@@ -1,187 +1,634 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
 
-  <title>ToonVerse AI</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+  <meta
+    name="description"
+    content="ToonVerse AI — Create, edit, transform and manage creative content with AI."
+  >
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b1020;
-      color: white;
-      min-height: 100vh;
-    }
+  <meta
+    name="theme-color"
+    content="#070b17"
+  >
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 24px;
-      background: #11182d;
-      border-bottom: 1px solid #27304d;
-    }
+  <title>ToonVerse AI — AI Creative Studio</title>
 
-    .logo {
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-left: 18px;
-      font-size: 14px;
-    }
-
-    .hero {
-      text-align: center;
-      padding: 80px 20px 50px;
-    }
-
-    .hero h1 {
-      font-size: 42px;
-      margin-bottom: 18px;
-    }
-
-    .hero p {
-      max-width: 700px;
-      margin: auto;
-      color: #cbd3ea;
-      line-height: 1.6;
-      font-size: 18px;
-    }
-
-    .buttons {
-      margin-top: 30px;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 14px 24px;
-      margin: 8px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-weight: bold;
-      background: #6c63ff;
-      color: white;
-    }
-
-    .btn.secondary {
-      background: #1c2746;
-    }
-
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
-      padding: 40px 20px 70px;
-      max-width: 1100px;
-      margin: auto;
-    }
-
-    .card {
-      background: #131c34;
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid #263253;
-    }
-
-    .card h3 {
-      margin-bottom: 10px;
-      font-size: 20px;
-    }
-
-    .card p {
-      color: #b9c2da;
-      line-height: 1.5;
-    }
-
-    footer {
-      text-align: center;
-      padding: 24px;
-      color: #8993ad;
-      border-top: 1px solid #27304d;
-    }
-
-    @media (max-width: 700px) {
-      header {
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      nav a {
-        margin: 0 8px;
-      }
-
-      .hero h1 {
-        font-size: 32px;
-      }
-    }
-  </style>
+  <!-- ToonVerse AI Main Styles -->
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css"
+  >
 </head>
 
 <body>
 
-  <header>
-    <div class="logo">ToonVerse AI</div>
+  <!-- =====================================================
+       HEADER
+       ===================================================== -->
 
-    <nav>
-      <a href="#">Home</a>
-      <a href="#">Create</a>
-      <a href="#">Edit</a>
-      <a href="#">My Library</a>
-    </nav>
+  <header class="site-header">
+
+    <div class="container navbar">
+
+      <a
+        class="logo"
+        href="#home"
+        aria-label="ToonVerse AI Home"
+      >
+        <span aria-hidden="true">✨</span>
+
+        <span class="logo-text">
+          ToonVerse AI
+        </span>
+      </a>
+
+      <nav aria-label="Main navigation">
+
+        <ul class="nav-links">
+
+          <li>
+            <a href="#home">
+              Home
+            </a>
+          </li>
+
+          <li>
+            <a href="#create">
+              Create
+            </a>
+          </li>
+
+          <li>
+            <a href="#edit">
+              Edit
+            </a>
+          </li>
+
+          <li>
+            <a href="#library">
+              My Library
+            </a>
+          </li>
+
+          <li>
+            <a href="#share">
+              Share
+            </a>
+          </li>
+
+          <li>
+            <a href="#print">
+              Print
+            </a>
+          </li>
+
+        </ul>
+
+      </nav>
+
+    </div>
+
   </header>
 
-  <section class="hero">
-    <h1>Create Anything with AI</h1>
 
-    <p>
-      ToonVerse AI is your all-in-one creative platform for AI images,
-      cartoons, photo editing, video creation, animation and more.
-    </p>
+  <!-- =====================================================
+       MAIN
+       ===================================================== -->
 
-    <div class="buttons">
-      <a href="#" class="btn">Start Creating</a>
-      <a href="#" class="btn secondary">Open Editor</a>
+  <main>
+
+
+    <!-- ===================================================
+         HERO
+         =================================================== -->
+
+    <section
+      class="hero"
+      id="home"
+    >
+
+      <div class="container">
+
+        <div class="hero-content">
+
+          <div class="hero-badge">
+            AI Creative Ecosystem
+          </div>
+
+          <h1 class="hero-title">
+
+            Create without
+            <span class="gradient-text">
+              limits.
+            </span>
+
+          </h1>
+
+          <p class="hero-description">
+
+            ToonVerse AI is your unified creative workspace
+            for AI creation, photo and video editing,
+            cartoon transformation, coloring, wallpapers,
+            memory videos, sharing, printing and more.
+
+          </p>
+
+          <div class="hero-actions">
+
+            <button
+              class="btn btn-primary"
+              type="button"
+              data-action="create"
+            >
+              Start Creating
+            </button>
+
+            <button
+              class="btn btn-secondary"
+              type="button"
+              data-action="edit"
+            >
+              Open AI Editor
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         CREATE
+         =================================================== -->
+
+    <section
+      class="section"
+      id="create"
+    >
+
+      <div class="container">
+
+        <h2 class="section-title">
+          Create with AI
+        </h2>
+
+        <p class="section-description">
+          Build images, cartoons, creative artwork,
+          wallpapers and future AI-powered experiences
+          from one unified studio.
+        </p>
+
+
+        <div class="grid feature-grid">
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              🎨
+            </div>
+
+            <h3>
+              Photo to Cartoon
+            </h3>
+
+            <p>
+              Transform photos into creative cartoon and
+              stylized visual experiences while preserving
+              the original media.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              ✨
+            </div>
+
+            <h3>
+              AI Generation
+            </h3>
+
+            <p>
+              Turn creative prompts into original visual
+              concepts with a scalable AI creation system.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              📷
+            </div>
+
+            <h3>
+              AI Camera
+            </h3>
+
+            <p>
+              Capture photos and prepare them for visual
+              intelligence, enhancement and creative effects.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              🖌️
+            </div>
+
+            <h3>
+              Coloring Studio
+            </h3>
+
+            <p>
+              Paint, color and enhance artwork with manual
+              tools and future AI-assisted coloring features.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              🖼️
+            </div>
+
+            <h3>
+              Wallpaper Studio
+            </h3>
+
+            <p>
+              Create wallpapers designed for different
+              screens, resolutions and device layouts.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              🎞️
+            </div>
+
+            <h3>
+              Memory Studio
+            </h3>
+
+            <p>
+              Build respectful photo and video memories with
+              restoration, animation, music, voice and text.
+            </p>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         EDIT
+         =================================================== -->
+
+    <section
+      class="section"
+      id="edit"
+    >
+
+      <div class="container">
+
+        <h2 class="section-title">
+          Unified AI Editor
+        </h2>
+
+        <p class="section-description">
+
+          One extensible editing workspace for photos,
+          video, cartoons and future creative formats.
+
+        </p>
+
+
+        <div class="grid feature-grid">
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              ✂️
+            </div>
+
+            <h3>
+              Select & Edit
+            </h3>
+
+            <p>
+              Work with the entire file or select only the
+              exact portion you want to crop, convert or edit.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              💡
+            </div>
+
+            <h3>
+              Magic Lighting
+            </h3>
+
+            <p>
+              Foundation for illumination, lighting and
+              creative visual-effect workflows.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              📚
+            </div>
+
+            <h3>
+              Batch Processing
+            </h3>
+
+            <p>
+              Architecture for handling multiple photos,
+              videos and creative assets efficiently.
+            </p>
+
+          </article>
+
+        </div>
+
+
+        <div class="hero-actions">
+
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-action="edit"
+          >
+            Launch Editor
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         LIBRARY
+         =================================================== -->
+
+    <section
+      class="section"
+      id="library"
+    >
+
+      <div class="container">
+
+        <h2 class="section-title">
+          My Library
+        </h2>
+
+        <p class="section-description">
+
+          A foundation for projects, saved creations,
+          automatic recovery and future cross-device
+          synchronization.
+
+        </p>
+
+        <div class="hero-actions">
+
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-action="library"
+          >
+            Open My Library
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         SHARE
+         =================================================== -->
+
+    <section
+      class="section"
+      id="share"
+    >
+
+      <div class="container">
+
+        <h2 class="section-title">
+          Share & Export
+        </h2>
+
+        <p class="section-description">
+
+          The platform foundation for exporting and sharing
+          supported images, videos, documents and creative
+          projects.
+
+        </p>
+
+
+        <div class="grid feature-grid">
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              🖼️
+            </div>
+
+            <h3>
+              Image Export
+            </h3>
+
+            <p>
+              Foundation for JPG, JPEG and PNG output.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              🎬
+            </div>
+
+            <h3>
+              Video Export
+            </h3>
+
+            <p>
+              Foundation for MP4 and supported video
+              workflows.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div class="card-icon" aria-hidden="true">
+              📄
+            </div>
+
+            <h3>
+              Document Export
+            </h3>
+
+            <p>
+              Foundation for PDF and future supported
+              document workflows.
+            </p>
+
+          </article>
+
+        </div>
+
+
+        <div class="hero-actions">
+
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-action="share"
+          >
+            Share
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         PRINT
+         =================================================== -->
+
+    <section
+      class="section"
+      id="print"
+    >
+
+      <div class="container">
+
+        <h2 class="section-title">
+          Print Studio
+        </h2>
+
+        <p class="section-description">
+
+          Foundation for print preview, printer selection,
+          paper size, orientation, margins, scaling,
+          positioning and quality controls.
+
+        </p>
+
+        <div class="hero-actions">
+
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-action="print"
+          >
+            Open Print Studio
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+  <!-- =====================================================
+       FOOTER
+       ===================================================== -->
+
+  <footer class="site-footer">
+
+    <div class="container footer-content">
+
+      <div>
+        <strong>
+          ToonVerse AI
+        </strong>
+      </div>
+
+      <div>
+        ©
+        <span data-current-year>
+          2026
+        </span>
+        ToonVerse AI
+      </div>
+
     </div>
-  </section>
 
-  <section class="features">
-
-    <div class="card">
-      <h3>AI Image Studio</h3>
-      <p>Create images and artwork using text prompts and AI tools.</p>
-    </div>
-
-    <div class="card">
-      <h3>Photo to Cartoon</h3>
-      <p>Transform your photos into creative cartoon and toon styles.</p>
-    </div>
-
-    <div class="card">
-      <h3>AI Creative Editor</h3>
-      <p>Edit photos, graphics and future creative projects in one place.</p>
-    </div>
-
-    <div class="card">
-      <h3>Photo to Video</h3>
-      <p>Turn your photos and memories into animated video experiences.</p>
-    </div>
-
-  </section>
-
-  <footer>
-    © 2026 ToonVerse AI. All rights reserved.
   </footer>
+
+
+  <!-- Accessible status region -->
+
+  <div
+    id="app-status"
+    role="status"
+    aria-live="polite"
+    class="hidden"
+  ></div>
+
+
+  <!-- =====================================================
+       TOONVERSE AI JAVASCRIPT
+       Config must load before main.js
+       ===================================================== -->
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/main.js"></script>
 
 </body>
 </html>
