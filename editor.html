@@ -2354,11 +2354,30 @@ document.addEventListener("DOMContentLoaded", () => {
     )
     .forEach(button => {
 
-      button.addEventListener(
-        "click",
-        () => fileInput?.click()
-      );
-    });
+   button.addEventListener("click", () => {
+
+  if (!fileInput) {
+    notify("Import input is not available.", "error");
+    return;
+  }
+
+  fileInput.value = "";
+
+  if (typeof fileInput.showPicker === "function") {
+    try {
+      fileInput.showPicker();
+      return;
+    } catch (error) {
+      console.warn("showPicker fallback:", error);
+    }
+  }
+
+  fileInput.click();
+}); 
+      
+      
+      
+    
 
 
   fileInput?.addEventListener(
