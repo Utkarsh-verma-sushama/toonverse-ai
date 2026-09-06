@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="description"
+    content="ToonVerse AI Unified AI Editor — professional creative workspace for image, video and AI-assisted editing."
+  >
+
+  <meta name="theme-color" content="#070b17">
+  <meta name="color-scheme" content="dark">
+
+  <title>Unified AI Editor — ToonVerse AI</title>
+
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+
+  <style>
+    /* =====================================================
+       TOONVERSE AI — UNIFIED EDITOR
+       Stable V1 Workspace Foundation
+       ===================================================== */
+
+    :root {
+      --editor-topbar: 64px;
+      --editor-tools: 78px;
+      --editor-left: 260px;
+      --editor-right: 310px;
+      --editor-bottom: 48px;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #070b17;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .editor-app {
+      height: 100dvh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #070b17;
+      color: #fff;
+    }
+
+    /* =====================================================
+       TOP BAR
+       ===================================================== */
+
+    .editor-topbar {
+      min-height: var(--editor-topbar);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+
+      padding:
+        max(8px, env(safe-area-inset-top))
+        12px
+        8px;
+
+      background: rgba(10, 15, 29, 0.97);
+      border-bottom: 1px solid rgba(255,255,255,.09);
+
+      z-index: 1000;
+    }
+
+    .editor-topbar-group {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .editor-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .document-info {
+      min-width: 0;
+      margin-left: 5px;
+    }
+
+    .document-name {
+      max-width: 230px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .88rem;
+      font-weight: 750;
+    }
+
+    .document-meta {
+      margin-top: 1px;
+      color: var(--text-muted);
+      font-size: .68rem;
+    }
+
+    .topbar-divider {
+      width: 1px;
+      height: 28px;
+      margin: 0 3px;
+      background: rgba(255,255,255,.1);
+    }
+
+    /* =====================================================
+       COMMAND TOOLBAR
+       ===================================================== */
+
+    .editor-commandbar {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+
+      padding: 5px 10px;
+
+      overflow-x: auto;
+
+      background: #0d1426;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .command-group {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .command-button {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+
+      padding: 5px 9px;
+
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 9px;
+
+      background: rgba(255,255,255,.035);
+      color: var(--text-secondary);
+
+      cursor: pointer;
+    }
+
+    .command-button:hover {
+      background: rgba(255,255,255,.075);
+      color: #fff;
+    }
+
+    .command-button:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+    }
+
+    .command-label {
+      font-size: .76rem;
+      font-weight: 650;
+    }
+
+    /* =====================================================
+       MAIN EDITOR GRID
+       ===================================================== */
+
+    .editor-body {
+      min-height: 0;
+      flex: 1;
+
+      display: grid;
+      grid-template-columns:
+        var(--editor-tools)
+        var(--editor-left)
+        minmax(0,1fr)
+        var(--editor-right);
+    }
+
+    /* =====================================================
+       PRIMARY TOOL RAIL
+       ===================================================== */
+
+    .tool-rail {
+      min-height: 0;
+      overflow-y: auto;
+
+      padding: 8px 6px;
+
+      background: #0b1120;
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+
+    .rail-button {
+      width: 100%;
+      min-height: 58px;
+
+      display: grid;
+      place-items: center;
+      gap: 2px;
+
+      margin-bottom: 5px;
+      padding: 6px 3px;
+
+      border: 1px solid transparent;
+      border-radius: 11px;
+
+      background: transparent;
+      color: var(--text-muted);
+
+      cursor: pointer;
+    }
+
+    .rail-button:hover,
+    .rail-button.active {
+      color: #fff;
+      background: rgba(124,92,255,.13);
+      border-color: rgba(124,92,255,.28);
+    }
+
+    .rail-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .rail-label {
+      font-size: .61rem;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       LEFT PANEL
+       ===================================================== */
+
+    .editor-left {
+      min-width: 0;
+      overflow-y: auto;
+
+      background: #0d1426;
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+
+    .editor-panel-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+
+      padding: 10px 12px;
+
+      background: rgba(13,20,38,.97);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .editor-panel-title {
+      margin: 0;
+      font-size: .87rem;
+      font-weight: 800;
+    }
+
+    .editor-panel-content {
+      padding: 12px;
+    }
+
+    .tool-section + .tool-section {
+      margin-top: 18px;
+    }
+
+    .tool-section-title {
+      margin: 0 0 8px;
+      color: var(--text-muted);
+      font-size: .69rem;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .editor-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 7px;
+    }
+
+    .editor-tool-card {
+      min-height: 78px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+
+      padding: 10px;
+
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 11px;
+
+      background: rgba(255,255,255,.03);
+      color: #fff;
+
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .editor-tool-card:hover,
+    .editor-tool-card.active {
+      border-color: rgba(124,92,255,.36);
+      background: rgba(124,92,255,.09);
+    }
+
+    .tool-card-icon {
+      font-size: 1.25rem;
+    }
+
+    .tool-card-name {
+      font-size: .73rem;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       CANVAS WORKSPACE
+       ===================================================== */
+
+    .canvas-workspace {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+
+      display: flex;
+      flex-direction: column;
+
+      overflow: hidden;
+
+      background: #080c17;
+    }
+
+    .canvas-toolbar {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+
+      padding: 5px 10px;
+
+      overflow-x: auto;
+
+      background: rgba(11,17,32,.95);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+
+    .canvas-toolbar-group {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .canvas-stage {
+      position: relative;
+
+      min-width: 0;
+      min-height: 0;
+      flex: 1;
+
+      display: grid;
+      place-items: center;
+
+      overflow: auto;
+
+      padding: 40px;
+
+      background-color: #090e1b;
+      background-image:
+        linear-gradient(
+          45deg,
+          rgba(255,255,255,.025) 25%,
+          transparent 25%
+        ),
+        linear-gradient(
+          -45deg,
+          rgba(255,255,255,.025) 25%,
+          transparent 25%
+        ),
+        linear-gradient(
+          45deg,
+          transparent 75%,
+          rgba(255,255,255,.025) 75%
+        ),
+        linear-gradient(
+          -45deg,
+          transparent 75%,
+          rgba(255,255,255,.025) 75%
+        );
+
+      background-size: 24px 24px;
+      background-position:
+        0 0,
+        0 12px,
+        12px -12px,
+        -12px 0;
+    }
+
+    .canvas-document {
+      position: relative;
+
+      width: min(760px, 78vw);
+      aspect-ratio: 4 / 3;
+
+      display: grid;
+      place-items: center;
+
+      overflow: hidden;
+
+      background: #111827;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 4px;
+
+      box-shadow:
+        0 28px 80px rgba(0,0,0,.48);
+
+      transform-origin: center;
+    }
+
+    .canvas-document.has-media {
+      background: #000;
+    }
+
+    .canvas-placeholder {
+      max-width: 460px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .canvas-placeholder-icon {
+      font-size: 3rem;
+    }
+
+    .canvas-placeholder h2 {
+      margin: 12px 0 7px;
+      font-size: 1.15rem;
+    }
+
+    .canvas-placeholder p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: .83rem;
+      line-height: 1.55;
+    }
+
+    .canvas-image {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .canvas-selection {
+      position: absolute;
+      inset: 15%;
+      display: none;
+      border: 1px dashed #fff;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.28);
+      pointer-events: none;
+    }
+
+    .canvas-selection.visible {
+      display: block;
+    }
+
+    /* =====================================================
+       RIGHT PROPERTIES / LAYERS
+       ===================================================== */
+
+    .editor-right {
+      min-width: 0;
+      overflow-y: auto;
+
+      background: #0d1426;
+      border-left: 1px solid rgba(255,255,255,.08);
+    }
+
+    .property-tabs {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 4px;
+
+      padding: 7px;
+
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .property-tab {
+      min-height: 34px;
+
+      border: 0;
+      border-radius: 8px;
+
+      background: transparent;
+      color: var(--text-muted);
+
+      font-size: .72rem;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    .property-tab.active {
+      background: rgba(124,92,255,.14);
+      color: #fff;
+    }
+
+    .property-panel {
+      padding: 12px;
+    }
+
+    .property-group {
+      padding: 12px;
+      margin-bottom: 10px;
+
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+
+      background: rgba(255,255,255,.025);
+    }
+
+    .property-heading {
+      margin: 0 0 10px;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .property-row {
+      display: grid;
+      grid-template-columns: 1fr 90px;
+      align-items: center;
+      gap: 8px;
+
+      margin-top: 8px;
+    }
+
+    .property-label {
+      color: var(--text-secondary);
+      font-size: .72rem;
+    }
+
+    .editor-input,
+    .editor-select {
+      width: 100%;
+      min-height: 34px;
+
+      padding: 5px 8px;
+
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+
+      outline: 0;
+
+      background: #0a1121;
+      color: #fff;
+
+      font-size: .73rem;
+    }
+
+    .editor-input:focus,
+    .editor-select:focus {
+      border-color: rgba(124,92,255,.55);
+    }
+
+    .layer-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      min-height: 46px;
+      padding: 7px;
+
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 9px;
+
+      background: rgba(255,255,255,.025);
+    }
+
+    .layer-item.active {
+      border-color: rgba(124,92,255,.34);
+      background: rgba(124,92,255,.08);
+    }
+
+    .layer-thumb {
+      width: 34px;
+      height: 34px;
+
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+
+      border-radius: 7px;
+
+      background: #18233a;
+    }
+
+    .layer-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .layer-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .layer-meta {
+      margin-top: 2px;
+      color: var(--text-muted);
+      font-size: .62rem;
+    }
+
+    /* =====================================================
+       BOTTOM STATUS BAR
+       ===================================================== */
+
+    .editor-statusbar {
+      min-height: var(--editor-bottom);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+
+      padding:
+        6px
+        12px
+        max(6px, env(safe-area-inset-bottom));
+
+      background: #0b1120;
+      border-top: 1px solid rgba(255,255,255,.08);
+
+      color: var(--text-muted);
+      font-size: .68rem;
+    }
+
+    .status-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .online-dot {
+      width: 7px;
+      height: 7px;
+      display: inline-block;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    /* =====================================================
+       MOBILE NAVIGATION
+       ===================================================== */
+
+    .editor-mobile-nav {
+      display: none;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 1200px) {
+      .editor-body {
+        grid-template-columns:
+          var(--editor-tools)
+          220px
+          minmax(0,1fr);
+      }
+
+      .editor-right {
+        display: none;
+      }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: hidden;
+      }
+
+      .editor-body {
+        grid-template-columns:
+          64px
+          minmax(0,1fr);
+      }
+
+      .editor-left,
+      .editor-right {
+        display: none;
+      }
+
+      .document-meta,
+      .topbar-divider {
+        display: none;
+      }
+
+      .canvas-stage {
+        padding: 20px;
+      }
+
+      .canvas-document {
+        width: min(760px, 88vw);
+      }
+    }
+
+    @media (max-width: 650px) {
+      :root {
+        --editor-topbar: 58px;
+      }
+
+      .editor-topbar {
+        min-height: 58px;
+        padding-inline: 8px;
+      }
+
+      .editor-brand span:last-child {
+        display: none;
+      }
+
+      .document-name {
+        max-width: 110px;
+      }
+
+      .editor-topbar .command-label {
+        display: none;
+      }
+
+      .editor-body {
+        display: block;
+      }
+
+      .tool-rail {
+        display: none;
+      }
+
+      .canvas-workspace {
+        height: calc(
+          100dvh -
+          58px -
+          46px -
+          52px -
+          env(safe-area-inset-bottom)
+        );
+      }
+
+      .canvas-stage {
+        padding: 12px;
+      }
+
+      .canvas-document {
+        width: 94vw;
+        max-height: 70vh;
+      }
+
+      .editor-statusbar {
+        display: none;
+      }
+
+      .editor-mobile-nav {
+        min-height: 52px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: 3px;
+
+        padding:
+          4px
+          5px
+          max(4px, env(safe-area-inset-bottom));
+
+        background: #0d1426;
+        border-top: 1px solid rgba(255,255,255,.09);
+      }
+
+      .mobile-tool {
+        flex: 1;
+        min-width: 0;
+
+        display: grid;
+        place-items: center;
+        gap: 1px;
+
+        padding: 5px 2px;
+
+        border: 0;
+        border-radius: 8px;
+
+        background: transparent;
+        color: var(--text-muted);
+
+        font-size: .6rem;
+      }
+
+      .mobile-tool.active {
+        background: rgba(124,92,255,.13);
+        color: #fff;
+      }
+
+      .mobile-tool span:first-child {
+        font-size: 1rem;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .document-info {
+        display: none;
+      }
+
+      .canvas-placeholder {
+        padding: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="editor-app">
+
+  <!-- ===================================================
+       TOP BAR
+       =================================================== -->
+
+  <header class="editor-topbar">
+
+    <div class="editor-topbar-group">
+
+      <a
+        href="./index.html"
+        class="icon-btn"
+        aria-label="Back to ToonVerse AI home"
+        title="Home"
+      >
+        ←
+      </a>
+
+      <a
+        href="./index.html"
+        class="editor-brand"
+        aria-label="ToonVerse AI"
+      >
+        <span>✨</span>
+        <span>ToonVerse AI</span>
+      </a>
+
+      <div class="topbar-divider"></div>
+
+      <div class="document-info">
+        <div
+          class="document-name"
+          id="document-name"
+        >
+          Untitled Project
+        </div>
+
+        <div
+          class="document-meta"
+          id="document-meta"
+        >
+          Unified AI Editor
+        </div>
+      </div>
+
+    </div>
+
+
+    <div class="editor-topbar-group">
+
+      <button
+        type="button"
+        class="command-button"
+        data-editor-action="save"
+      >
+        💾
+        <span class="command-label">Save</span>
+      </button>
+
+      <button
+        type="button"
+        class="command-button"
+        data-editor-action="export"
+      >
+        📤
+        <span class="command-label">Export</span>
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- ===================================================
+       COMMAND BAR
+       =================================================== -->
+
+  <div class="editor-commandbar">
+
+    <div class="command-group">
+
+      <button
+        class="command-button"
+        type="button"
+        id="import-button"
+        data-editor-action="import"
+      >
+        📁
+        <span class="command-label">Import</span>
+      </button>
+
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="new"
+      >
+        ＋
+        <span class="command-label">New</span>
+      </button>
+
+      <span class="topbar-divider"></span>
+
+      <button
+        class="command-button"
+        id="undo-button"
+        type="button"
+        data-editor-action="undo"
+        disabled
+      >
+        ↶
+        <span class="command-label">Undo</span>
+      </button>
+
+      <button
+        class="command-button"
+        id="redo-button"
+        type="button"
+        data-editor-action="redo"
+        disabled
+      >
+        ↷
+        <span class="command-label">Redo</span>
+      </button>
+
+    </div>
+
+
+    <div class="command-group">
+
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="zoom-out"
+      >
+        −
+      </button>
+
+      <span
+        id="zoom-display"
+        style="
+          min-width: 48px;
+          text-align: center;
+          font-size: .72rem;
+        "
+      >
+        100%
+      </span>
+
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="zoom-in"
+      >
+        ＋
+      </button>
+
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="fit"
+      >
+        Fit
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================
+       EDITOR BODY
+       =================================================== -->
+
+  <div class="editor-body">
+
+    <!-- TOOL RAIL -->
+
+    <nav
+      class="tool-rail"
+      aria-label="Editor tools"
+    >
+
+      <button
+        class="rail-button active"
+        type="button"
+        data-editor-tool="select"
+      >
+        <span class="rail-icon">↖️</span>
+        <span class="rail-label">Select</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="crop"
+      >
+        <span class="rail-icon">✂️</span>
+        <span class="rail-label">Crop</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="brush"
+      >
+        <span class="rail-icon">🖌️</span>
+        <span class="rail-label">Brush</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="erase"
+      >
+        <span class="rail-icon">🧽</span>
+        <span class="rail-label">Erase</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="text"
+      >
+        <span class="rail-icon">T</span>
+        <span class="rail-label">Text</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="adjust"
+      >
+        <span class="rail-icon">🎚️</span>
+        <span class="rail-label">Adjust</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="effects"
+      >
+        <span class="rail-icon">✨</span>
+        <span class="rail-label">Effects</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="ai"
+      >
+        <span class="rail-icon">🧠</span>
+        <span class="rail-label">AI</span>
+      </button>
+
+    </nav>
+
+
+    <!-- LEFT PANEL -->
+
+    <aside
+      class="editor-left"
+      aria-label="Editor tool options"
+    >
+
+      <div class="editor-panel-header">
+
+        <h2
+          class="editor-panel-title"
+          id="tool-panel-title"
+        >
+          Select & Transform
+        </h2>
+
+        <span class="badge">
+          Tools
+        </span>
+
+      </div>
+
+
+      <div class="editor-panel-content">
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            Transform
+          </h3>
+
+          <div class="editor-tool-grid">
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="crop"
+            >
+              <span class="tool-card-icon">✂️</span>
+              <span class="tool-card-name">Crop</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="resize"
+            >
+              <span class="tool-card-icon">↔️</span>
+              <span class="tool-card-name">Resize</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="rotate"
+            >
+              <span class="tool-card-icon">🔄</span>
+              <span class="tool-card-name">Rotate</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="flip"
+            >
+              <span class="tool-card-icon">↔</span>
+              <span class="tool-card-name">Flip</span>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            Adjustments
+          </h3>
+
+          <div class="editor-tool-grid">
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="brightness"
+            >
+              <span class="tool-card-icon">☀️</span>
+              <span class="tool-card-name">Brightness</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="contrast"
+            >
+              <span class="tool-card-icon">◐</span>
+              <span class="tool-card-name">Contrast</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="color"
+            >
+              <span class="tool-card-icon">🎨</span>
+              <span class="tool-card-name">Color</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="sharpness"
+            >
+              <span class="tool-card-icon">🔍</span>
+              <span class="tool-card-name">Sharpness</span>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            AI Tools
+          </h3>
+
+          <div class="editor-tool-grid">
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="ai-enhance"
+            >
+              <span class="tool-card-icon">✨</span>
+              <span class="tool-card-name">AI Enhance</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="background"
+            >
+              <span class="tool-card-icon">🪄</span>
+              <span class="tool-card-name">Background</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="cartoon"
+            >
+              <span class="tool-card-icon">🎭</span>
+              <span class="tool-card-name">Cartoon</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="lighting"
+            >
+              <span class="tool-card-icon">💡</span>
+              <span class="tool-card-name">Lighting</span>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            Content
+          </h3>
+
+          <div class="editor-tool-grid">
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="text"
+            >
+              <span class="tool-card-icon">T</span>
+              <span class="tool-card-name">Add Text</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="image"
+            >
+              <span class="tool-card-icon">🖼️</span>
+              <span class="tool-card-name">Add Image</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="shape"
+            >
+              <span class="tool-card-icon">⬡</span>
+              <span class="tool-card-name">Shape</span>
+            </button>
+
+            <button
+              class="editor-tool-card"
+              type="button"
+              data-editor-operation="layers"
+            >
+              <span class="tool-card-icon">📚</span>
+              <span class="tool-card-name">Layers</span>
+            </button>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </aside>
+
+
+    <!-- =================================================
+         CANVAS
+         ================================================= -->
+
+    <main class="canvas-workspace">
+
+      <div class="canvas-toolbar">
+
+        <div class="canvas-toolbar-group">
+
+          <span class="badge badge-info">
+            Canvas
+          </span>
+
+          <span
+            id="canvas-info"
+            class="text-muted"
+            style="font-size:.7rem;"
+          >
+            No media loaded
+          </span>
+
+        </div>
+
+
+        <div class="canvas-toolbar-group">
+
+          <button
+            class="command-button"
+            type="button"
+            data-editor-action="before-after"
+          >
+            ◐
+            <span class="command-label">
+              Compare
+            </span>
+          </button>
+
+          <button
+            class="command-button"
+            type="button"
+            data-editor-action="fullscreen"
+          >
+            ⛶
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="canvas-stage"
+        id="canvas-stage"
+      >
+
+        <div
+          class="canvas-document"
+          id="canvas-document"
+        >
+
+          <div
+            class="canvas-placeholder"
+            id="canvas-placeholder"
+          >
+
+            <div class="canvas-placeholder-icon">
+              🖼️
+            </div>
+
+            <h2>
+              Start your edit
+            </h2>
+
+            <p>
+              Import a photo or supported creative file.
+              ToonVerse AI will keep the original source
+              unchanged while the editing workspace works
+              with a project copy.
+            </p>
+
+            <button
+              class="btn btn-primary"
+              type="button"
+              data-editor-action="import"
+              style="margin-top:16px;"
+            >
+              Import Media
+            </button>
+
+          </div>
+
+
+          <img
+            id="canvas-image"
+            class="canvas-image"
+            alt="Editing canvas"
+            hidden
+          >
+
+
+          <div
+            class="canvas-selection"
+            id="canvas-selection"
+            aria-hidden="true"
+          ></div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+
+    <!-- =================================================
+         RIGHT PANEL
+         ================================================= -->
+
+    <aside
+      class="editor-right"
+      aria-label="Properties and layers"
+    >
+
+      <div
+        class="property-tabs"
+        role="tablist"
+      >
+
+        <button
+          class="property-tab active"
+          type="button"
+          data-property-tab="properties"
+        >
+          Properties
+        </button>
+
+        <button
+          class="property-tab"
+          type="button"
+          data-property-tab="layers"
+        >
+          Layers
+        </button>
+
+        <button
+          class="property-tab"
+          type="button"
+          data-property-tab="history"
+        >
+          History
+        </button>
+
+      </div>
+
+
+      <div class="property-panel">
+
+        <section class="property-group">
+
+          <h3 class="property-heading">
+            Document
+          </h3>
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Width
+            </span>
+
+            <input
+              class="editor-input"
+              id="document-width"
+              type="number"
+              value="1200"
+              min="1"
+            >
+
+          </div>
+
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Height
+            </span>
+
+            <input
+              class="editor-input"
+              id="document-height"
+              type="number"
+              value="900"
+              min="1"
+            >
+
+          </div>
+
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Units
+            </span>
+
+            <select class="editor-select">
+              <option>Pixels</option>
+              <option>Inches</option>
+              <option>Centimeters</option>
+            </select>
+
+          </div>
+
+        </section>
+
+
+        <section class="property-group">
+
+          <h3 class="property-heading">
+            Transform
+          </h3>
+
+          <div class="property-row">
+            <span class="property-label">X</span>
+            <input class="editor-input" type="number" value="0">
+          </div>
+
+          <div class="property-row">
+            <span class="property-label">Y</span>
+            <input class="editor-input" type="number" value="0">
+          </div>
+
+          <div class="property-row">
+            <span class="property-label">Rotation</span>
+            <input class="editor-input" type="number" value="0">
+          </div>
+
+          <div class="property-row">
+            <span class="property-label">Opacity</span>
+            <input type="range" min="0" max="100" value="100">
+          </div>
+
+        </section>
+
+
+        <section class="property-group">
+
+          <h3 class="property-heading">
+            Layers
+          </h3>
+
+          <div
+            class="layer-list"
+            id="layer-list"
+          >
+
+            <div class="layer-item active">
+
+              <div class="layer-thumb">
+                📄
+              </div>
+
+              <div class="layer-info">
+
+                <div class="layer-name">
+                  Background
+                </div>
+
+                <div class="layer-meta">
+                  Base layer
+                </div>
+
+              </div>
+
+              <span title="Visible">
+                👁
+              </span>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <section class="property-group">
+
+          <h3 class="property-heading">
+            Project Safety
+          </h3>
+
+          <div class="alert alert-info">
+
+            <span>🛡️</span>
+
+            <div
+              class="text-muted"
+              style="
+                font-size:.7rem;
+                line-height:1.45;
+              "
+            >
+              Original media remains separate.
+              Future AI operations will connect through
+              controlled processing and safety services.
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+
+  <!-- ===================================================
+       STATUS BAR
+       =================================================== -->
+
+  <footer class="editor-statusbar">
+
+    <div class="status-group">
+
+      <span>
+        <span class="online-dot"></span>
+        <span id="network-status">Online</span>
+      </span>
+
+      <span id="editor-status">
+        Ready
+      </span>
+
+    </div>
+
+
+    <div class="status-group">
+
+      <span id="media-dimensions">
+        —
+      </span>
+
+      <span>
+        RGB
+      </span>
+
+      <span>
+        ToonVerse AI Editor V1
+      </span>
+
+    </div>
+
+  </footer>
+
+
+  <!-- MOBILE TOOLBAR -->
+
+  <nav
+    class="editor-mobile-nav"
+    aria-label="Mobile editor tools"
+  >
+
+    <button
+      class="mobile-tool active"
+      type="button"
+      data-editor-tool="select"
+    >
+      <span>↖️</span>
+      <span>Select</span>
+    </button>
+
+    <button
+      class="mobile-tool"
+      type="button"
+      data-editor-tool="crop"
+    >
+      <span>✂️</span>
+      <span>Crop</span>
+    </button>
+
+    <button
+      class="mobile-tool"
+      type="button"
+      data-editor-tool="adjust"
+    >
+      <span>🎚️</span>
+      <span>Adjust</span>
+    </button>
+
+    <button
+      class="mobile-tool"
+      type="button"
+      data-editor-tool="effects"
+    >
+      <span>✨</span>
+      <span>Effects</span>
+    </button>
+
+    <button
+      class="mobile-tool"
+      type="button"
+      data-editor-tool="ai"
+    >
+      <span>🧠</span>
+      <span>AI</span>
+    </button>
+
+  </nav>
+
+</div>
+
+
+<!-- =====================================================
+     FILE INPUT
+     ===================================================== -->
+
+<input
+  id="editor-file-input"
+  type="file"
+  accept="image/jpeg,image/png,image/webp"
+  hidden
+>
+
+
+<!-- ACCESSIBILITY -->
+
+<div
+  id="app-status"
+  class="visually-hidden"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+></div>
+
+
+<!-- =====================================================
+     GLOBAL FOUNDATION
+     ===================================================== -->
+
+<script src="./assets/js/config.js" defer></script>
+<script src="./assets/js/main.js" defer></script>
+
+
+<!-- =====================================================
+     EDITOR V1 CONTROLLER
+
+     This provides safe local frontend behavior.
+     Advanced destructive/non-destructive processing
+     will later move into dedicated editor modules.
+     ===================================================== -->
+
+<script>
+"use strict";
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const fileInput =
+    document.getElementById("editor-file-input");
+
+  const canvasDocument =
+    document.getElementById("canvas-document");
+
+  const canvasImage =
+    document.getElementById("canvas-image");
+
+  const placeholder =
+    document.getElementById("canvas-placeholder");
+
+  const selection =
+    document.getElementById("canvas-selection");
+
+  const zoomDisplay =
+    document.getElementById("zoom-display");
+
+  const documentName =
+    document.getElementById("document-name");
+
+  const documentMeta =
+    document.getElementById("document-meta");
+
+  const canvasInfo =
+    document.getElementById("canvas-info");
+
+  const dimensions =
+    document.getElementById("media-dimensions");
+
+  const widthInput =
+    document.getElementById("document-width");
+
+  const heightInput =
+    document.getElementById("document-height");
+
+  const layerList =
+    document.getElementById("layer-list");
+
+  const editorStatus =
+    document.getElementById("editor-status");
+
+  const networkStatus =
+    document.getElementById("network-status");
+
+  let currentFile = null;
+  let objectURL = null;
+  let zoom = 1;
+  let activeTool = "select";
+
+
+  /* ===================================================
+     NOTIFICATIONS
+     =================================================== */
+
+  function notify(message, type = "info") {
+
+    if (
+      window.ToonVerseAI &&
+      typeof window.ToonVerseAI.showToast === "function"
+    ) {
+
+      window.ToonVerseAI.showToast(
+        message,
+        type
+      );
+
+      return;
+    }
+
+    console.info(
+      "ToonVerse AI:",
+      message
+    );
+  }
+
+
+  function setStatus(message) {
+
+    if (editorStatus) {
+      editorStatus.textContent = message;
+    }
+  }
+
+
+  /* ===================================================
+     FILE IMPORT
+     =================================================== */
+
+  document
+    .querySelectorAll(
+      '[data-editor-action="import"]'
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => fileInput?.click()
+      );
+    });
+
+
+  fileInput?.addEventListener(
+    "change",
+    () => {
+
+      const file =
+        fileInput.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      if (
+        ![
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ].includes(file.type)
+      ) {
+
+        notify(
+          "This V1 editor currently accepts JPG, PNG and WebP images.",
+          "warning"
+        );
+
+        return;
+      }
+
+      loadImage(file);
+    }
+  );
+
+
+  function loadImage(file) {
+
+    if (objectURL) {
+      URL.revokeObjectURL(objectURL);
+    }
+
+    objectURL =
+      URL.createObjectURL(file);
+
+    currentFile = file;
+
+    canvasImage.onload =
+      () => {
+
+        const width =
+          canvasImage.naturalWidth;
+
+        const height =
+          canvasImage.naturalHeight;
+
+        canvasDocument.style.aspectRatio =
+          `${width} / ${height}`;
+
+        canvasDocument.classList.add(
+          "has-media"
+        );
+
+        placeholder.hidden = true;
+        canvasImage.hidden = false;
+
+        documentName.textContent =
+          file.name;
+
+        documentMeta.textContent =
+          `${formatBytes(file.size)} • ${file.type}`;
+
+        canvasInfo.textContent =
+          `${width} × ${height}px`;
+
+        dimensions.textContent =
+          `${width} × ${height}px`;
+
+        widthInput.value =
+          width;
+
+        heightInput.value =
+          height;
+
+        updateLayer(file.name);
+
+        zoom = 1;
+
+        updateZoom();
+
+        setStatus(
+          "Image loaded"
+        );
+
+        notify(
+          "Image imported into the editor.",
+          "success"
+        );
+      };
+
+
+    canvasImage.onerror =
+      () => {
+
+        notify(
+          "The selected image could not be loaded.",
+          "error"
+        );
+      };
+
+
+    canvasImage.src =
+      objectURL;
+  }
+
+
+  /* ===================================================
+     LAYERS
+     =================================================== */
+
+  function updateLayer(name) {
+
+    if (!layerList) {
+      return;
+    }
+
+    layerList.innerHTML = "";
+
+    const layer =
+      document.createElement("div");
+
+    layer.className =
+      "layer-item active";
+
+    const thumb =
+      document.createElement("div");
+
+    thumb.className =
+      "layer-thumb";
+
+    thumb.textContent =
+      "🖼️";
+
+    const info =
+      document.createElement("div");
+
+    info.className =
+      "layer-info";
+
+    const title =
+      document.createElement("div");
+
+    title.className =
+      "layer-name";
+
+    title.textContent =
+      name;
+
+    const meta =
+      document.createElement("div");
+
+    meta.className =
+      "layer-meta";
+
+    meta.textContent =
+      "Image layer";
+
+    const visibility =
+      document.createElement("span");
+
+    visibility.textContent =
+      "👁";
+
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    layer.appendChild(thumb);
+    layer.appendChild(info);
+    layer.appendChild(visibility);
+
+    layerList.appendChild(layer);
+  }
+
+
+  /* ===================================================
+     TOOL SELECTION
+     =================================================== */
+
+  const toolNames = {
+    select: "Select & Transform",
+    crop: "Crop & Selection",
+    brush: "Brush & Painting",
+    erase: "Erase",
+    text: "Text",
+    adjust: "Adjustments",
+    effects: "Effects & Lighting",
+    ai: "AI Tools"
+  };
+
+
+  document
+    .querySelectorAll(
+      "[data-editor-tool]"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          activeTool =
+            button.dataset.editorTool;
+
+          document
+            .querySelectorAll(
+              "[data-editor-tool]"
+            )
+            .forEach(item => {
+
+              item.classList.toggle(
+                "active",
+                item.dataset.editorTool === activeTool
+              );
+            });
+
+
+          const panelTitle =
+            document.getElementById(
+              "tool-panel-title"
+            );
+
+          if (panelTitle) {
+
+            panelTitle.textContent =
+              toolNames[activeTool] ||
+              "Editor Tools";
+          }
+
+
+          selection?.classList.toggle(
+            "visible",
+            activeTool === "crop" &&
+            Boolean(currentFile)
+          );
+
+
+          setStatus(
+            `${toolNames[activeTool] || activeTool} selected`
+          );
+        }
+      );
+    });
+
+
+  /* ===================================================
+     TOOL OPERATIONS
+     =================================================== */
+
+  document
+    .querySelectorAll(
+      "[data-editor-operation]"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const operation =
+            button.dataset.editorOperation;
+
+          if (!currentFile) {
+
+            notify(
+              "Import an image before using editing tools.",
+              "info"
+            );
+
+            return;
+          }
+
+
+          if (operation === "rotate") {
+
+            notify(
+              "Rotate control selected. Non-destructive transform engine will connect here."
+            );
+
+            return;
+          }
+
+
+          if (operation === "crop") {
+
+            activeTool = "crop";
+
+            selection?.classList.add(
+              "visible"
+            );
+
+            notify(
+              "Crop workspace selected."
+            );
+
+            return;
+          }
+
+
+          notify(
+            `${formatOperationName(operation)} foundation is ready for the editing engine.`
+          );
+        }
+      );
+    });
+
+
+  /* ===================================================
+     GLOBAL EDITOR ACTIONS
+     =================================================== */
+
+  document
+    .querySelectorAll(
+      "[data-editor-action]"
+    )
+    .forEach(button => {
+
+      const action =
+        button.dataset.editorAction;
+
+      if (action === "import") {
+        return;
+      }
+
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          switch (action) {
+
+            case "save":
+
+              saveProject();
+
+              break;
+
+
+            case "export":
+
+              exportProject();
+
+              break;
+
+
+            case "new":
+
+              resetProject();
+
+              break;
+
+
+            case "undo":
+
+              notify(
+                "Undo history engine will activate with editable operations."
+              );
+
+              break;
+
+
+            case "redo":
+
+              notify(
+                "Redo history engine will activate with editable operations."
+              );
+
+              break;
+
+
+            case "zoom-in":
+
+              zoom =
+                Math.min(
+                  4,
+                  zoom + 0.1
+                );
+
+              updateZoom();
+
+              break;
+
+
+            case "zoom-out":
+
+              zoom =
+                Math.max(
+                  0.2,
+                  zoom - 0.1
+                );
+
+              updateZoom();
+
+              break;
+
+
+            case "fit":
+
+              zoom = 1;
+
+              updateZoom();
+
+              break;
+
+
+            case "before-after":
+
+              notify(
+                "Before/after comparison will activate when edits are applied."
+              );
+
+              break;
+
+
+            case "fullscreen":
+
+              toggleFullscreen();
+
+              break;
+
+          }
+        }
+      );
+    });
+
+
+  /* ===================================================
+     ZOOM
+     =================================================== */
+
+  function updateZoom() {
+
+    if (canvasDocument) {
+
+      canvasDocument.style.transform =
+        `scale(${zoom})`;
+    }
+
+    if (zoomDisplay) {
+
+      zoomDisplay.textContent =
+        `${Math.round(zoom * 100)}%`;
+    }
+  }
+
+
+  /* ===================================================
+     LOCAL PROJECT SAVE
+     =================================================== */
+
+  function saveProject() {
+
+    const project = {
+
+      version: 1,
+
+      name:
+        currentFile?.name ||
+        "Untitled Project",
+
+      sourceType:
+        currentFile?.type ||
+        null,
+
+      sourceSize:
+        currentFile?.size ||
+        null,
+
+      width:
+        Number(widthInput?.value) || null,
+
+      height:
+        Number(heightInput?.value) || null,
+
+      activeTool,
+
+      zoom,
+
+      savedAt:
+        new Date().toISOString()
+    };
+
+
+    try {
+
+      localStorage.setItem(
+        "toonverse:editor:last-project",
+        JSON.stringify(project)
+      );
+
+
+      setStatus(
+        "Project metadata saved"
+      );
+
+
+      notify(
+        "Project metadata saved on this device.",
+        "success"
+      );
+
+
+    } catch {
+
+      notify(
+        "Project metadata could not be saved on this device.",
+        "error"
+      );
+    }
+  }
+
+
+  /* ===================================================
+     EXPORT
+
+     V1 safely exports the currently loaded original image.
+     Actual rendered edited export comes with the image
+     processing engine.
+     =================================================== */
+
+  function exportProject() {
+
+    if (
+      !currentFile ||
+      !objectURL
+    ) {
+
+      notify(
+        "Import media before exporting.",
+        "info"
+      );
+
+      return;
+    }
+
+
+    const anchor =
+      document.createElement("a");
+
+    anchor.href =
+      objectURL;
+
+    anchor.download =
+      currentFile.name;
+
+    document.body.appendChild(
+      anchor
+    );
+
+    anchor.click();
+
+    anchor.remove();
+
+
+    notify(
+      "Original working image exported. Rendered edited export will connect with the processing engine.",
+      "success"
+    );
+  }
+
+
+  /* ===================================================
+     NEW PROJECT
+     =================================================== */
+
+  function resetProject() {
+
+    if (objectURL) {
+
+      URL.revokeObjectURL(
+        objectURL
+      );
+
+      objectURL = null;
+    }
+
+
+    currentFile = null;
+
+    fileInput.value = "";
+
+    canvasImage.removeAttribute(
+      "src"
+    );
+
+    canvasImage.hidden = true;
+
+    placeholder.hidden = false;
+
+    canvasDocument.classList.remove(
+      "has-media"
+    );
+
+    canvasDocument.style.aspectRatio =
+      "4 / 3";
+
+    selection?.classList.remove(
+      "visible"
+    );
+
+    documentName.textContent =
+      "Untitled Project";
+
+    documentMeta.textContent =
+      "Unified AI Editor";
+
+    canvasInfo.textContent =
+      "No media loaded";
+
+    dimensions.textContent =
+      "—";
+
+    widthInput.value =
+      1200;
+
+    heightInput.value =
+      900;
+
+    zoom = 1;
+
+    updateZoom();
+
+    updateLayer(
+      "Background"
+    );
+
+    setStatus(
+      "New project"
+    );
+
+
+    notify(
+      "New editor project started.",
+      "success"
+    );
+  }
+
+
+  /* ===================================================
+     FULLSCREEN
+     =================================================== */
+
+  async function toggleFullscreen() {
+
+    try {
+
+      if (!document.fullscreenElement) {
+
+        await document.documentElement
+          .requestFullscreen?.();
+
+      } else {
+
+        await document
+          .exitFullscreen?.();
+      }
+
+    } catch {
+
+      notify(
+        "Fullscreen is not available in this browser.",
+        "warning"
+      );
+    }
+  }
+
+
+  /* ===================================================
+     NETWORK STATUS
+     =================================================== */
+
+  function updateNetworkStatus() {
+
+    if (!networkStatus) {
+      return;
+    }
+
+    networkStatus.textContent =
+      navigator.onLine
+        ? "Online"
+        : "Offline";
+  }
+
+
+  window.addEventListener(
+    "online",
+    updateNetworkStatus
+  );
+
+  window.addEventListener(
+    "offline",
+    updateNetworkStatus
+  );
+
+  updateNetworkStatus();
+
+
+  /* ===================================================
+     HELPERS
+     =================================================== */
+
+  function formatBytes(bytes) {
+
+    if (!Number.isFinite(bytes)) {
+      return "";
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+
+      return `${(
+        bytes / 1024
+      ).toFixed(1)} KB`;
+    }
+
+    return `${(
+      bytes /
+      (1024 * 1024)
+    ).toFixed(1)} MB`;
+  }
+
+
+  function formatOperationName(value) {
+
+    return String(value || "")
+      .replace(/-/g, " ")
+      .replace(
+        /\b\w/g,
+        letter =>
+          letter.toUpperCase()
+      );
+  }
+
+
+  /* ===================================================
+     CLEANUP
+     =================================================== */
+
+  window.addEventListener(
+    "beforeunload",
+    () => {
+
+      if (objectURL) {
+
+        URL.revokeObjectURL(
+          objectURL
+        );
+      }
+    }
+  );
+
+
+  updateZoom();
+
+});
+</script>
+
+</body>
+</html>
