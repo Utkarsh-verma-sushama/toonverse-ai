@@ -5,30 +5,64 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
   <meta
     name="description"
-    content="ToonVerse AI — Create, edit, transform, share and print creative content with AI."
+    content="ToonVerse AI — Create, edit, transform, organize, share and print creative content with AI."
   >
+
+  <meta
+    name="keywords"
+    content="ToonVerse AI, AI editor, photo to cartoon, AI image tools, creative studio, video tools, wallpaper studio, memory studio"
+  >
+
+  <meta name="author" content="ToonVerse AI">
 
   <meta name="theme-color" content="#070b17">
 
   <meta name="color-scheme" content="dark">
 
+  <meta
+    name="robots"
+    content="index, follow"
+  >
+
+  <meta
+    property="og:title"
+    content="ToonVerse AI — AI Creative Studio"
+  >
+
+  <meta
+    property="og:description"
+    content="A unified AI creative ecosystem for creating, editing, transforming, organizing, sharing and printing digital content."
+  >
+
+  <meta
+    property="og:type"
+    content="website"
+  >
+
+  <meta
+    property="og:url"
+    content="https://utkarsh-verma-sushama.github.io/toonverse-ai/"
+  >
+
   <title>ToonVerse AI — AI Creative Studio</title>
 
-  <!--
-    IMPORTANT:
-    GitHub Pages publishes from repository root.
-    Therefore all production assets use root-relative
-    repository paths: ./assets/...
-  -->
+  <!-- =====================================================
+       CORE STYLES
+       ===================================================== -->
 
   <link
     rel="stylesheet"
     href="./assets/css/main.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/components.css"
   >
 </head>
 
@@ -36,11 +70,22 @@
 <body>
 
   <!-- =====================================================
-       HEADER
+       ACCESSIBILITY
+       ===================================================== -->
+
+  <a
+    href="#main-content"
+    class="visually-hidden"
+  >
+    Skip to main content
+  </a>
+
+
+  <!-- =====================================================
+       SITE HEADER
        ===================================================== -->
 
   <header class="site-header">
-
     <div class="container navbar">
 
       <a
@@ -56,32 +101,44 @@
       </a>
 
 
-      <nav aria-label="Main navigation">
+      <nav aria-label="Primary navigation">
 
         <ul class="nav-links">
 
           <li>
-            <a href="#home">Home</a>
+            <a href="#home">
+              Home
+            </a>
           </li>
 
           <li>
-            <a href="#create">Create</a>
+            <a href="#create">
+              Create
+            </a>
           </li>
 
           <li>
-            <a href="#edit">Edit</a>
+            <a href="#edit">
+              Edit
+            </a>
           </li>
 
           <li>
-            <a href="#library">My Library</a>
+            <a href="#library">
+              My Library
+            </a>
           </li>
 
           <li>
-            <a href="#share">Share</a>
+            <a href="#share">
+              Share
+            </a>
           </li>
 
           <li>
-            <a href="#print">Print</a>
+            <a href="#print">
+              Print
+            </a>
           </li>
 
         </ul>
@@ -89,7 +146,6 @@
       </nav>
 
     </div>
-
   </header>
 
 
@@ -97,14 +153,16 @@
        MAIN
        ===================================================== -->
 
-  <main>
+  <main id="main-content">
 
-
-    <!-- HERO -->
+    <!-- ===================================================
+         HERO
+         =================================================== -->
 
     <section
       class="hero"
       id="home"
+      aria-labelledby="hero-title"
     >
 
       <div class="container">
@@ -115,46 +173,73 @@
             AI Creative Ecosystem
           </div>
 
-
-          <h1 class="hero-title">
-
+          <h1
+            class="hero-title"
+            id="hero-title"
+          >
             Create without
-
             <span class="gradient-text">
               limits.
             </span>
-
           </h1>
 
-
           <p class="hero-description">
-
-            ToonVerse AI is a unified AI creative workspace
-            for creating, transforming and editing photos,
-            videos, cartoons, artwork, wallpapers and
-            digital memories.
-
+            ToonVerse AI is a unified creative ecosystem
+            designed to bring AI generation, professional
+            editing, media transformation, project management,
+            sharing and printing into one powerful workspace.
           </p>
 
 
           <div class="hero-actions">
 
             <button
-              class="btn btn-primary"
+              class="btn btn-primary btn-large"
               type="button"
               data-action="create"
             >
               Start Creating
             </button>
 
-
             <button
-              class="btn btn-secondary"
+              class="btn btn-secondary btn-large"
               type="button"
               data-action="edit"
             >
               Open AI Editor
             </button>
+
+          </div>
+
+
+          <div
+            class="flex"
+            style="
+              margin-top: 22px;
+              gap: 8px;
+              flex-wrap: wrap;
+            "
+          >
+
+            <span class="badge badge-info">
+              Responsive
+            </span>
+
+            <span class="badge badge-success">
+              V1 Foundation Live
+            </span>
+
+            <span class="badge">
+              Web
+            </span>
+
+            <span class="badge">
+              Mobile Ready
+            </span>
+
+            <span class="badge">
+              Extensible
+            </span>
 
           </div>
 
@@ -165,37 +250,40 @@
     </section>
 
 
-    <!-- =====================================================
+    <!-- ===================================================
          CREATE
-         ===================================================== -->
+         =================================================== -->
 
     <section
       class="section"
       id="create"
+      aria-labelledby="create-title"
     >
 
       <div class="container">
 
-        <h2 class="section-title">
+        <h2
+          class="section-title"
+          id="create-title"
+        >
           Create with AI
         </h2>
 
-
         <p class="section-description">
-
-          One creative ecosystem for AI generation,
-          transformation, coloring, visual intelligence,
-          wallpapers and memories.
-
+          One creative ecosystem for image generation,
+          transformation, visual intelligence, coloring,
+          wallpapers, memories and future AI-powered media tools.
         </p>
 
 
         <div class="grid feature-grid">
 
-
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               🎨
             </div>
 
@@ -204,9 +292,9 @@
             </h3>
 
             <p>
-              Transform photos into creative cartoon and
-              stylized artwork while preserving the
-              original media.
+              Transform photos into creative cartoon,
+              illustration and stylized artwork while
+              preserving the original file.
             </p>
 
           </article>
@@ -214,7 +302,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               ✨
             </div>
 
@@ -224,7 +315,7 @@
 
             <p>
               Turn creative prompts into original
-              AI-powered visual concepts and artwork.
+              AI-powered images, concepts and visual artwork.
             </p>
 
           </article>
@@ -232,7 +323,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               📷
             </div>
 
@@ -241,9 +335,9 @@
             </h3>
 
             <p>
-              Capture media for visual understanding,
-              enhancement and intelligent creative
-              workflows.
+              Capture images and prepare them for visual
+              understanding, enhancement and intelligent
+              creative workflows.
             </p>
 
           </article>
@@ -251,7 +345,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               🖌️
             </div>
 
@@ -260,8 +357,9 @@
             </h3>
 
             <p>
-              Paint and color artwork using manual
-              creative tools with AI-assisted workflows.
+              Manual painting tools combined with
+              AI-assisted coloring workflows and editable
+              creative layers.
             </p>
 
           </article>
@@ -269,7 +367,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               🖼️
             </div>
 
@@ -278,9 +379,9 @@
             </h3>
 
             <p>
-              Create wallpapers designed for different
-              screen sizes, resolutions and device
-              layouts.
+              Design wallpapers optimized for different
+              devices, resolutions, aspect ratios and
+              screen-safe areas.
             </p>
 
           </article>
@@ -288,7 +389,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               🎞️
             </div>
 
@@ -298,12 +402,24 @@
 
             <p>
               Build respectful photo and video memories
-              using restoration, animation, music,
-              voice and text.
+              using restoration, animation, music, voice
+              and text.
             </p>
 
           </article>
 
+        </div>
+
+
+        <div class="hero-actions">
+
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-action="create"
+          >
+            Open Create Studio
+          </button>
 
         </div>
 
@@ -312,143 +428,192 @@
     </section>
 
 
-    <!-- =====================================================
-         UNIFIED EDITOR
-         ===================================================== -->
+    <!-- ===================================================
+         EDITOR
+         =================================================== -->
 
     <section
       class="section"
       id="edit"
+      aria-labelledby="editor-title"
     >
 
       <div class="container">
 
-        <h2 class="section-title">
+        <h2
+          class="section-title"
+          id="editor-title"
+        >
           Unified AI Creative Editor
         </h2>
 
-
         <p class="section-description">
-
-          A scalable editing workspace designed for
-          photos, videos, cartoons and future creative
-          formats.
-
+          A scalable editing foundation for photos, video,
+          cartoons, text, multi-item projects and future
+          creative formats.
         </p>
 
 
-        <div class="grid feature-grid">
+        <div class="tool-grid">
 
+          <article class="tool-card">
 
-          <article class="card">
+            <div>
+              <div class="tool-card-icon">
+                ✂️
+              </div>
 
-            <div class="card-icon" aria-hidden="true">
-              ✂️
+              <div class="tool-card-title">
+                Select & Edit
+              </div>
             </div>
 
-            <h3>
-              Select & Edit
-            </h3>
-
-            <p>
-              Work with an entire file or select only
-              the exact portion you want to crop,
-              transform or edit.
-            </p>
+            <div class="tool-card-description">
+              Select an entire file or only the exact
+              region that needs editing or transformation.
+            </div>
 
           </article>
 
 
-          <article class="card">
+          <article class="tool-card">
 
-            <div class="card-icon" aria-hidden="true">
-              💡
+            <div>
+              <div class="tool-card-icon">
+                💡
+              </div>
+
+              <div class="tool-card-title">
+                Magic Effects
+              </div>
             </div>
 
-            <h3>
-              Magic Effects
-            </h3>
-
-            <p>
-              Foundation for illumination, lighting and
-              advanced creative visual effects.
-            </p>
+            <div class="tool-card-description">
+              Foundation for illumination, lighting,
+              effects and advanced visual enhancement.
+            </div>
 
           </article>
 
 
-          <article class="card">
+          <article class="tool-card">
 
-            <div class="card-icon" aria-hidden="true">
-              📚
+            <div>
+              <div class="tool-card-icon">
+                📚
+              </div>
+
+              <div class="tool-card-title">
+                Batch Processing
+              </div>
             </div>
 
-            <h3>
-              Batch Processing
-            </h3>
-
-            <p>
-              Work with multiple photos, videos and
-              creative assets through scalable batch
-              workflows.
-            </p>
+            <div class="tool-card-description">
+              Work with multiple images, videos and
+              creative files in scalable workflows.
+            </div>
 
           </article>
 
 
-          <article class="card">
+          <article class="tool-card">
 
-            <div class="card-icon" aria-hidden="true">
-              📝
+            <div>
+              <div class="tool-card-icon">
+                📝
+              </div>
+
+              <div class="tool-card-title">
+                Image to Text
+              </div>
             </div>
 
-            <h3>
-              Image to Text
-            </h3>
-
-            <p>
-              Foundation for extracting and working
-              with text contained inside images.
-            </p>
+            <div class="tool-card-description">
+              Foundation for extracting, reviewing
+              and working with text inside images.
+            </div>
 
           </article>
 
 
-          <article class="card">
+          <article class="tool-card">
 
-            <div class="card-icon" aria-hidden="true">
-              🎥
+            <div>
+              <div class="tool-card-icon">
+                🎥
+              </div>
+
+              <div class="tool-card-title">
+                Video to Text
+              </div>
             </div>
 
-            <h3>
-              Video to Text
-            </h3>
-
-            <p>
-              Foundation for future video transcription
-              and text-based workflows.
-            </p>
+            <div class="tool-card-description">
+              Foundation for transcription and
+              future text-based video workflows.
+            </div>
 
           </article>
 
 
-          <article class="card">
+          <article class="tool-card">
 
-            <div class="card-icon" aria-hidden="true">
-              🔄
+            <div>
+              <div class="tool-card-icon">
+                🔄
+              </div>
+
+              <div class="tool-card-title">
+                Import & Export
+              </div>
             </div>
 
-            <h3>
-              Import & Export
-            </h3>
-
-            <p>
-              Foundation for universal media import,
-              conversion, export and sharing.
-            </p>
+            <div class="tool-card-description">
+              Universal media import, transformation,
+              conversion and export architecture.
+            </div>
 
           </article>
 
+
+          <article class="tool-card">
+
+            <div>
+              <div class="tool-card-icon">
+                🧩
+              </div>
+
+              <div class="tool-card-title">
+                Composition
+              </div>
+            </div>
+
+            <div class="tool-card-description">
+              Combine multiple creative assets into
+              one canvas or composition.
+            </div>
+
+          </article>
+
+
+          <article class="tool-card">
+
+            <div>
+              <div class="tool-card-icon">
+                ↩️
+              </div>
+
+              <div class="tool-card-title">
+                Undo & Recovery
+              </div>
+            </div>
+
+            <div class="tool-card-description">
+              Foundation for edit history, recovery
+              and resilient project workflows.
+            </div>
+
+          </article>
 
         </div>
 
@@ -460,7 +625,7 @@
             type="button"
             data-action="edit"
           >
-            Launch Editor
+            Launch AI Editor
           </button>
 
         </div>
@@ -470,29 +635,77 @@
     </section>
 
 
-    <!-- =====================================================
+    <!-- ===================================================
          LIBRARY
-         ===================================================== -->
+         =================================================== -->
 
     <section
       class="section"
       id="library"
+      aria-labelledby="library-title"
     >
 
       <div class="container">
 
-        <h2 class="section-title">
+        <h2
+          class="section-title"
+          id="library-title"
+        >
           My Library
         </h2>
 
-
         <p class="section-description">
-
-          A unified home for projects, saved creations,
-          automatic recovery and future cross-device
+          A unified project home for saved creations,
+          project recovery and future cross-device
           cloud synchronization.
-
         </p>
+
+
+        <div class="panel">
+
+          <div class="panel-header">
+
+            <h3 class="panel-title">
+              Project Library
+            </h3>
+
+            <span class="badge badge-info">
+              Foundation
+            </span>
+
+          </div>
+
+
+          <div class="panel-body">
+
+            <div class="empty-state">
+
+              <div>
+
+                <div
+                  class="empty-state-icon"
+                  aria-hidden="true"
+                >
+                  📁
+                </div>
+
+                <h3>
+                  Your creative projects will live here
+                </h3>
+
+                <p>
+                  ToonVerse AI will use this workspace
+                  for projects, drafts, recovered sessions
+                  and synchronized creative assets.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
 
 
         <div class="hero-actions">
@@ -512,36 +725,39 @@
     </section>
 
 
-    <!-- =====================================================
+    <!-- ===================================================
          SHARE
-         ===================================================== -->
+         =================================================== -->
 
     <section
       class="section"
       id="share"
+      aria-labelledby="share-title"
     >
 
       <div class="container">
 
-        <h2 class="section-title">
+        <h2
+          class="section-title"
+          id="share-title"
+        >
           Share & Export
         </h2>
 
-
         <p class="section-description">
-
           A universal export foundation for images,
-          video, documents and future creative formats.
-
+          videos, documents and future creative formats.
         </p>
 
 
         <div class="grid feature-grid">
 
-
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               🖼️
             </div>
 
@@ -550,7 +766,7 @@
             </h3>
 
             <p>
-              JPG, JPEG and PNG workflows.
+              Foundation for JPG, JPEG and PNG workflows.
             </p>
 
           </article>
@@ -558,7 +774,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               🎬
             </div>
 
@@ -567,7 +786,8 @@
             </h3>
 
             <p>
-              MP4 and supported video workflows.
+              Foundation for MP4 and supported
+              video formats.
             </p>
 
           </article>
@@ -575,7 +795,10 @@
 
           <article class="card">
 
-            <div class="card-icon" aria-hidden="true">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
               📄
             </div>
 
@@ -584,11 +807,32 @@
             </h3>
 
             <p>
-              PDF and supported document workflows.
+              Foundation for PDF and supported
+              document workflows.
             </p>
 
           </article>
 
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              📤
+            </div>
+
+            <h3>
+              System Sharing
+            </h3>
+
+            <p>
+              Foundation for device and platform
+              share workflows.
+            </p>
+
+          </article>
 
         </div>
 
@@ -600,7 +844,7 @@
             type="button"
             data-action="share"
           >
-            Share
+            Open Share & Export
           </button>
 
         </div>
@@ -610,30 +854,97 @@
     </section>
 
 
-    <!-- =====================================================
+    <!-- ===================================================
          PRINT
-         ===================================================== -->
+         =================================================== -->
 
     <section
       class="section"
       id="print"
+      aria-labelledby="print-title"
     >
 
       <div class="container">
 
-        <h2 class="section-title">
+        <h2
+          class="section-title"
+          id="print-title"
+        >
           Print Studio
         </h2>
 
-
         <p class="section-description">
-
-          Print workflow foundation for preview,
-          printer selection, paper size, orientation,
-          margins, scaling, positioning and quality
-          controls.
-
+          Professional print workflow foundation for
+          preview, printer selection, paper configuration,
+          layout and output quality controls.
         </p>
+
+
+        <div class="grid feature-grid">
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              🖨️
+            </div>
+
+            <h3>
+              Printer Selection
+            </h3>
+
+            <p>
+              Foundation for printer discovery,
+              selection and compatibility handling.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              📐
+            </div>
+
+            <h3>
+              Page Layout
+            </h3>
+
+            <p>
+              Paper size, orientation, scale,
+              positioning and margin controls.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              🎯
+            </div>
+
+            <h3>
+              Print Quality
+            </h3>
+
+            <p>
+              Foundation for high-quality color,
+              black-and-white and edited media printing.
+            </p>
+
+          </article>
+
+        </div>
 
 
         <div class="hero-actions">
@@ -653,6 +964,124 @@
     </section>
 
 
+    <!-- ===================================================
+         PLATFORM FOUNDATION
+         =================================================== -->
+
+    <section
+      class="section"
+      aria-labelledby="platform-title"
+    >
+
+      <div class="container">
+
+        <h2
+          class="section-title"
+          id="platform-title"
+        >
+          Built as a Platform
+        </h2>
+
+        <p class="section-description">
+          The website foundation is structured so future
+          account, synchronization, AI services and
+          cross-platform applications can connect without
+          rebuilding the public interface from scratch.
+        </p>
+
+
+        <div class="grid feature-grid">
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              🔐
+            </div>
+
+            <h3>
+              Account & Security
+            </h3>
+
+            <p>
+              Architecture ready for authentication,
+              secure sessions, device verification and
+              future MFA workflows.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ☁️
+            </div>
+
+            <h3>
+              Cloud Sync
+            </h3>
+
+            <p>
+              Foundation ready for synchronized
+              projects and creative libraries.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              🛡️
+            </div>
+
+            <h3>
+              Safety Foundation
+            </h3>
+
+            <p>
+              Designed for future consent,
+              moderation and responsible AI safeguards.
+            </p>
+
+          </article>
+
+
+          <article class="card">
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              📱
+            </div>
+
+            <h3>
+              Cross-Platform
+            </h3>
+
+            <p>
+              Web-first architecture designed to
+              expand toward Android, iOS and desktop apps.
+            </p>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
   </main>
 
 
@@ -668,13 +1097,12 @@
         ToonVerse AI
       </strong>
 
-
       <div>
-
         ©
-        <span data-current-year>2026</span>
+        <span data-current-year>
+          2026
+        </span>
         ToonVerse AI
-
       </div>
 
     </div>
@@ -683,17 +1111,32 @@
 
 
   <!-- =====================================================
-       JAVASCRIPT
-
-       IMPORTANT:
-       config.js loads first.
-       main.js loads after configuration.
+       APPLICATION STATUS REGION
        ===================================================== -->
 
-  <script src="./assets/js/config.js"></script>
+  <div
+    id="app-status"
+    class="visually-hidden"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
 
-  <script src="./assets/js/main.js"></script>
 
+  <!-- =====================================================
+       JAVASCRIPT
+       Config must load before main.js
+       ===================================================== -->
+
+  <script
+    src="./assets/js/config.js"
+    defer
+  ></script>
+
+  <script
+    src="./assets/js/main.js"
+    defer
+  ></script>
 
 </body>
 </html>
