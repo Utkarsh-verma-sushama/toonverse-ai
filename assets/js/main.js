@@ -2,138 +2,124 @@
 
 /* =========================================================
    ToonVerse AI
-   Global Frontend Controller — V1 Architecture
-   =========================================================
+   Global Frontend Controller — V1.1 Stable Foundation
 
-   Responsibilities:
-   - App bootstrapping
-   - Navigation / routing
-   - Action handling
+   Core responsibilities:
+   - App bootstrap
+   - Central routing
+   - Home/Create/Editor navigation
+   - Safe placeholder handling for future pages
+   - Global actions
    - Toast notifications
-   - Active navigation
-   - Smooth scrolling
-   - Draft / local state helpers
    - Accessibility announcements
-   - Online / offline state
-   - Safe external navigation
+   - Active section navigation
+   - Scroll controls
+   - Network state
+   - Local storage helpers
+   - App-wide event system
    - Future module registration
-   - Error protection
-   - Shared frontend API
+   - Runtime protection
 
    IMPORTANT:
-   This file contains NO private API keys or secrets.
-   Backend credentials must never be placed in frontend code.
+   Never place private API keys, secrets, passwords,
+   access tokens or backend credentials in frontend JS.
    ========================================================= */
 
 (() => {
 
   /* =======================================================
-     APPLICATION CONSTANTS
+     APP CONSTANTS
      ======================================================= */
 
   const APP = Object.freeze({
     name: "ToonVerse AI",
-    version: "1.0.0",
+    version: "1.1.0",
     namespace: "toonverse",
     environment:
       window.ToonVerseConfig?.app?.environment ||
-      "development",
+      "development"
   });
 
 
   /* =======================================================
-     ROUTES
+     ROUTE REGISTRY
 
-     These paths are centralized so future pages can be
-     connected without changing action logic everywhere.
+     "enabled" means the standalone page is now live.
+
+     As future pages are created, only their enabled state
+     needs to become true. The central routing structure
+     does not need to be redesigned.
      ======================================================= */
 
   const ROUTES = Object.freeze({
 
-    home: "./index.html",
+    home: Object.freeze({
+      path: "./index.html",
+      enabled: true,
+      label: "Home"
+    }),
 
-    create: "./create.html",
+    create: Object.freeze({
+      path: "./create.html",
+      enabled: true,
+      label: "Create Studio"
+    }),
 
-    editor: "./editor.html",
+    editor: Object.freeze({
+      path: "./editor.html",
+      enabled: true,
+      label: "Unified AI Editor"
+    }),
 
-    library: "./library.html",
+    library: Object.freeze({
+      path: "./library.html",
+      enabled: false,
+      label: "My Library"
+    }),
 
-    share: "./share.html",
+    share: Object.freeze({
+      path: "./share.html",
+      enabled: false,
+      label: "Share & Export"
+    }),
 
-    print: "./print.html",
+    print: Object.freeze({
+      path: "./print.html",
+      enabled: false,
+      label: "Print Studio"
+    }),
 
-    settings: "./settings.html",
+    settings: Object.freeze({
+      path: "./settings.html",
+      enabled: false,
+      label: "Settings"
+    }),
 
-    account: "./account.html",
+    account: Object.freeze({
+      path: "./account.html",
+      enabled: false,
+      label: "Account"
+    }),
 
-    support: "./support.html",
+    support: Object.freeze({
+      path: "./support.html",
+      enabled: false,
+      label: "Support"
+    })
   });
 
 
   /* =======================================================
-     FEATURE AVAILABILITY
-
-     Existing pages work immediately.
-     Future pages can remain disabled until created.
-     ======================================================= */
-
-  const FEATURES = {
-
-    create: true,
-
-    editor:
-      Boolean(
-        window.ToonVerseConfig?.features?.aiEditor
-      ),
-
-    library:
-      Boolean(
-        window.ToonVerseConfig?.features?.library
-      ),
-
-    share:
-      Boolean(
-        window.ToonVerseConfig?.features?.sharing
-      ),
-
-    print:
-      Boolean(
-        window.ToonVerseConfig?.features?.printing
-      ),
-
-    authentication:
-      Boolean(
-        window.ToonVerseConfig?.features?.authentication
-      ),
-
-    cloudSync:
-      Boolean(
-        window.ToonVerseConfig?.features?.cloudSync
-      )
-  };
-
-
-  /* =======================================================
-     APP STATE
+     RUNTIME STATE
      ======================================================= */
 
   const state = {
-
     initialized: false,
-
-    online:
-      navigator.onLine,
-
-    currentPage:
-      detectCurrentPage(),
-
+    online: navigator.onLine,
+    currentPage: detectCurrentPage(),
     activeSection: "",
-
-    modules:
-      new Map(),
-
-    toastContainer:
-      null
+    modules: new Map(),
+    toastContainer: null
   };
 
 
@@ -141,9 +127,7 @@
      BOOTSTRAP
      ======================================================= */
 
-  if (
-    document.readyState === "loading"
-  ) {
+  if (document.readyState === "loading") {
 
     document.addEventListener(
       "DOMContentLoaded",
@@ -173,7 +157,7 @@
 
       initializeNavigation();
 
-      initializeActionSystem();
+      initializeGlobalActions();
 
       initializeActiveNavigation();
 
@@ -185,16 +169,15 @@
 
       initializeNetworkMonitoring();
 
-      initializeGlobalErrorProtection();
+      initializeExternalLinkSafety();
 
-      initializeExternalLinks();
-
-      initializeModuleSystem();
+      initializeErrorProtection();
 
       emitAppEvent(
         "app:ready",
         {
-          page: state.currentPage
+          page: state.currentPage,
+          version: APP.version
         }
       );
 
@@ -202,14 +185,9 @@
       console.info(
         `${APP.name} v${APP.version} initialized`,
         {
-          page:
-            state.currentPage,
-
-          environment:
-            APP.environment,
-
-          online:
-            state.online
+          page: state.currentPage,
+          environment: APP.environment,
+          online: state.online
         }
       );
 
@@ -217,13 +195,13 @@
     } catch (error) {
 
       console.error(
-        "ToonVerse AI initialization failed:",
+        "ToonVerse AI initialization error:",
         error
       );
 
 
       showToast(
-        "The interface loaded with a recoverable initialization issue.",
+        "The interface loaded with a recoverable startup issue.",
         "error"
       );
     }
@@ -231,7 +209,7 @@
 
 
   /* =======================================================
-     CURRENT PAGE DETECTION
+     PAGE DETECTION
      ======================================================= */
 
   function detectCurrentPage() {
@@ -241,59 +219,28 @@
         .toLowerCase();
 
 
-    if (
-      path.endsWith("/create.html")
+    const entries =
+      Object.entries(ROUTES);
+
+
+    for (
+      const [name, route]
+      of entries
     ) {
-      return "create";
-    }
+
+      if (name === "home") {
+        continue;
+      }
 
 
-    if (
-      path.endsWith("/editor.html")
-    ) {
-      return "editor";
-    }
+      if (
+        path.endsWith(
+          route.path.replace("./", "/")
+        )
+      ) {
 
-
-    if (
-      path.endsWith("/library.html")
-    ) {
-      return "library";
-    }
-
-
-    if (
-      path.endsWith("/share.html")
-    ) {
-      return "share";
-    }
-
-
-    if (
-      path.endsWith("/print.html")
-    ) {
-      return "print";
-    }
-
-
-    if (
-      path.endsWith("/settings.html")
-    ) {
-      return "settings";
-    }
-
-
-    if (
-      path.endsWith("/account.html")
-    ) {
-      return "account";
-    }
-
-
-    if (
-      path.endsWith("/support.html")
-    ) {
-      return "support";
+        return name;
+      }
     }
 
 
@@ -302,104 +249,7 @@
 
 
   /* =======================================================
-     NAVIGATION SYSTEM
-     ======================================================= */
-
-  function initializeNavigation() {
-
-    initializeSmoothAnchors();
-
-    initializeRouteLinks();
-  }
-
-
-  function initializeSmoothAnchors() {
-
-    const links =
-      document.querySelectorAll(
-        'a[href^="#"]'
-      );
-
-
-    links.forEach((link) => {
-
-      link.addEventListener(
-        "click",
-        (event) => {
-
-          const targetId =
-            link.getAttribute("href");
-
-
-          if (
-            !targetId ||
-            targetId === "#"
-          ) {
-            return;
-          }
-
-
-          const target =
-            document.querySelector(
-              targetId
-            );
-
-
-          if (!target) {
-            return;
-          }
-
-
-          event.preventDefault();
-
-
-          target.scrollIntoView({
-            behavior:
-              prefersReducedMotion()
-                ? "auto"
-                : "smooth",
-
-            block:
-              "start"
-          });
-        }
-      );
-    });
-  }
-
-
-  function initializeRouteLinks() {
-
-    document
-      .querySelectorAll(
-        "[data-route]"
-      )
-      .forEach((element) => {
-
-        element.addEventListener(
-          "click",
-          (event) => {
-
-            const route =
-              element.dataset.route;
-
-
-            if (!route) {
-              return;
-            }
-
-
-            event.preventDefault();
-
-            navigate(route);
-          }
-        );
-      });
-  }
-
-
-  /* =======================================================
-     CENTRAL ROUTER
+     CENTRAL NAVIGATION
      ======================================================= */
 
   function navigate(
@@ -410,40 +260,86 @@
     const {
       replace = false,
       newTab = false,
-      fallbackToast = true
+      force = false
     } = options;
 
 
-    let url = destination;
-
+    /* -----------------------------------------------------
+       Route name
+       ----------------------------------------------------- */
 
     if (
+      typeof destination === "string" &&
       Object.prototype.hasOwnProperty.call(
         ROUTES,
         destination
       )
     ) {
 
-      url =
+      const route =
         ROUTES[destination];
+
+
+      if (
+        !route.enabled &&
+        !force
+      ) {
+
+        showUnavailableRoute(
+          route
+        );
+
+        return false;
+      }
+
+
+      return openURL(
+        route.path,
+        {
+          replace,
+          newTab
+        }
+      );
     }
 
 
+    /* -----------------------------------------------------
+       Direct URL/path
+       ----------------------------------------------------- */
+
     if (
-      typeof url !== "string" ||
-      !url.trim()
+      typeof destination !== "string" ||
+      !destination.trim()
     ) {
 
-      if (fallbackToast) {
-
-        showToast(
-          "This destination is not available yet.",
-          "info"
-        );
-      }
+      showToast(
+        "This destination is not available.",
+        "info"
+      );
 
       return false;
     }
+
+
+    return openURL(
+      destination,
+      {
+        replace,
+        newTab
+      }
+    );
+  }
+
+
+  function openURL(
+    url,
+    options = {}
+  ) {
+
+    const {
+      replace = false,
+      newTab = false
+    } = options;
 
 
     if (newTab) {
@@ -475,17 +371,30 @@
   }
 
 
+  function showUnavailableRoute(
+    route
+  ) {
+
+    showToast(
+      `${route.label} foundation is prepared, but its standalone workspace is not live yet.`,
+      "info"
+    );
+  }
+
+
   /* =======================================================
      GLOBAL ACTION SYSTEM
 
-     Any element with:
+     Existing HTML can use:
      data-action="create"
      data-action="edit"
+     data-action="library"
+     data-action="share"
+     data-action="print"
      etc.
-     will automatically use this controller.
      ======================================================= */
 
-  function initializeActionSystem() {
+  function initializeGlobalActions() {
 
     document
       .querySelectorAll(
@@ -534,163 +443,54 @@
 
     switch (action) {
 
-
-      /* ---------------------------------------------------
-         CREATE
-         --------------------------------------------------- */
+      case "home":
+        navigate("home");
+        break;
 
       case "create":
-
         navigate("create");
-
         break;
-
-
-      /* ---------------------------------------------------
-         EDITOR
-         --------------------------------------------------- */
 
       case "edit":
-
-        handleFeatureRoute(
-          "editor",
-          "Unified AI Editor"
-        );
-
+      case "editor":
+        navigate("editor");
         break;
-
-
-      /* ---------------------------------------------------
-         LIBRARY
-         --------------------------------------------------- */
 
       case "library":
-
-        handleFeatureRoute(
-          "library",
-          "My Library"
-        );
-
+        navigate("library");
         break;
-
-
-      /* ---------------------------------------------------
-         SHARE
-         --------------------------------------------------- */
 
       case "share":
-
-        handleFeatureRoute(
-          "share",
-          "Share & Export"
-        );
-
+        navigate("share");
         break;
-
-
-      /* ---------------------------------------------------
-         PRINT
-         --------------------------------------------------- */
 
       case "print":
-
-        handleFeatureRoute(
-          "print",
-          "Print Studio"
-        );
-
+        navigate("print");
         break;
-
-
-      /* ---------------------------------------------------
-         SETTINGS
-         --------------------------------------------------- */
 
       case "settings":
-
-        handleFeatureRoute(
-          "settings",
-          "Settings"
-        );
-
+        navigate("settings");
         break;
-
-
-      /* ---------------------------------------------------
-         ACCOUNT
-         --------------------------------------------------- */
 
       case "account":
-
-        handleFeatureRoute(
-          "account",
-          "Account"
-        );
-
+        navigate("account");
         break;
-
-
-      /* ---------------------------------------------------
-         SUPPORT
-         --------------------------------------------------- */
 
       case "support":
-
-        handleFeatureRoute(
-          "support",
-          "Support"
-        );
-
+        navigate("support");
         break;
-
-
-      /* ---------------------------------------------------
-         HOME
-         --------------------------------------------------- */
-
-      case "home":
-
-        navigate("home");
-
-        break;
-
-
-      /* ---------------------------------------------------
-         SCROLL TOP
-         --------------------------------------------------- */
 
       case "scroll-top":
-
         scrollToTop();
-
         break;
-
-
-      /* ---------------------------------------------------
-         SCROLL BOTTOM
-         --------------------------------------------------- */
 
       case "scroll-bottom":
-
         scrollToBottom();
-
         break;
-
-
-      /* ---------------------------------------------------
-         RELOAD
-         --------------------------------------------------- */
 
       case "reload":
-
         window.location.reload();
-
         break;
-
-
-      /* ---------------------------------------------------
-         UNKNOWN ACTION
-         --------------------------------------------------- */
 
       default:
 
@@ -719,99 +519,102 @@
 
 
   /* =======================================================
-     FEATURE ROUTE HANDLER
-
-     If a future page already exists, the same route
-     automatically works.
-
-     At present unfinished modules remain safely on the
-     current page instead of sending users to a 404.
+     NAVIGATION LINKS
      ======================================================= */
 
-  function handleFeatureRoute(
-    feature,
-    label
-  ) {
+  function initializeNavigation() {
 
-    if (
-      feature === "editor" &&
-      !FEATURES.editor
-    ) {
+    initializeSmoothAnchors();
 
-      showComingSoon(label);
-
-      return;
-    }
-
-
-    if (
-      feature === "library" &&
-      !FEATURES.library
-    ) {
-
-      showComingSoon(label);
-
-      return;
-    }
-
-
-    if (
-      feature === "share" &&
-      !FEATURES.share
-    ) {
-
-      showComingSoon(label);
-
-      return;
-    }
-
-
-    if (
-      feature === "print" &&
-      !FEATURES.print
-    ) {
-
-      showComingSoon(label);
-
-      return;
-    }
-
-
-    /*
-      Existing config currently marks some foundation
-      features as enabled even if standalone pages have
-      not yet been created.
-
-      To prevent accidental 404s, we verify known V1
-      routes conservatively.
-    */
-
-
-    if (
-      feature !== "create"
-    ) {
-
-      showComingSoon(label);
-
-      return;
-    }
-
-
-    navigate(feature);
+    initializeDataRoutes();
   }
 
 
-  function showComingSoon(label) {
+  function initializeSmoothAnchors() {
 
-    showToast(
-      `${label} foundation is ready. Its full workspace will connect in the next build stage.`,
-      "info"
-    );
+    document
+      .querySelectorAll(
+        'a[href^="#"]'
+      )
+      .forEach((link) => {
+
+        link.addEventListener(
+          "click",
+          (event) => {
+
+            const targetId =
+              link.getAttribute("href");
+
+
+            if (
+              !targetId ||
+              targetId === "#"
+            ) {
+              return;
+            }
+
+
+            const target =
+              document.querySelector(
+                targetId
+              );
+
+
+            if (!target) {
+              return;
+            }
+
+
+            event.preventDefault();
+
+
+            target.scrollIntoView({
+              behavior:
+                prefersReducedMotion()
+                  ? "auto"
+                  : "smooth",
+
+              block:
+                "start"
+            });
+          }
+        );
+      });
+  }
+
+
+  function initializeDataRoutes() {
+
+    document
+      .querySelectorAll(
+        "[data-route]"
+      )
+      .forEach((element) => {
+
+        element.addEventListener(
+          "click",
+          (event) => {
+
+            const route =
+              element.dataset.route;
+
+
+            if (!route) {
+              return;
+            }
+
+
+            event.preventDefault();
+
+            navigate(route);
+          }
+        );
+      });
   }
 
 
   /* =======================================================
-     ACTIVE NAVIGATION
+     ACTIVE HOME NAVIGATION
      ======================================================= */
 
   function initializeActiveNavigation() {
@@ -840,7 +643,7 @@
     }
 
 
-    const updateNavigation =
+    const update =
       () => {
 
         const offset =
@@ -904,13 +707,13 @@
       };
 
 
-    updateNavigation();
+    update();
 
 
     window.addEventListener(
       "scroll",
       throttle(
-        updateNavigation,
+        update,
         100
       ),
       {
@@ -922,7 +725,7 @@
     window.addEventListener(
       "resize",
       throttle(
-        updateNavigation,
+        update,
         150
       )
     );
@@ -939,30 +742,26 @@
       .querySelectorAll(
         "[data-scroll-top]"
       )
-      .forEach(
-        (element) => {
+      .forEach((element) => {
 
-          element.addEventListener(
-            "click",
-            scrollToTop
-          );
-        }
-      );
+        element.addEventListener(
+          "click",
+          scrollToTop
+        );
+      });
 
 
     document
       .querySelectorAll(
         "[data-scroll-bottom]"
       )
-      .forEach(
-        (element) => {
+      .forEach((element) => {
 
-          element.addEventListener(
-            "click",
-            scrollToBottom
-          );
-        }
-      );
+        element.addEventListener(
+          "click",
+          scrollToBottom
+        );
+      });
   }
 
 
@@ -1010,18 +809,16 @@
       .querySelectorAll(
         "[data-current-year]"
       )
-      .forEach(
-        (element) => {
+      .forEach((element) => {
 
-          element.textContent =
-            year;
-        }
-      );
+        element.textContent =
+          year;
+      });
   }
 
 
   /* =======================================================
-     ACCESSIBILITY STATUS
+     ACCESSIBILITY
      ======================================================= */
 
   function ensureAccessibilityRegion() {
@@ -1154,24 +951,35 @@
     }
 
 
-    /*
-      Inline fallback ensures notifications still work
-      even if component CSS fails to load.
-    */
-
     Object.assign(
       container.style,
       {
-        position: "fixed",
-        right: "16px",
-        bottom: "16px",
-        zIndex: "10000",
+        position:
+          "fixed",
+
+        right:
+          "16px",
+
+        bottom:
+          "16px",
+
+        zIndex:
+          "10000",
+
         width:
           "min(360px, calc(100vw - 32px))",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        pointerEvents: "none"
+
+        display:
+          "flex",
+
+        flexDirection:
+          "column",
+
+        gap:
+          "10px",
+
+        pointerEvents:
+          "none"
       }
     );
 
@@ -1190,9 +998,12 @@
     options = {}
   ) {
 
-    const {
-      duration = 3600
-    } = options;
+    const duration =
+      Number.isFinite(
+        options.duration
+      )
+        ? options.duration
+        : 3600;
 
 
     const container =
@@ -1227,19 +1038,19 @@
           "14px 16px",
 
         border:
-          "1px solid rgba(255,255,255,0.13)",
+          "1px solid rgba(255,255,255,.13)",
 
         borderRadius:
           "14px",
 
         background:
-          "rgba(18,27,49,0.98)",
+          "rgba(18,27,49,.98)",
 
         color:
-          "#ffffff",
+          "#fff",
 
         boxShadow:
-          "0 14px 40px rgba(0,0,0,0.38)",
+          "0 14px 40px rgba(0,0,0,.38)",
 
         backdropFilter:
           "blur(16px)",
@@ -1259,26 +1070,28 @@
     );
 
 
-    const header =
+    const row =
       document.createElement(
         "div"
       );
 
 
-    header.style.display =
-      "flex";
+    Object.assign(
+      row.style,
+      {
+        display:
+          "flex",
 
+        alignItems:
+          "flex-start",
 
-    header.style.alignItems =
-      "flex-start";
+        justifyContent:
+          "space-between",
 
-
-    header.style.justifyContent =
-      "space-between";
-
-
-    header.style.gap =
-      "12px";
+        gap:
+          "12px"
+      }
+    );
 
 
     const content =
@@ -1297,22 +1110,18 @@
       );
 
 
-    title.className =
-      "toast-title";
-
-
     title.textContent =
       getToastTitle(type);
+
+
+    title.style.display =
+      "block";
 
 
     const text =
       document.createElement(
         "div"
       );
-
-
-    text.className =
-      "toast-message";
 
 
     text.textContent =
@@ -1326,10 +1135,10 @@
           "3px",
 
         color:
-          "rgba(255,255,255,0.76)",
+          "rgba(255,255,255,.76)",
 
         fontSize:
-          "0.9rem",
+          ".9rem",
 
         lineHeight:
           "1.45"
@@ -1337,37 +1146,37 @@
     );
 
 
-    const closeButton =
+    const close =
       document.createElement(
         "button"
       );
 
 
-    closeButton.type =
+    close.type =
       "button";
 
 
-    closeButton.setAttribute(
+    close.setAttribute(
       "aria-label",
       "Dismiss notification"
     );
 
 
-    closeButton.textContent =
+    close.textContent =
       "×";
 
 
     Object.assign(
-      closeButton.style,
+      close.style,
       {
-        flex:
-          "0 0 auto",
-
         width:
           "28px",
 
         height:
           "28px",
+
+        flex:
+          "0 0 auto",
 
         display:
           "grid",
@@ -1382,10 +1191,10 @@
           "8px",
 
         background:
-          "rgba(255,255,255,0.06)",
+          "rgba(255,255,255,.06)",
 
         color:
-          "#ffffff",
+          "#fff",
 
         cursor:
           "pointer",
@@ -1406,18 +1215,18 @@
     );
 
 
-    header.appendChild(
+    row.appendChild(
       content
     );
 
 
-    header.appendChild(
-      closeButton
+    row.appendChild(
+      close
     );
 
 
     toast.appendChild(
-      header
+      row
     );
 
 
@@ -1429,7 +1238,8 @@
     announce(message);
 
 
-    let removed = false;
+    let removed =
+      false;
 
 
     const dismiss =
@@ -1440,7 +1250,8 @@
         }
 
 
-        removed = true;
+        removed =
+          true;
 
 
         toast.style.opacity =
@@ -1461,7 +1272,7 @@
       };
 
 
-    closeButton.addEventListener(
+    close.addEventListener(
       "click",
       dismiss
     );
@@ -1472,8 +1283,7 @@
       (event) => {
 
         if (
-          event.target !==
-          closeButton
+          event.target !== close
         ) {
 
           dismiss();
@@ -1495,10 +1305,7 @@
     );
 
 
-    if (
-      Number.isFinite(duration) &&
-      duration > 0
-    ) {
+    if (duration > 0) {
 
       window.setTimeout(
         dismiss,
@@ -1507,10 +1314,10 @@
     }
 
 
-    return {
-      dismiss,
-      element: toast
-    };
+    return Object.freeze({
+      element: toast,
+      dismiss
+    });
   }
 
 
@@ -1534,7 +1341,7 @@
 
 
   /* =======================================================
-     NETWORK / OFFLINE MONITORING
+     NETWORK STATE
      ======================================================= */
 
   function initializeNetworkMonitoring() {
@@ -1547,14 +1354,14 @@
           true;
 
 
-        showToast(
-          "Internet connection restored.",
-          "success"
+        emitAppEvent(
+          "network:online"
         );
 
 
-        emitAppEvent(
-          "network:online"
+        showToast(
+          "Internet connection restored.",
+          "success"
         );
       }
     );
@@ -1568,14 +1375,14 @@
           false;
 
 
-        showToast(
-          "You are offline. Local features can continue where supported.",
-          "warning"
+        emitAppEvent(
+          "network:offline"
         );
 
 
-        emitAppEvent(
-          "network:offline"
+        showToast(
+          "You are offline. Local features can continue where supported.",
+          "warning"
         );
       }
     );
@@ -1592,10 +1399,6 @@
       "keydown",
       (event) => {
 
-        /*
-          Ctrl/Cmd + Home
-        */
-
         if (
           event.key === "Home" &&
           (
@@ -1609,10 +1412,6 @@
           return;
         }
 
-
-        /*
-          Ctrl/Cmd + End
-        */
 
         if (
           event.key === "End" &&
@@ -1628,10 +1427,6 @@
         }
 
 
-        /*
-          Escape closes registered overlays.
-        */
-
         if (
           event.key === "Escape"
         ) {
@@ -1646,55 +1441,49 @@
 
 
   /* =======================================================
-     SAFE EXTERNAL LINKS
+     EXTERNAL LINK SAFETY
      ======================================================= */
 
-  function initializeExternalLinks() {
+  function initializeExternalLinkSafety() {
 
     document
       .querySelectorAll(
         'a[target="_blank"]'
       )
-      .forEach(
-        (link) => {
+      .forEach((link) => {
 
-          const existingRel =
-            link.getAttribute("rel") || "";
-
-
-          const relParts =
-            new Set(
-              existingRel
-                .split(/\s+/)
-                .filter(Boolean)
-            );
+        const existing =
+          link.getAttribute("rel") || "";
 
 
-          relParts.add(
-            "noopener"
+        const values =
+          new Set(
+            existing
+              .split(/\s+/)
+              .filter(Boolean)
           );
 
 
-          relParts.add(
-            "noreferrer"
-          );
+        values.add(
+          "noopener"
+        );
 
 
-          link.setAttribute(
-            "rel",
-            Array.from(
-              relParts
-            ).join(" ")
-          );
-        }
-      );
+        values.add(
+          "noreferrer"
+        );
+
+
+        link.setAttribute(
+          "rel",
+          Array.from(values).join(" ")
+        );
+      });
   }
 
 
   /* =======================================================
      STORAGE HELPERS
-
-     Safe wrapper for localStorage.
      ======================================================= */
 
   function storageKey(key) {
@@ -1783,19 +1572,16 @@
 
 
   /* =======================================================
-     MODULE SYSTEM
+     MODULE REGISTRY
 
-     Future editor, auth, library, print, camera, AI etc.
-     can register themselves without rebuilding main.js.
+     Future files such as:
+     editor-engine.js
+     auth.js
+     cloud-sync.js
+     print.js
+     etc.
+     can register themselves here.
      ======================================================= */
-
-  function initializeModuleSystem() {
-
-    emitAppEvent(
-      "modules:ready"
-    );
-  }
-
 
   function registerModule(
     name,
@@ -1829,7 +1615,7 @@
     ) {
 
       console.warn(
-        `ToonVerse AI module "${name}" is already registered.`
+        `Module "${name}" is already registered.`
       );
 
 
@@ -1851,9 +1637,7 @@
       try {
 
         module.init({
-          app:
-            publicAPI,
-
+          app: publicAPI,
           config:
             window.ToonVerseConfig ||
             null
@@ -1862,8 +1646,13 @@
       } catch (error) {
 
         console.error(
-          `Failed to initialize module "${name}":`,
+          `Module "${name}" initialization failed:`,
           error
+        );
+
+
+        state.modules.delete(
+          name
         );
 
 
@@ -1894,9 +1683,7 @@
 
 
   /* =======================================================
-     APPLICATION EVENTS
-
-     Allows separate files/modules to coordinate cleanly.
+     APP EVENT BUS
      ======================================================= */
 
   function emitAppEvent(
@@ -1953,10 +1740,10 @@
 
 
   /* =======================================================
-     GLOBAL ERROR PROTECTION
+     ERROR PROTECTION
      ======================================================= */
 
-  function initializeGlobalErrorProtection() {
+  function initializeErrorProtection() {
 
     window.addEventListener(
       "error",
@@ -1988,7 +1775,7 @@
       (event) => {
 
         console.error(
-          "ToonVerse AI unhandled promise rejection:",
+          "ToonVerse AI promise rejection:",
           event.reason
         );
 
@@ -2006,7 +1793,7 @@
 
 
   /* =======================================================
-     HELPERS
+     UTILITIES
      ======================================================= */
 
   function prefersReducedMotion() {
@@ -2093,11 +1880,9 @@
   }
 
 
-  function safeText(value) {
+  function getCurrentPage() {
 
-    return String(
-      value ?? ""
-    );
+    return state.currentPage;
   }
 
 
@@ -2107,22 +1892,17 @@
   }
 
 
-  function getCurrentPage() {
+  function getRoute(name) {
 
-    return state.currentPage;
+    return (
+      ROUTES[name] ||
+      null
+    );
   }
 
 
   /* =======================================================
-     PUBLIC APPLICATION API
-
-     Other ToonVerse files can safely call:
-
-     ToonVerseAI.navigate(...)
-     ToonVerseAI.showToast(...)
-     ToonVerseAI.saveLocal(...)
-     ToonVerseAI.registerModule(...)
-     etc.
+     PUBLIC API
      ======================================================= */
 
   const publicAPI =
@@ -2137,66 +1917,46 @@
       environment:
         APP.environment,
 
-
       routes:
         ROUTES,
 
-
       navigate,
-
 
       handleAction,
 
-
       showToast,
-
 
       announce,
 
-
       scrollToTop,
-
 
       scrollToBottom,
 
-
       saveLocal,
-
 
       readLocal,
 
-
       removeLocal,
-
 
       registerModule,
 
-
       getModule,
-
 
       emit:
         emitAppEvent,
 
-
       on:
         onAppEvent,
 
+      throttle,
 
       debounce,
 
-
-      throttle,
-
-
-      safeText,
-
-
       isOnline,
-
 
       getCurrentPage,
 
+      getRoute,
 
       getState() {
 
