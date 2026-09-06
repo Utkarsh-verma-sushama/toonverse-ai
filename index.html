@@ -11,7 +11,7 @@
     body {
       font-family: Arial, sans-serif;
       background: #0b1020;
-      color: white;
+      color: #ffffff;
       min-height: 100vh;
     }
 
@@ -31,10 +31,15 @@
       font-weight: bold;
     }
 
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
     nav a {
-      color: white;
+      color: #ffffff;
       text-decoration: none;
-      margin-left: 18px;
       font-size: 14px;
     }
 
@@ -58,17 +63,20 @@
 
     .buttons {
       margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
     .btn {
       display: inline-block;
       padding: 14px 24px;
-      margin: 8px;
       border-radius: 10px;
       text-decoration: none;
       font-weight: bold;
       background: #6c63ff;
-      color: white;
+      color: #ffffff;
     }
 
     .btn.secondary {
@@ -113,28 +121,24 @@
         flex-direction: column;
       }
 
-      nav a {
-        margin: 0 8px;
-      }
-
       .hero h1 {
         font-size: 32px;
       }
     }
   </style></head><body><header>
   <div class="logo">ToonVerse AI</div>  <nav>
-    <a href="index.html">Home</a>
-    <a href="create.html">Create</a>
-    <a href="edit.html">Edit</a>
-    <a href="library.html">My Library</a>
+    <a href="./index.html">Home</a>
+    <a href="./create.html">Create</a>
+    <a href="./edit.html">Edit</a>
+    <a href="./library.html">My Library</a>
   </nav>
 </header><section class="hero">
   <h1>Create Anything with AI</h1>  <p>
     ToonVerse AI is your all-in-one creative platform for AI images,
     cartoons, photo editing, video creation, animation and more.
   </p>  <div class="buttons">
-    <a href="create.html" class="btn">Start Creating</a>
-    <a href="edit.html" class="btn secondary">Open Editor</a>
+    <a href="./create.html" class="btn">Start Creating</a>
+    <a href="./edit.html" class="btn secondary">Open Editor</a>
   </div>
 </section><section class="features">  <div class="card">
     <h3>AI Image Studio</h3>
