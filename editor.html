@@ -2449,7 +2449,8 @@ document.addEventListener("DOMContentLoaded", () => {
       URL.createObjectURL(file);
 
     currentFile = file;
-
+canvasImage.dataset.rotation = "0";
+canvasImage.style.transform = "rotate(0deg)";
     canvasImage.onload =
       () => {
 
