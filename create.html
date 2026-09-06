@@ -2,129 +2,894 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Create | ToonVerse AI</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="description"
+    content="ToonVerse AI Create Studio — Generate, transform and build creative media with AI."
+  >
+
+  <meta name="theme-color" content="#070b17">
+  <meta name="color-scheme" content="dark">
+
+  <title>Create Studio — ToonVerse AI</title>
+
+  <!-- Core styles -->
+  <link
+    rel="stylesheet"
+    href="./assets/css/main.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/components.css"
+  >
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* =====================================================
+       CREATE STUDIO — PAGE-SPECIFIC FOUNDATION
+       ===================================================== */
 
     body {
-      font-family: Arial, sans-serif;
-      background: #0b1020;
-      color: #ffffff;
-      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    header {
-      padding: 18px 20px;
-      background: #11182d;
-      border-bottom: 1px solid #27304d;
+    .create-page {
+      min-height: 100vh;
+      background: var(--bg-primary);
+    }
+
+    .create-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 3000;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 14px;
+
+      min-height: 68px;
+
+      padding:
+        max(10px, env(safe-area-inset-top))
+        18px
+        10px;
+
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+
+      background: rgba(7, 11, 23, 0.9);
+
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .create-topbar-left,
+    .create-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      min-width: 0;
+    }
+
+    .create-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+
+      color: #ffffff;
+
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .create-title-wrap {
+      min-width: 0;
+    }
+
+    .create-title {
+      margin: 0;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      font-size: 1rem;
+    }
+
+    .create-subtitle {
+      margin-top: 2px;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      color: var(--text-muted);
+      font-size: 0.77rem;
+    }
+
+    .create-layout {
+      width: min(1480px, 100%);
+
+      margin: 0 auto;
+
+      display: grid;
+      grid-template-columns:
+        240px
+        minmax(0, 1fr)
+        310px;
+
+      min-height: calc(100vh - 68px);
+    }
+
+    /* =====================================================
+       LEFT TOOL SIDEBAR
+       ===================================================== */
+
+    .create-sidebar {
+      position: sticky;
+      top: 68px;
+
+      height: calc(100vh - 68px);
+
+      overflow-y: auto;
+
+      padding: 16px 12px;
+
+      background: var(--bg-secondary);
+
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .create-sidebar-section + .create-sidebar-section {
+      margin-top: 22px;
+    }
+
+    .create-sidebar-heading {
+      margin: 0 0 8px;
+
+      padding: 0 8px;
+
+      color: var(--text-muted);
+
+      font-size: 0.72rem;
+      font-weight: 800;
+
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .create-tool-button {
+      width: 100%;
+
+      display: flex;
+      align-items: center;
+
+      gap: 10px;
+
+      min-height: 44px;
+
+      padding: 9px 10px;
+
+      border: 1px solid transparent;
+      border-radius: 11px;
+
+      background: transparent;
+      color: var(--text-secondary);
+
+      text-align: left;
+
+      cursor: pointer;
+
+      transition:
+        background 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease;
+    }
+
+    .create-tool-button:hover,
+    .create-tool-button.active {
+      color: #ffffff;
+
+      background: rgba(124, 92, 255, 0.12);
+
+      border-color: rgba(124, 92, 255, 0.26);
+    }
+
+    .create-tool-icon {
+      width: 30px;
+      height: 30px;
+
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      border-radius: 9px;
+
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .create-tool-text {
+      min-width: 0;
+    }
+
+    .create-tool-title {
+      display: block;
+
+      font-weight: 700;
+      font-size: 0.87rem;
+    }
+
+    .create-tool-meta {
+      display: block;
+
+      margin-top: 1px;
+
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    /* =====================================================
+       MAIN WORKSPACE
+       ===================================================== */
+
+    .create-workspace {
+      min-width: 0;
+
+      padding: 24px;
+
+      background:
+        radial-gradient(
+          circle at top,
+          rgba(124, 92, 255, 0.08),
+          transparent 32%
+        ),
+        var(--bg-primary);
+    }
+
+    .workspace-header {
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
+
+      gap: 18px;
+
+      margin-bottom: 20px;
+    }
+
+    .workspace-heading {
+      margin: 0;
+
+      font-size: clamp(1.55rem, 3vw, 2.3rem);
+    }
+
+    .workspace-description {
+      max-width: 720px;
+
+      margin: 7px 0 0;
+
+      color: var(--text-secondary);
+
+      line-height: 1.65;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 7px;
+
+      margin-bottom: 18px;
+
+      overflow-x: auto;
+
+      padding-bottom: 2px;
+    }
+
+    .mode-tab {
+      flex: 0 0 auto;
+
+      padding: 8px 13px;
+
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--text-secondary);
+
+      cursor: pointer;
+
+      font-size: 0.83rem;
+      font-weight: 700;
+    }
+
+    .mode-tab.active {
+      background: rgba(124, 92, 255, 0.18);
+      border-color: rgba(124, 92, 255, 0.35);
+
+      color: #ffffff;
+    }
+
+    /* =====================================================
+       PROMPT COMPOSER
+       ===================================================== */
+
+    .prompt-card {
+      overflow: hidden;
+
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 20px;
+
+      background: rgba(18, 27, 49, 0.88);
+
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+    }
+
+    .prompt-card-header {
+      display: flex;
       align-items: center;
-      gap: 15px;
+      justify-content: space-between;
+
+      gap: 12px;
+
+      padding: 14px 16px;
+
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .prompt-label {
+      font-weight: 750;
+    }
+
+    .prompt-status {
+      display: flex;
+      align-items: center;
+
+      gap: 6px;
+
+      color: var(--text-muted);
+
+      font-size: 0.76rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+
+      border-radius: 50%;
+
+      background: #22c55e;
+
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+    }
+
+    .prompt-input-wrap {
+      position: relative;
+    }
+
+    .prompt-textarea {
+      width: 100%;
+
+      min-height: 170px;
+
+      resize: vertical;
+
+      padding: 18px;
+
+      border: 0;
+      outline: 0;
+
+      background: transparent;
+      color: #ffffff;
+
+      font: inherit;
+      line-height: 1.65;
+    }
+
+    .prompt-textarea::placeholder {
+      color: rgba(255, 255, 255, 0.38);
+    }
+
+    .prompt-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 12px;
+
+      padding: 13px 14px;
+
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .prompt-actions-left,
+    .prompt-actions-right {
+      display: flex;
+      align-items: center;
+
+      gap: 8px;
+
       flex-wrap: wrap;
     }
 
-    .logo {
-      font-size: 23px;
-      font-weight: bold;
+    /* =====================================================
+       UPLOAD
+       ===================================================== */
+
+    .source-section {
+      margin-top: 18px;
     }
 
-    nav a {
-      color: #ffffff;
-      text-decoration: none;
-      margin-right: 14px;
-      font-size: 14px;
+    .source-section-title {
+      margin: 0 0 10px;
+
+      font-size: 0.94rem;
     }
 
-    .hero {
-      text-align: center;
-      padding: 55px 20px 30px;
-    }
+    .create-upload-zone {
+      min-height: 180px;
 
-    .hero h1 {
-      font-size: 38px;
-      margin-bottom: 14px;
-    }
-
-    .hero p {
-      color: #b9c2da;
-      max-width: 720px;
-      margin: auto;
-      line-height: 1.6;
-    }
-
-    .tools {
-      max-width: 1150px;
-      margin: auto;
-      padding: 30px 20px 70px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 18px;
-    }
+      place-items: center;
 
-    .tool {
-      display: block;
-      background: #131c34;
-      border: 1px solid #263253;
-      border-radius: 16px;
-      padding: 25px;
-      color: white;
-      text-decoration: none;
-      transition: 0.2s;
-    }
+      padding: 26px;
 
-    .tool:hover {
-      transform: translateY(-3px);
-      border-color: #6c63ff;
-    }
+      border: 2px dashed rgba(124, 92, 255, 0.3);
+      border-radius: 17px;
 
-    .icon {
-      font-size: 30px;
-      margin-bottom: 14px;
-    }
+      background: rgba(124, 92, 255, 0.045);
 
-    .tool h2 {
-      font-size: 20px;
-      margin-bottom: 9px;
-    }
-
-    .tool p {
-      color: #b9c2da;
-      line-height: 1.5;
-      font-size: 14px;
-    }
-
-    .coming {
-      display: inline-block;
-      margin-top: 15px;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 20px;
-      background: #1c2746;
-      color: #cbd3ea;
-    }
-
-    footer {
       text-align: center;
-      border-top: 1px solid #27304d;
-      padding: 25px;
-      color: #8993ad;
+
+      cursor: pointer;
+
+      transition:
+        background 170ms ease,
+        border-color 170ms ease;
+    }
+
+    .create-upload-zone:hover,
+    .create-upload-zone.drag-active {
+      border-color: rgba(124, 92, 255, 0.7);
+
+      background: rgba(124, 92, 255, 0.09);
+    }
+
+    .create-upload-icon {
+      font-size: 2.2rem;
+    }
+
+    .create-upload-title {
+      margin: 10px 0 5px;
+
+      font-weight: 750;
+    }
+
+    .create-upload-text {
+      margin: 0;
+
+      color: var(--text-muted);
+
+      font-size: 0.83rem;
+    }
+
+    .create-upload-input {
+      display: none;
+    }
+
+    /* =====================================================
+       QUICK TOOLS
+       ===================================================== */
+
+    .quick-tools {
+      margin-top: 22px;
+    }
+
+    .section-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 12px;
+
+      margin-bottom: 11px;
+    }
+
+    .section-row h2 {
+      margin: 0;
+
+      font-size: 1rem;
+    }
+
+    .quick-tool-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 10px;
+    }
+
+    .quick-tool {
+      min-height: 112px;
+
+      display: flex;
+      flex-direction: column;
+
+      justify-content: space-between;
+
+      gap: 12px;
+
+      padding: 14px;
+
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 15px;
+
+      background: rgba(255, 255, 255, 0.035);
+
+      cursor: pointer;
+
+      transition:
+        transform 160ms ease,
+        border-color 160ms ease,
+        background 160ms ease;
+    }
+
+    .quick-tool:hover {
+      transform: translateY(-2px);
+
+      border-color: rgba(124, 92, 255, 0.36);
+
+      background: rgba(124, 92, 255, 0.075);
+    }
+
+    .quick-tool-icon {
+      font-size: 1.55rem;
+    }
+
+    .quick-tool-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .quick-tool-meta {
+      margin-top: 3px;
+
+      color: var(--text-muted);
+
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+
+    /* =====================================================
+       RESULT AREA
+       ===================================================== */
+
+    .result-section {
+      margin-top: 24px;
+    }
+
+    .result-panel {
+      min-height: 260px;
+
+      display: grid;
+      place-items: center;
+
+      padding: 28px;
+
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(124, 92, 255, 0.04),
+          rgba(34, 211, 238, 0.025)
+        ),
+        rgba(255, 255, 255, 0.02);
+
+      text-align: center;
+    }
+
+    .result-icon {
+      font-size: 2.6rem;
+    }
+
+    .result-title {
+      margin: 12px 0 6px;
+
+      font-size: 1.05rem;
+    }
+
+    .result-text {
+      max-width: 520px;
+
+      margin: 0;
+
+      color: var(--text-muted);
+
+      line-height: 1.55;
+    }
+
+    /* =====================================================
+       RIGHT SETTINGS PANEL
+       ===================================================== */
+
+    .create-settings {
+      position: sticky;
+      top: 68px;
+
+      height: calc(100vh - 68px);
+
+      overflow-y: auto;
+
+      padding: 16px;
+
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+
+      background: var(--bg-secondary);
+    }
+
+    .settings-section + .settings-section {
+      margin-top: 18px;
+    }
+
+    .settings-heading {
+      margin: 0 0 9px;
+
+      font-size: 0.85rem;
+    }
+
+    .setting-card {
+      padding: 13px;
+
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 13px;
+
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .setting-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 10px;
+
+      margin-bottom: 7px;
+    }
+
+    .setting-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .setting-value {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .create-select,
+    .create-input {
+      width: 100%;
+
+      min-height: 42px;
+
+      padding: 9px 10px;
+
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+
+      outline: none;
+
+      background: #0d1528;
+      color: #ffffff;
+    }
+
+    .create-select:focus,
+    .create-input:focus {
+      border-color: rgba(124, 92, 255, 0.55);
+    }
+
+    .setting-help {
+      margin: 7px 0 0;
+
+      color: var(--text-muted);
+
+      font-size: 0.71rem;
+      line-height: 1.45;
+    }
+
+    .settings-toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      gap: 12px;
+    }
+
+    /* =====================================================
+       GENERATE BUTTON
+       ===================================================== */
+
+    .generate-bar {
+      position: sticky;
+      bottom: 0;
+
+      z-index: 100;
+
+      margin-top: 24px;
+
+      padding:
+        12px
+        0
+        max(12px, env(safe-area-inset-bottom));
+
+      background:
+        linear-gradient(
+          to top,
+          var(--bg-primary) 60%,
+          transparent
+        );
+    }
+
+    .generate-button {
+      width: 100%;
+
+      min-height: 54px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 9px;
+
+      border: 0;
+      border-radius: 15px;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--brand-primary),
+          #5f7cff,
+          var(--brand-secondary)
+        );
+
+      color: #ffffff;
+
+      font-size: 0.98rem;
+      font-weight: 800;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 14px 32px rgba(124, 92, 255, 0.23);
+    }
+
+    .generate-button:active {
+      transform: translateY(1px);
+    }
+
+    /* =====================================================
+       MOBILE DRAWER BUTTONS
+       ===================================================== */
+
+    .mobile-panel-button {
+      display: none;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 1180px) {
+      .create-layout {
+        grid-template-columns:
+          210px
+          minmax(0, 1fr);
+      }
+
+      .create-settings {
+        display: none;
+      }
+
+      .mobile-panel-button {
+        display: inline-grid;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .create-layout {
+        display: block;
+      }
+
+      .create-sidebar {
+        display: none;
+      }
+
+      .create-workspace {
+        padding: 18px;
+      }
+
+      .quick-tool-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .workspace-header {
+        display: block;
+      }
+
+      .workspace-header .badge {
+        margin-top: 12px;
+      }
     }
 
     @media (max-width: 600px) {
-      .hero h1 {
-        font-size: 30px;
+      .create-topbar {
+        padding-left: 11px;
+        padding-right: 11px;
       }
 
-      nav {
+      .create-brand span:last-child {
+        display: none;
+      }
+
+      .create-topbar-right .btn {
+        padding-inline: 10px;
+      }
+
+      .create-workspace {
+        padding: 14px 12px 22px;
+      }
+
+      .prompt-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .prompt-actions-left,
+      .prompt-actions-right {
         width: 100%;
+      }
+
+      .prompt-actions-right .btn {
+        flex: 1;
+      }
+
+      .quick-tool-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-tool {
+        min-height: 105px;
+      }
+
+      .result-panel {
+        min-height: 220px;
+        padding: 22px 16px;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .quick-tool-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
       }
     }
   </style>
@@ -132,90 +897,1736 @@
 
 <body>
 
-<header>
-  <div class="logo">ToonVerse AI</div>
+  <div class="create-page">
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="create.html">Create</a>
-    <a href="#">Edit</a>
-    <a href="#">My Library</a>
-  </nav>
-</header>
+    <!-- ===================================================
+         TOP BAR
+         =================================================== -->
 
-<section class="hero">
-  <h1>Create with ToonVerse AI</h1>
+    <header class="create-topbar">
 
-  <p>
-    Choose a creative tool to start your project.
-    More AI creation, editing and productivity tools will be added
-    as the ToonVerse AI ecosystem grows.
-  </p>
-</section>
+      <div class="create-topbar-left">
 
-<section class="tools">
+        <a
+          class="icon-btn"
+          href="./index.html"
+          aria-label="Back to ToonVerse AI home"
+          title="Back to Home"
+        >
+          ←
+        </a>
 
-  <a href="#" class="tool">
-    <div class="icon">✨</div>
-    <h2>AI Image Studio</h2>
-    <p>Create original images and artwork from text prompts.</p>
-    <span class="coming">Coming Next</span>
-  </a>
+        <a
+          class="create-brand"
+          href="./index.html"
+          aria-label="ToonVerse AI"
+        >
+          <span aria-hidden="true">✨</span>
+          <span>ToonVerse AI</span>
+        </a>
 
-  <a href="#" class="tool">
-    <div class="icon">🎨</div>
-    <h2>Photo to Cartoon</h2>
-    <p>Transform photos into creative cartoon and toon styles.</p>
-    <span class="coming">Coming Next</span>
-  </a>
+        <div class="create-title-wrap">
 
-  <a href="#" class="tool">
-    <div class="icon">🖼️</div>
-    <h2>AI Creative Editor</h2>
-    <p>Edit photos, graphics and creative projects in one workspace.</p>
-    <span class="coming">Coming Next</span>
-  </a>
+          <h1 class="create-title">
+            Create Studio
+          </h1>
 
-  <a href="#" class="tool">
-    <div class="icon">🎬</div>
-    <h2>Photo to Video</h2>
-    <p>Transform photos and memories into animated video experiences.</p>
-    <span class="coming">Coming Next</span>
-  </a>
+          <div class="create-subtitle">
+            AI creation workspace
+          </div>
 
-  <a href="#" class="tool">
-    <div class="icon">📷</div>
-    <h2>AI Camera</h2>
-    <p>Capture images and prepare them for AI-powered creative tools.</p>
-    <span class="coming">Planned</span>
-  </a>
+        </div>
 
-  <a href="#" class="tool">
-    <div class="icon">🖌️</div>
-    <h2>Painting Studio</h2>
-    <p>Draw, paint, color and create with assisted editing tools.</p>
-    <span class="coming">Planned</span>
-  </a>
+      </div>
 
-  <a href="#" class="tool">
-    <div class="icon">📱</div>
-    <h2>Wallpaper Studio</h2>
-    <p>Create wallpapers designed for different screens and devices.</p>
-    <span class="coming">Planned</span>
-  </a>
 
-  <a href="#" class="tool">
-    <div class="icon">📝</div>
-    <h2>Image & Video to Text</h2>
-    <p>Extract and work with text from supported images and videos.</p>
-    <span class="coming">Planned</span>
-  </a>
+      <div class="create-topbar-right">
 
-</section>
+        <span class="badge badge-success">
+          V1 Studio
+        </span>
 
-<footer>
-  © 2026 ToonVerse AI. All rights reserved.
-</footer>
+        <button
+          class="icon-btn mobile-panel-button"
+          type="button"
+          data-create-action="settings"
+          aria-label="Open generation settings"
+          title="Settings"
+        >
+          ⚙️
+        </button>
+
+        <button
+          class="btn btn-secondary btn-small"
+          type="button"
+          data-create-action="save-draft"
+        >
+          Save Draft
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         APP LAYOUT
+         =================================================== -->
+
+    <div class="create-layout">
+
+      <!-- =================================================
+           LEFT SIDEBAR
+           ================================================= -->
+
+      <aside
+        class="create-sidebar"
+        aria-label="Create tools"
+      >
+
+        <div class="create-sidebar-section">
+
+          <h2 class="create-sidebar-heading">
+            Create
+          </h2>
+
+
+          <button
+            class="create-tool-button active"
+            type="button"
+            data-create-mode="generate"
+          >
+            <span class="create-tool-icon">
+              ✨
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                AI Generate
+              </span>
+
+              <span class="create-tool-meta">
+                Prompt to visual
+              </span>
+            </span>
+          </button>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="cartoon"
+          >
+            <span class="create-tool-icon">
+              🎨
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                Photo to Cartoon
+              </span>
+
+              <span class="create-tool-meta">
+                Stylize images
+              </span>
+            </span>
+          </button>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="wallpaper"
+          >
+            <span class="create-tool-icon">
+              🖼️
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                Wallpaper Studio
+              </span>
+
+              <span class="create-tool-meta">
+                Device-ready
+              </span>
+            </span>
+          </button>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="coloring"
+          >
+            <span class="create-tool-icon">
+              🖌️
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                Coloring Studio
+              </span>
+
+              <span class="create-tool-meta">
+                Paint & assist
+              </span>
+            </span>
+          </button>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="memory"
+          >
+            <span class="create-tool-icon">
+              🎞️
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                Memory Studio
+              </span>
+
+              <span class="create-tool-meta">
+                Photo to memory
+              </span>
+            </span>
+          </button>
+
+        </div>
+
+
+        <div class="create-sidebar-section">
+
+          <h2 class="create-sidebar-heading">
+            Intelligence
+          </h2>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="camera"
+          >
+            <span class="create-tool-icon">
+              📷
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                AI Camera
+              </span>
+
+              <span class="create-tool-meta">
+                Visual intelligence
+              </span>
+            </span>
+          </button>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="image-text"
+          >
+            <span class="create-tool-icon">
+              📝
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                Image to Text
+              </span>
+
+              <span class="create-tool-meta">
+                Extract text
+              </span>
+            </span>
+          </button>
+
+
+          <button
+            class="create-tool-button"
+            type="button"
+            data-create-mode="video-text"
+          >
+            <span class="create-tool-icon">
+              🎥
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                Video to Text
+              </span>
+
+              <span class="create-tool-meta">
+                Transcription
+              </span>
+            </span>
+          </button>
+
+        </div>
+
+
+        <div class="create-sidebar-section">
+
+          <h2 class="create-sidebar-heading">
+            Workspace
+          </h2>
+
+
+          <a
+            class="create-tool-button"
+            href="./index.html#library"
+          >
+            <span class="create-tool-icon">
+              📁
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                My Library
+              </span>
+
+              <span class="create-tool-meta">
+                Projects & drafts
+              </span>
+            </span>
+          </a>
+
+
+          <a
+            class="create-tool-button"
+            href="./index.html#edit"
+          >
+            <span class="create-tool-icon">
+              ✂️
+            </span>
+
+            <span class="create-tool-text">
+              <span class="create-tool-title">
+                AI Editor
+              </span>
+
+              <span class="create-tool-meta">
+                Advanced editing
+              </span>
+            </span>
+          </a>
+
+        </div>
+
+      </aside>
+
+
+      <!-- =================================================
+           MAIN WORKSPACE
+           ================================================= -->
+
+      <main class="create-workspace">
+
+        <div class="workspace-header">
+
+          <div>
+
+            <h2 class="workspace-heading">
+              What do you want to create?
+            </h2>
+
+            <p class="workspace-description">
+              Describe your idea, optionally add reference
+              media, then choose the output settings.
+              ToonVerse AI's future generation services
+              will connect directly to this workspace.
+            </p>
+
+          </div>
+
+          <span class="badge badge-info">
+            Creative Workspace
+          </span>
+
+        </div>
+
+
+        <!-- Mode tabs -->
+
+        <div
+          class="mode-tabs"
+          role="tablist"
+          aria-label="Creation mode"
+        >
+
+          <button
+            class="mode-tab active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-create-mode="generate"
+          >
+            Generate
+          </button>
+
+          <button
+            class="mode-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-create-mode="cartoon"
+          >
+            Cartoon
+          </button>
+
+          <button
+            class="mode-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-create-mode="wallpaper"
+          >
+            Wallpaper
+          </button>
+
+          <button
+            class="mode-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-create-mode="memory"
+          >
+            Memory
+          </button>
+
+          <button
+            class="mode-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-create-mode="image-text"
+          >
+            Image → Text
+          </button>
+
+          <button
+            class="mode-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-create-mode="video-text"
+          >
+            Video → Text
+          </button>
+
+        </div>
+
+
+        <!-- Prompt -->
+
+        <section
+          class="prompt-card"
+          aria-labelledby="prompt-heading"
+        >
+
+          <div class="prompt-card-header">
+
+            <span
+              class="prompt-label"
+              id="prompt-heading"
+            >
+              Creative Prompt
+            </span>
+
+            <span class="prompt-status">
+              <span
+                class="status-dot"
+                aria-hidden="true"
+              ></span>
+
+              Ready
+            </span>
+
+          </div>
+
+
+          <div class="prompt-input-wrap">
+
+            <textarea
+              class="prompt-textarea"
+              id="create-prompt"
+              maxlength="4000"
+              placeholder="Describe what you want ToonVerse AI to create..."
+              aria-label="Creative prompt"
+            ></textarea>
+
+          </div>
+
+
+          <div class="prompt-actions">
+
+            <div class="prompt-actions-left">
+
+              <button
+                class="btn btn-secondary btn-small"
+                type="button"
+                data-create-action="voice"
+              >
+                🎙️ Voice
+              </button>
+
+              <button
+                class="btn btn-secondary btn-small"
+                type="button"
+                data-create-action="enhance-prompt"
+              >
+                ✨ Enhance Prompt
+              </button>
+
+            </div>
+
+
+            <div class="prompt-actions-right">
+
+              <span
+                id="prompt-counter"
+                class="text-muted"
+                style="font-size: 0.76rem;"
+              >
+                0 / 4000
+              </span>
+
+              <button
+                class="btn btn-secondary btn-small"
+                type="button"
+                data-create-action="clear-prompt"
+              >
+                Clear
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- Upload -->
+
+        <section class="source-section">
+
+          <h2 class="source-section-title">
+            Reference Media
+          </h2>
+
+          <label
+            class="create-upload-zone"
+            id="create-upload-zone"
+            for="create-file-input"
+            tabindex="0"
+          >
+
+            <div>
+
+              <div
+                class="create-upload-icon"
+                aria-hidden="true"
+              >
+                📤
+              </div>
+
+              <div class="create-upload-title">
+                Add image or video
+              </div>
+
+              <p class="create-upload-text">
+                Tap to browse or drag files here.
+                Original files remain unchanged.
+              </p>
+
+              <p
+                class="create-upload-text"
+                style="margin-top: 5px;"
+              >
+                Supported foundation:
+                JPG, JPEG, PNG, WebP, MP4
+              </p>
+
+            </div>
+
+          </label>
+
+          <input
+            class="create-upload-input"
+            id="create-file-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,video/mp4"
+            multiple
+          >
+
+          <div
+            id="selected-files"
+            style="
+              display: grid;
+              gap: 8px;
+              margin-top: 10px;
+            "
+          ></div>
+
+        </section>
+
+
+        <!-- Quick tools -->
+
+        <section class="quick-tools">
+
+          <div class="section-row">
+
+            <h2>
+              Quick Creative Tools
+            </h2>
+
+            <span class="text-muted">
+              Select a workflow
+            </span>
+
+          </div>
+
+
+          <div class="quick-tool-grid">
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="cartoon"
+            >
+              <div class="quick-tool-icon">
+                🎨
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Photo to Cartoon
+                </div>
+
+                <div class="quick-tool-meta">
+                  Transform a photo into stylized artwork
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="wallpaper"
+            >
+              <div class="quick-tool-icon">
+                🖼️
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Wallpaper
+                </div>
+
+                <div class="quick-tool-meta">
+                  Create device-optimized wallpapers
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="coloring"
+            >
+              <div class="quick-tool-icon">
+                🖌️
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Coloring Studio
+                </div>
+
+                <div class="quick-tool-meta">
+                  Paint manually or with AI assistance
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="memory"
+            >
+              <div class="quick-tool-icon">
+                🎞️
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Memory Video
+                </div>
+
+                <div class="quick-tool-meta">
+                  Build respectful photo memories
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="camera"
+            >
+              <div class="quick-tool-icon">
+                📷
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  AI Camera
+                </div>
+
+                <div class="quick-tool-meta">
+                  Visual understanding and capture
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="image-text"
+            >
+              <div class="quick-tool-icon">
+                📝
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Image to Text
+                </div>
+
+                <div class="quick-tool-meta">
+                  Extract useful text from images
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="video-text"
+            >
+              <div class="quick-tool-icon">
+                🎥
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Video to Text
+                </div>
+
+                <div class="quick-tool-meta">
+                  Prepare video transcription
+                </div>
+              </div>
+            </button>
+
+
+            <button
+              class="quick-tool"
+              type="button"
+              data-create-mode="batch"
+            >
+              <div class="quick-tool-icon">
+                📚
+              </div>
+
+              <div>
+                <div class="quick-tool-title">
+                  Batch Workflow
+                </div>
+
+                <div class="quick-tool-meta">
+                  Process multiple creative assets
+                </div>
+              </div>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- Result area -->
+
+        <section class="result-section">
+
+          <div class="section-row">
+
+            <h2>
+              Output Preview
+            </h2>
+
+            <span class="badge">
+              Preview Area
+            </span>
+
+          </div>
+
+
+          <div
+            class="result-panel"
+            id="create-result-panel"
+          >
+
+            <div>
+
+              <div
+                class="result-icon"
+                aria-hidden="true"
+              >
+                ✨
+              </div>
+
+              <h3 class="result-title">
+                Your creation will appear here
+              </h3>
+
+              <p class="result-text">
+                The interface is ready for the future
+                ToonVerse AI generation engine.
+                Once backend AI services are connected,
+                generated media and progress states will
+                appear in this area.
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- Generate -->
+
+        <div class="generate-bar">
+
+          <button
+            class="generate-button"
+            id="generate-button"
+            type="button"
+            data-create-action="generate"
+          >
+            <span aria-hidden="true">
+              ✨
+            </span>
+
+            <span>
+              Generate with ToonVerse AI
+            </span>
+          </button>
+
+        </div>
+
+      </main>
+
+
+      <!-- =================================================
+           SETTINGS PANEL
+           ================================================= -->
+
+      <aside
+        class="create-settings"
+        aria-label="Generation settings"
+      >
+
+        <div class="settings-section">
+
+          <h2 class="settings-heading">
+            Output Settings
+          </h2>
+
+
+          <div class="setting-card">
+
+            <div class="setting-label-row">
+
+              <label
+                class="setting-label"
+                for="output-type"
+              >
+                Output Type
+              </label>
+
+            </div>
+
+            <select
+              class="create-select"
+              id="output-type"
+            >
+              <option value="image">
+                Image
+              </option>
+
+              <option value="video">
+                Video
+              </option>
+
+              <option value="text">
+                Text
+              </option>
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <div class="setting-card">
+
+            <div class="setting-label-row">
+
+              <label
+                class="setting-label"
+                for="aspect-ratio"
+              >
+                Aspect Ratio
+              </label>
+
+            </div>
+
+            <select
+              class="create-select"
+              id="aspect-ratio"
+            >
+              <option value="auto">
+                Auto
+              </option>
+
+              <option value="1:1">
+                Square — 1:1
+              </option>
+
+              <option value="4:5">
+                Portrait — 4:5
+              </option>
+
+              <option value="9:16">
+                Mobile — 9:16
+              </option>
+
+              <option value="16:9">
+                Landscape — 16:9
+              </option>
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <div class="setting-card">
+
+            <div class="setting-label-row">
+
+              <label
+                class="setting-label"
+                for="quality"
+              >
+                Quality
+              </label>
+
+              <span class="setting-value">
+                High
+              </span>
+
+            </div>
+
+            <select
+              class="create-select"
+              id="quality"
+            >
+              <option value="standard">
+                Standard
+              </option>
+
+              <option
+                value="high"
+                selected
+              >
+                High
+              </option>
+
+              <option value="maximum">
+                Maximum
+              </option>
+            </select>
+
+            <p class="setting-help">
+              Higher quality options can require
+              more processing when AI services are active.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <div class="setting-card">
+
+            <div class="setting-label-row">
+
+              <label
+                class="setting-label"
+                for="variation-count"
+              >
+                Variations
+              </label>
+
+              <span
+                class="setting-value"
+                id="variation-value"
+              >
+                1
+              </span>
+
+            </div>
+
+            <input
+              id="variation-count"
+              type="range"
+              min="1"
+              max="4"
+              value="1"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <div class="setting-card">
+
+            <div class="settings-toggle-row">
+
+              <div>
+
+                <div class="setting-label">
+                  Preserve Original
+                </div>
+
+                <div class="setting-help">
+                  Keep uploaded source media unchanged.
+                </div>
+
+              </div>
+
+              <label class="switch">
+
+                <input
+                  type="checkbox"
+                  id="preserve-original"
+                  checked
+                >
+
+                <span class="switch-slider"></span>
+
+              </label>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <div class="setting-card">
+
+            <div class="settings-toggle-row">
+
+              <div>
+
+                <div class="setting-label">
+                  Safe Creation
+                </div>
+
+                <div class="setting-help">
+                  Responsible creation safeguards remain enabled.
+                </div>
+
+              </div>
+
+              <label class="switch">
+
+                <input
+                  type="checkbox"
+                  checked
+                  disabled
+                >
+
+                <span class="switch-slider"></span>
+
+              </label>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <div class="alert alert-info">
+
+            <span aria-hidden="true">
+              🛡️
+            </span>
+
+            <div>
+
+              <strong>
+                Responsible AI
+              </strong>
+
+              <div
+                class="text-muted"
+                style="
+                  margin-top: 4px;
+                  font-size: 0.76rem;
+                  line-height: 1.45;
+                "
+              >
+                Production services will apply
+                consent, rights and safety checks
+                before supported AI transformations.
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </aside>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       STATUS REGION
+       ===================================================== -->
+
+  <div
+    id="app-status"
+    class="visually-hidden"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+
+
+  <!-- =====================================================
+       CORE JAVASCRIPT
+       ===================================================== -->
+
+  <script
+    src="./assets/js/config.js"
+    defer
+  ></script>
+
+  <script
+    src="./assets/js/main.js"
+    defer
+  ></script>
+
+
+  <!-- =====================================================
+       CREATE STUDIO CONTROLLER
+       Self-contained V1 frontend behavior.
+       ===================================================== -->
+
+  <script>
+    "use strict";
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+      const prompt =
+        document.getElementById("create-prompt");
+
+      const counter =
+        document.getElementById("prompt-counter");
+
+      const fileInput =
+        document.getElementById("create-file-input");
+
+      const uploadZone =
+        document.getElementById("create-upload-zone");
+
+      const selectedFiles =
+        document.getElementById("selected-files");
+
+      const variation =
+        document.getElementById("variation-count");
+
+      const variationValue =
+        document.getElementById("variation-value");
+
+
+      /* ===================================================
+         PROMPT COUNTER
+         =================================================== */
+
+      function updatePromptCounter() {
+
+        if (!prompt || !counter) {
+          return;
+        }
+
+        counter.textContent =
+          `${prompt.value.length} / 4000`;
+      }
+
+      prompt?.addEventListener(
+        "input",
+        updatePromptCounter
+      );
+
+      updatePromptCounter();
+
+
+      /* ===================================================
+         TOAST
+         =================================================== */
+
+      function notify(message, type = "info") {
+
+        if (
+          window.ToonVerseAI &&
+          typeof window.ToonVerseAI.showToast === "function"
+        ) {
+
+          window.ToonVerseAI.showToast(
+            message,
+            type
+          );
+
+          return;
+        }
+
+        console.info(
+          "ToonVerse AI:",
+          message
+        );
+      }
+
+
+      /* ===================================================
+         CREATION MODES
+         =================================================== */
+
+      const modeNames = {
+
+        generate: "AI Generate",
+
+        cartoon: "Photo to Cartoon",
+
+        wallpaper: "Wallpaper Studio",
+
+        coloring: "Coloring & Painting Studio",
+
+        memory: "Memory Studio",
+
+        camera: "AI Camera",
+
+        "image-text": "Image to Text",
+
+        "video-text": "Video to Text",
+
+        batch: "Batch Processing"
+      };
+
+
+      function setCreateMode(mode) {
+
+        document
+          .querySelectorAll("[data-create-mode]")
+          .forEach((element) => {
+
+            const active =
+              element.dataset.createMode === mode;
+
+            element.classList.toggle(
+              "active",
+              active
+            );
+
+            if (
+              element.getAttribute("role") === "tab"
+            ) {
+
+              element.setAttribute(
+                "aria-selected",
+                active ? "true" : "false"
+              );
+            }
+          });
+
+
+        notify(
+          `${modeNames[mode] || "Creative workflow"} selected.`
+        );
+      }
+
+
+      document
+        .querySelectorAll("[data-create-mode]")
+        .forEach((button) => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const mode =
+                button.dataset.createMode;
+
+              if (mode) {
+                setCreateMode(mode);
+              }
+            }
+          );
+        });
+
+
+      /* ===================================================
+         FILE SELECTION
+         =================================================== */
+
+      function formatBytes(bytes) {
+
+        if (!Number.isFinite(bytes)) {
+          return "";
+        }
+
+        if (bytes < 1024) {
+          return `${bytes} B`;
+        }
+
+        if (bytes < 1024 * 1024) {
+          return `${(
+            bytes / 1024
+          ).toFixed(1)} KB`;
+        }
+
+        return `${(
+          bytes /
+          (1024 * 1024)
+        ).toFixed(1)} MB`;
+      }
+
+
+      function renderFiles(files) {
+
+        if (!selectedFiles) {
+          return;
+        }
+
+        selectedFiles.innerHTML = "";
+
+        if (!files.length) {
+          return;
+        }
+
+
+        Array.from(files)
+          .slice(0, 100)
+          .forEach((file) => {
+
+            const item =
+              document.createElement("div");
+
+            item.className =
+              "media-item";
+
+
+            const thumb =
+              document.createElement("div");
+
+            thumb.className =
+              "media-thumb";
+
+            thumb.textContent =
+              file.type.startsWith("video/")
+                ? "🎥"
+                : "🖼️";
+
+
+            const info =
+              document.createElement("div");
+
+            info.className =
+              "media-info";
+
+
+            const name =
+              document.createElement("div");
+
+            name.className =
+              "media-name";
+
+            name.textContent =
+              file.name;
+
+
+            const meta =
+              document.createElement("div");
+
+            meta.className =
+              "media-meta";
+
+            meta.textContent =
+              `${file.type || "File"} • ${formatBytes(file.size)}`;
+
+
+            info.appendChild(name);
+            info.appendChild(meta);
+
+            item.appendChild(thumb);
+            item.appendChild(info);
+
+            selectedFiles.appendChild(item);
+          });
+
+
+        notify(
+          `${files.length} file${files.length === 1 ? "" : "s"} selected.`,
+          "success"
+        );
+      }
+
+
+      fileInput?.addEventListener(
+        "change",
+        () => {
+
+          renderFiles(
+            fileInput.files || []
+          );
+        }
+      );
+
+
+      /* ===================================================
+         DRAG & DROP
+         =================================================== */
+
+      if (uploadZone) {
+
+        [
+          "dragenter",
+          "dragover"
+        ].forEach((eventName) => {
+
+          uploadZone.addEventListener(
+            eventName,
+            (event) => {
+
+              event.preventDefault();
+
+              uploadZone.classList.add(
+                "drag-active"
+              );
+            }
+          );
+        });
+
+
+        [
+          "dragleave",
+          "drop"
+        ].forEach((eventName) => {
+
+          uploadZone.addEventListener(
+            eventName,
+            (event) => {
+
+              event.preventDefault();
+
+              uploadZone.classList.remove(
+                "drag-active"
+              );
+            }
+          );
+        });
+
+
+        uploadZone.addEventListener(
+          "drop",
+          (event) => {
+
+            const files =
+              event.dataTransfer?.files;
+
+            if (!files?.length) {
+              return;
+            }
+
+            renderFiles(files);
+          }
+        );
+
+
+        uploadZone.addEventListener(
+          "keydown",
+          (event) => {
+
+            if (
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+
+              event.preventDefault();
+
+              fileInput?.click();
+            }
+          }
+        );
+      }
+
+
+      /* ===================================================
+         SETTINGS
+         =================================================== */
+
+      variation?.addEventListener(
+        "input",
+        () => {
+
+          if (variationValue) {
+
+            variationValue.textContent =
+              variation.value;
+          }
+        }
+      );
+
+
+      /* ===================================================
+         ACTIONS
+         =================================================== */
+
+      document
+        .querySelectorAll("[data-create-action]")
+        .forEach((button) => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const action =
+                button.dataset.createAction;
+
+
+              switch (action) {
+
+                case "clear-prompt":
+
+                  if (prompt) {
+
+                    prompt.value = "";
+
+                    updatePromptCounter();
+
+                    prompt.focus();
+                  }
+
+                  notify(
+                    "Prompt cleared."
+                  );
+
+                  break;
+
+
+                case "enhance-prompt":
+
+                  if (
+                    !prompt ||
+                    !prompt.value.trim()
+                  ) {
+
+                    notify(
+                      "Write a prompt first, then ToonVerse AI can enhance it."
+                    );
+
+                    break;
+                  }
+
+                  notify(
+                    "Prompt enhancement engine will connect here."
+                  );
+
+                  break;
+
+
+                case "voice":
+
+                  notify(
+                    "Voice prompt foundation is ready. Microphone services will connect here."
+                  );
+
+                  break;
+
+
+                case "save-draft":
+
+                  try {
+
+                    localStorage.setItem(
+                      "toonverse-create-draft",
+                      JSON.stringify({
+                        prompt:
+                          prompt?.value || "",
+
+                        savedAt:
+                          new Date().toISOString()
+                      })
+                    );
+
+                    notify(
+                      "Draft saved on this device.",
+                      "success"
+                    );
+
+                  } catch {
+
+                    notify(
+                      "Draft could not be saved on this device.",
+                      "error"
+                    );
+                  }
+
+                  break;
+
+
+                case "settings":
+
+                  notify(
+                    "Generation settings are available on larger screens. Mobile settings drawer will connect here."
+                  );
+
+                  break;
+
+
+                case "generate":
+
+                  const promptValue =
+                    prompt?.value.trim() || "";
+
+                  const hasFiles =
+                    Boolean(
+                      fileInput?.files?.length
+                    );
+
+
+                  if (
+                    !promptValue &&
+                    !hasFiles
+                  ) {
+
+                    notify(
+                      "Add a prompt or reference media before generating."
+                    );
+
+                    prompt?.focus();
+
+                    return;
+                  }
+
+
+                  notify(
+                    "Create Studio is ready. The secure AI generation backend will connect at this action.",
+                    "success"
+                  );
+
+                  break;
+
+
+                default:
+
+                  break;
+              }
+            }
+          );
+        });
+
+
+      /* ===================================================
+         DRAFT RECOVERY
+         =================================================== */
+
+      try {
+
+        const savedDraft =
+          localStorage.getItem(
+            "toonverse-create-draft"
+          );
+
+        if (savedDraft && prompt) {
+
+          const parsed =
+            JSON.parse(savedDraft);
+
+          if (
+            parsed &&
+            typeof parsed.prompt === "string" &&
+            parsed.prompt.trim() &&
+            !prompt.value
+          ) {
+
+            prompt.value =
+              parsed.prompt;
+
+            updatePromptCounter();
+
+            notify(
+              "Previous Create Studio draft restored.",
+              "success"
+            );
+          }
+        }
+
+      } catch (error) {
+
+        console.warn(
+          "ToonVerse AI draft recovery:",
+          error
+        );
+      }
+
+    });
+  </script>
 
 </body>
 </html>
