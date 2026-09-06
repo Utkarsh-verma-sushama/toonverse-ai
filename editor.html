@@ -3000,7 +3000,7 @@ canvasImage.style.transform = "rotate(0deg)";
     );
   }
 
-
+anchor.remove();
   /* ===================================================
      NEW PROJECT
      =================================================== */
@@ -3024,7 +3024,8 @@ canvasImage.style.transform = "rotate(0deg)";
     canvasImage.removeAttribute(
       "src"
     );
-
+canvasImage.dataset.rotation = "0";
+canvasImage.style.transform = "rotate(0deg)";
     canvasImage.hidden = true;
 
     placeholder.hidden = false;
