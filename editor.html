@@ -2639,11 +2639,38 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
 
-          if (operation === "rotate") {
+          
 
-            notify(
-              "Rotate control selected. Non-destructive transform engine will connect here."
-            );
+            
+              
+            if (operation === "rotate") {
+
+  const currentRotation =
+    Number(canvasImage.dataset.rotation || 0);
+
+  const nextRotation =
+    (currentRotation + 90) % 360;
+
+  canvasImage.dataset.rotation =
+    String(nextRotation);
+
+  canvasImage.style.transform =
+    `rotate(${nextRotation}deg)`;
+
+  canvasImage.style.transformOrigin =
+    "center center";
+
+  setStatus(
+    `Rotated ${nextRotation}°`
+  );
+
+  notify(
+    `Image rotated to ${nextRotation}°`,
+    "success"
+  );
+
+  return;
+}
 
             return;
           }
