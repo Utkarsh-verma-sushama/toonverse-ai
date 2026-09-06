@@ -2718,7 +2718,41 @@ canvasImage.style.transform = "rotate(0deg)";
 
   return;
 }
+if (operation === "flip") {
 
+  const currentFlip =
+    canvasImage.dataset.flip === "true";
+
+  const nextFlip =
+    !currentFlip;
+
+  canvasImage.dataset.flip =
+    String(nextFlip);
+
+  const rotation =
+    Number(canvasImage.dataset.rotation || 0);
+
+  canvasImage.style.transform =
+    `rotate(${rotation}deg) scaleX(${nextFlip ? -1 : 1})`;
+
+  canvasImage.style.transformOrigin =
+    "center center";
+
+  setStatus(
+    nextFlip
+      ? "Image flipped horizontally"
+      : "Image flip reset"
+  );
+
+  notify(
+    nextFlip
+      ? "Image flipped horizontally."
+      : "Image flip reset.",
+    "success"
+  );
+
+  return;
+}
             
           
 
