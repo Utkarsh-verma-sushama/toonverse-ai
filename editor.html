@@ -2368,6 +2368,62 @@ button{
 
     <section class="property-group">
 
+      <h3 class="property-title">Stickers & Frames</h3>
+
+      <div class="property-row">
+        <span class="property-label">Sticker</span>
+        <select id="sticker-choice" class="editor-select">
+          <option value="🌟">Star</option>
+          <option value="❤️">Heart</option>
+          <option value="✨">Sparkles</option>
+          <option value="🔥">Fire</option>
+          <option value="🎉">Celebration</option>
+          <option value="😎">Cool Face</option>
+          <option value="👍">Thumbs Up</option>
+          <option value="📍">Location</option>
+          <option value="💬">Message</option>
+          <option value="👑">Crown</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Sticker Size</span>
+        <input id="sticker-size" type="range" min="24" max="500" value="120">
+      </div>
+
+      <button class="top-button primary-button" id="add-sticker" type="button">
+        Add Sticker Layer
+      </button>
+
+      <div class="property-row">
+        <span class="property-label">Frame Style</span>
+        <select id="frame-style" class="editor-select">
+          <option value="classic">Classic</option>
+          <option value="rounded">Rounded</option>
+          <option value="double">Double</option>
+          <option value="neon">Neon</option>
+          <option value="film">Film</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Frame Color</span>
+        <input id="frame-color" class="editor-input" type="color" value="#ffffff">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Frame Width</span>
+        <input id="frame-width" type="range" min="4" max="120" value="28">
+      </div>
+
+      <button class="top-button primary-button" id="add-frame" type="button">
+        Add Frame Layer
+      </button>
+
+    </section>
+
+    <section class="property-group">
+
       <h3 class="property-title">Layer Position</h3>
 
       <div class="property-row">
@@ -2852,6 +2908,21 @@ document.addEventListener(
 
     const applyShapeButton =
       $("apply-shape");
+
+    const stickerChoice =
+      $("sticker-choice");
+
+    const stickerSize =
+      $("sticker-size");
+
+    const frameStyle =
+      $("frame-style");
+
+    const frameColor =
+      $("frame-color");
+
+    const frameWidth =
+      $("frame-width");
 
     const contentX =
       $("content-x");
@@ -7487,6 +7558,481 @@ document.addEventListener(
     );
 
 
+    function createStickerLayer() {
+
+      if (
+        !currentFile
+      ) {
+
+        notify(
+          "Import an image before adding a sticker.",
+          "warning"
+        );
+
+        return false;
+      }
+
+      pushUndo(
+        "Before Add Sticker"
+      );
+
+      const layerCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      layerCanvas.width =
+        work.width;
+
+      layerCanvas.height =
+        work.height;
+
+      const size =
+        Math.max(
+          24,
+          Math.min(
+            500,
+            Number(
+              stickerSize.value
+            ) ||
+            120
+          )
+        );
+
+      const number =
+        layers.filter(
+          layer =>
+            layer.name?.startsWith(
+              "Sticker"
+            )
+        ).length +
+        1;
+
+      const layer = {
+
+        id:
+          `layer-${Date.now()}-${layerCounter++}`,
+
+        name:
+          `Sticker ${number}`,
+
+        kind:
+          "text",
+
+        contentData: {
+
+          text:
+            stickerChoice.value,
+
+          font:
+            "Arial",
+
+          size,
+
+          color:
+            "#ffffff",
+
+          align:
+            "center",
+
+          x:
+            Math.max(
+              0,
+              work.width /
+              2 -
+              size
+            ),
+
+          y:
+            Math.max(
+              0,
+              work.height /
+              2 -
+              size
+            ),
+
+          width:
+            Math.min(
+              work.width,
+              size *
+              2
+            ),
+
+          height:
+            Math.min(
+              work.height,
+              size *
+              2
+            ),
+
+          sticker:
+            true
+        },
+
+        canvas:
+          layerCanvas,
+
+        visible:
+          true,
+
+        locked:
+          false,
+
+        opacity:
+          1,
+
+        blendMode:
+          "source-over",
+
+        groupId:
+          null
+      };
+
+      renderTextLayer(
+        layer
+      );
+
+      layers.push(
+        layer
+      );
+
+      selectLayer(
+        layer.id,
+        false
+      );
+
+      renderAll();
+      renderLayerList();
+
+      addHistoryMessage(
+        `${layer.name} added`
+      );
+
+      notify(
+        "Editable sticker layer added.",
+        "success"
+      );
+
+      return true;
+    }
+
+    function renderFrameLayer(
+      layer
+    ) {
+
+      const context =
+        layer.canvas.getContext(
+          "2d"
+        );
+
+      const content =
+        layer.contentData;
+
+      const width =
+        Math.max(
+          4,
+          Math.min(
+            Math.min(
+              layer.canvas.width,
+              layer.canvas.height
+            ) /
+            4,
+            Number(
+              content.width
+            ) ||
+            28
+          )
+        );
+
+      const inset =
+        width /
+        2 +
+        2;
+
+      context.clearRect(
+        0,
+        0,
+        layer.canvas.width,
+        layer.canvas.height
+      );
+
+      context.save();
+
+      context.strokeStyle =
+        content.color;
+
+      context.lineWidth =
+        width;
+
+      context.lineJoin =
+        "round";
+
+      if (
+        content.style ===
+        "neon"
+      ) {
+
+        context.shadowColor =
+          content.color;
+
+        context.shadowBlur =
+          width *
+          .8;
+      }
+
+      const radius =
+        content.style ===
+        "rounded"
+        ? Math.min(
+            48,
+            width *
+            1.8
+          )
+        : 0;
+
+      context.beginPath();
+
+      if (
+        radius &&
+        typeof context.roundRect ===
+        "function"
+      ) {
+
+        context.roundRect(
+          inset,
+          inset,
+          layer.canvas.width -
+          inset *
+          2,
+          layer.canvas.height -
+          inset *
+          2,
+          radius
+        );
+
+      } else {
+
+        context.rect(
+          inset,
+          inset,
+          layer.canvas.width -
+          inset *
+          2,
+          layer.canvas.height -
+          inset *
+          2
+        );
+      }
+
+      context.stroke();
+
+      if (
+        content.style ===
+        "double"
+      ) {
+
+        context.lineWidth =
+          Math.max(
+            2,
+            width /
+            4
+          );
+
+        const secondInset =
+          inset +
+          width *
+          1.35;
+
+        context.strokeRect(
+          secondInset,
+          secondInset,
+          Math.max(
+            1,
+            layer.canvas.width -
+            secondInset *
+            2
+          ),
+          Math.max(
+            1,
+            layer.canvas.height -
+            secondInset *
+            2
+          )
+        );
+
+      } else if (
+        content.style ===
+        "film"
+      ) {
+
+        context.fillStyle =
+          content.color;
+
+        const hole =
+          Math.max(
+            5,
+            width *
+            .32
+          );
+
+        const gap =
+          hole *
+          1.8;
+
+        for (
+          let x =
+            width;
+          x <
+            layer.canvas.width -
+            width;
+          x +=
+            gap
+        ) {
+
+          context.clearRect(
+            x,
+            width *
+            .2,
+            hole,
+            width *
+            .45
+          );
+
+          context.clearRect(
+            x,
+            layer.canvas.height -
+            width *
+            .65,
+            hole,
+            width *
+            .45
+          );
+        }
+      }
+
+      context.restore();
+    }
+
+    function createFrameLayer() {
+
+      if (
+        !currentFile
+      ) {
+
+        notify(
+          "Import an image before adding a frame.",
+          "warning"
+        );
+
+        return false;
+      }
+
+      pushUndo(
+        "Before Add Frame"
+      );
+
+      const layerCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      layerCanvas.width =
+        work.width;
+
+      layerCanvas.height =
+        work.height;
+
+      const number =
+        layers.filter(
+          layer =>
+            layer.kind ===
+            "frame"
+        ).length +
+        1;
+
+      const layer = {
+
+        id:
+          `layer-${Date.now()}-${layerCounter++}`,
+
+        name:
+          `Frame ${number}`,
+
+        kind:
+          "frame",
+
+        contentData: {
+
+          style:
+            frameStyle.value,
+
+          color:
+            frameColor.value,
+
+          width:
+            Number(
+              frameWidth.value
+            ) ||
+            28
+        },
+
+        canvas:
+          layerCanvas,
+
+        visible:
+          true,
+
+        locked:
+          false,
+
+        opacity:
+          1,
+
+        blendMode:
+          "source-over",
+
+        groupId:
+          null
+      };
+
+      renderFrameLayer(
+        layer
+      );
+
+      layers.push(
+        layer
+      );
+
+      selectLayer(
+        layer.id,
+        false
+      );
+
+      renderAll();
+      renderLayerList();
+
+      addHistoryMessage(
+        `${layer.name} added`
+      );
+
+      notify(
+        "Export-ready frame layer added.",
+        "success"
+      );
+
+      return true;
+    }
+
+    $("add-sticker").addEventListener(
+      "click",
+      createStickerLayer
+    );
+
+    $("add-frame").addEventListener(
+      "click",
+      createFrameLayer
+    );
+
     function isTransformableLayer(
       layer
     ) {
@@ -8699,6 +9245,34 @@ document.addEventListener(
 
               if (
                 operation ===
+                "sticker"
+              ) {
+
+                setOperation(
+                  operation
+                );
+
+                createStickerLayer();
+
+                return;
+              }
+
+              if (
+                operation ===
+                "frame"
+              ) {
+
+                setOperation(
+                  operation
+                );
+
+                createFrameLayer();
+
+                return;
+              }
+
+              if (
+                operation ===
                 "add-image"
               ) {
 
@@ -8740,8 +9314,6 @@ document.addEventListener(
                 [
                   "magic-select",
                   "perspective",
-                  "sticker",
-                  "frame",
                   "collage",
                   "blend-mode"
                 ];
