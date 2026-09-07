@@ -2198,6 +2198,11 @@ button{
       </div>
 
       <div class="property-row">
+        <span class="property-label">Magic Tolerance</span>
+        <input id="magic-tolerance" type="range" min="0" max="100" value="24">
+      </div>
+
+      <div class="property-row">
         <span class="property-label">Adjustment</span>
         <select id="selection-adjustment" class="editor-select">
           <option value="brightness">Brightness</option>
@@ -2905,6 +2910,9 @@ document.addEventListener(
     const selectionFeather =
       $("selection-feather");
 
+    const magicTolerance =
+      $("magic-tolerance");
+
     const selectionAdjustment =
       $("selection-adjustment");
 
@@ -3091,6 +3099,9 @@ document.addEventListener(
 
     let lassoPoints =
       [];
+
+    let selectionKind =
+      null;
 
     const selectionMask =
       document.createElement(
@@ -9662,6 +9673,7 @@ document.addEventListener(
                   "select",
                   "rectangle-select",
                   "lasso",
+                  "magic-select",
                   "heal",
                   "clone",
                   "dodge",
@@ -9693,8 +9705,9 @@ document.addEventListener(
 
                 if (
                   [
-                  "rectangle-select",
-                    "lasso"
+                    "rectangle-select",
+                    "lasso",
+                    "magic-select"
                   ].includes(
                     operation
                   )
@@ -9933,7 +9946,6 @@ document.addEventListener(
 
               const frontEndHooks =
                 [
-                  "magic-select",
                   "perspective",
                   "blend-mode"
                 ];
@@ -10512,9 +10524,342 @@ document.addEventListener(
         }
       );
 
+    function createMagicSelection(
+      point
+    ) {
+
+      composite.width =
+        work.width;
+
+      composite.height =
+        work.height;
+
+      compositeContext.clearRect(
+        0,
+        0,
+        work.width,
+        work.height
+      );
+
+      layers.forEach(
+        layer => {
+
+          if (
+            layer.visible
+          ) {
+
+            compositeContext.save();
+
+            compositeContext.globalAlpha =
+              Number.isFinite(
+                layer.opacity
+              )
+              ? layer.opacity
+              : 1;
+
+            compositeContext.globalCompositeOperation =
+              layer.blendMode ||
+              "source-over";
+
+            compositeContext.drawImage(
+              layer.canvas,
+              0,
+              0
+            );
+
+            compositeContext.restore();
+          }
+        }
+      );
+
+      const source =
+        compositeContext.getImageData(
+          0,
+          0,
+          work.width,
+          work.height
+        );
+
+      const startX =
+        Math.max(
+          0,
+          Math.min(
+            work.width -
+            1,
+            Math.floor(
+              point.x
+            )
+          )
+        );
+
+      const startY =
+        Math.max(
+          0,
+          Math.min(
+            work.height -
+            1,
+            Math.floor(
+              point.y
+            )
+          )
+        );
+
+      const startIndex =
+        (
+          startY *
+          work.width +
+          startX
+        ) *
+        4;
+
+      const target = [
+        source.data[startIndex],
+        source.data[startIndex + 1],
+        source.data[startIndex + 2],
+        source.data[startIndex + 3]
+      ];
+
+      const tolerance =
+        Number(
+          magicTolerance.value
+        ) *
+        2.55;
+
+      const pixelCount =
+        work.width *
+        work.height;
+
+      const visited =
+        new Uint8Array(
+          pixelCount
+        );
+
+      const queue =
+        new Int32Array(
+          pixelCount
+        );
+
+      let head =
+        0;
+
+      let tail =
+        1;
+
+      queue[0] =
+        startY *
+        work.width +
+        startX;
+
+      visited[
+        queue[0]
+      ] =
+        1;
+
+      selectionMask.width =
+        work.width;
+
+      selectionMask.height =
+        work.height;
+
+      const maskData =
+        selectionMaskContext.createImageData(
+          work.width,
+          work.height
+        );
+
+      let minX =
+        work.width;
+
+      let minY =
+        work.height;
+
+      let maxX =
+        -1;
+
+      let maxY =
+        -1;
+
+      while (
+        head <
+        tail
+      ) {
+
+        const pixelIndex =
+          queue[
+            head++
+          ];
+
+        const dataIndex =
+          pixelIndex *
+          4;
+
+        const difference =
+          Math.max(
+            Math.abs(
+              source.data[dataIndex] -
+              target[0]
+            ),
+            Math.abs(
+              source.data[dataIndex + 1] -
+              target[1]
+            ),
+            Math.abs(
+              source.data[dataIndex + 2] -
+              target[2]
+            ),
+            Math.abs(
+              source.data[dataIndex + 3] -
+              target[3]
+            )
+          );
+
+        if (
+          difference >
+          tolerance
+        ) {
+
+          continue;
+        }
+
+        maskData.data[
+          dataIndex +
+          3
+        ] =
+          255;
+
+        const x =
+          pixelIndex %
+          work.width;
+
+        const y =
+          Math.floor(
+            pixelIndex /
+            work.width
+          );
+
+        minX =
+          Math.min(
+            minX,
+            x
+          );
+
+        minY =
+          Math.min(
+            minY,
+            y
+          );
+
+        maxX =
+          Math.max(
+            maxX,
+            x
+          );
+
+        maxY =
+          Math.max(
+            maxY,
+            y
+          );
+
+        const neighbours = [
+          x > 0
+          ? pixelIndex - 1
+          : -1,
+          x < work.width - 1
+          ? pixelIndex + 1
+          : -1,
+          y > 0
+          ? pixelIndex - work.width
+          : -1,
+          y < work.height - 1
+          ? pixelIndex + work.width
+          : -1
+        ];
+
+        neighbours.forEach(
+          neighbour => {
+
+            if (
+              neighbour >=
+              0 &&
+              !visited[
+                neighbour
+              ]
+            ) {
+
+              visited[
+                neighbour
+              ] =
+                1;
+
+              queue[
+                tail++
+              ] =
+                neighbour;
+            }
+          }
+        );
+      }
+
+      if (
+        maxX <
+        minX ||
+        maxY <
+        minY
+      ) {
+
+        notify(
+          "No matching area was found.",
+          "warning"
+        );
+
+        return;
+      }
+
+      selectionMaskContext.putImageData(
+        maskData,
+        0,
+        0
+      );
+
+      selectionRect = {
+        x:
+          minX,
+        y:
+          minY,
+        w:
+          maxX -
+          minX +
+          1,
+        h:
+          maxY -
+          minY +
+          1
+      };
+
+      lassoPoints =
+        [];
+
+      selectionKind =
+        "magic";
+
+      updatePixelSelectionOverlay();
+
+      addHistoryMessage(
+        "Magic selection created"
+      );
+
+      notify(
+        "Connected color area selected. Copy, delete or adjust it from Properties.",
+        "success"
+      );
+    }
+
     function hasPixelSelection() {
 
       return Boolean(
+        selectionKind ===
+        "magic" ||
         selectionRect ||
         lassoPoints.length >
         2
@@ -10522,6 +10867,18 @@ document.addEventListener(
     }
 
     function rebuildSelectionMask() {
+
+      if (
+        selectionKind ===
+        "magic" &&
+        selectionMask.width ===
+        work.width &&
+        selectionMask.height ===
+        work.height
+      ) {
+
+        return;
+      }
 
       selectionMask.width =
         work.width;
@@ -10748,6 +11105,9 @@ document.addEventListener(
       lassoPoints =
         [];
 
+      selectionKind =
+        null;
+
       selectionMaskContext.clearRect(
         0,
         0,
@@ -10779,7 +11139,7 @@ document.addEventListener(
       ) {
 
         notify(
-          "Create a rectangle or lasso selection first.",
+          "Create a rectangle, lasso or Magic Select selection first.",
           "warning"
         );
 
@@ -11404,6 +11764,20 @@ document.addEventListener(
         }
 
         if (
+          activeOperation ===
+          "magic-select"
+        ) {
+
+          createMagicSelection(
+            renderedToWorkPoint(
+              point
+            )
+          );
+
+          return;
+        }
+
+        if (
           [
             "rectangle-select",
             "lasso"
@@ -11428,6 +11802,9 @@ document.addEventListener(
             lassoPoints =
               [];
 
+            selectionKind =
+              "rectangle";
+
             selectionRect = {
               x:
                 workPoint.x,
@@ -11443,6 +11820,9 @@ document.addEventListener(
 
             selectionRect =
               null;
+
+            selectionKind =
+              "lasso";
 
             lassoPoints =
               [
