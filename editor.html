@@ -538,6 +538,11 @@ button{
   background:rgba(118,92,255,.12)
 }
 
+.layer-item.multi-selected{
+  outline:2px solid rgba(45,212,191,.75);
+  outline-offset:-2px
+}
+
 .layer-thumb{
   width:32px;
   height:32px;
@@ -1547,6 +1552,21 @@ button{
           <span class="tool-name">Move Down</span>
         </button>
 
+        <button class="tool-button" data-layer-action="multi-select">
+          <span class="tool-icon">☑</span>
+          <span class="tool-name">Multi Select</span>
+        </button>
+
+        <button class="tool-button" data-layer-action="group">
+          <span class="tool-icon">▣</span>
+          <span class="tool-name">Group</span>
+        </button>
+
+        <button class="tool-button" data-layer-action="ungroup">
+          <span class="tool-icon">▢</span>
+          <span class="tool-name">Ungroup</span>
+        </button>
+
         <button
           class="tool-button"
           data-editor-operation="blend-mode"
@@ -2201,6 +2221,37 @@ button{
         Layers
       </h3>
 
+      <div class="property-row">
+        <span class="property-label">Name</span>
+        <input id="layer-name-input" class="editor-input" type="text" maxlength="80" value="Background">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Layer Opacity</span>
+        <input id="layer-opacity-input" type="range" min="0" max="100" value="100">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Blend</span>
+        <select id="layer-blend-input" class="editor-select">
+          <option value="source-over">Normal</option>
+          <option value="multiply">Multiply</option>
+          <option value="screen">Screen</option>
+          <option value="overlay">Overlay</option>
+          <option value="darken">Darken</option>
+          <option value="lighten">Lighten</option>
+          <option value="color-dodge">Color Dodge</option>
+          <option value="color-burn">Color Burn</option>
+          <option value="hard-light">Hard Light</option>
+          <option value="soft-light">Soft Light</option>
+          <option value="difference">Difference</option>
+        </select>
+      </div>
+
+      <button class="top-button primary-button" id="apply-layer-properties" type="button">
+        Apply Layer Properties
+      </button>
+
       <div
         class="layer-list"
         id="layer-list"
@@ -2618,6 +2669,18 @@ document.addEventListener(
     const opacityInput =
       $("opacity-input");
 
+    const layerNameInput =
+      $("layer-name-input");
+
+    const layerOpacityInput =
+      $("layer-opacity-input");
+
+    const layerBlendInput =
+      $("layer-blend-input");
+
+    const applyLayerProperties =
+      $("apply-layer-properties");
+
     const adjustmentInputs = {
 
       brightness:
@@ -2678,6 +2741,15 @@ document.addEventListener(
 
     let contentResize =
       null;
+
+    let multiSelectMode =
+      false;
+
+    const selectedLayerIds =
+      new Set();
+
+    let groupCounter =
+      1;
 
     let layerCounter =
       1;
@@ -3175,6 +3247,21 @@ document.addEventListener(
               locked:
                 layer.locked,
 
+              opacity:
+                Number.isFinite(
+                  layer.opacity
+                )
+                ? layer.opacity
+                : 1,
+
+              blendMode:
+                layer.blendMode ||
+                "source-over",
+
+              groupId:
+                layer.groupId ||
+                null,
+
               kind:
                 layer.kind ||
                 "raster",
@@ -3369,6 +3456,18 @@ document.addEventListener(
                     Boolean(
                       savedLayer.locked
                     ),
+                  opacity:
+                    Number.isFinite(
+                      savedLayer.opacity
+                    )
+                    ? savedLayer.opacity
+                    : 1,
+                  blendMode:
+                    savedLayer.blendMode ||
+                    "source-over",
+                  groupId:
+                    savedLayer.groupId ||
+                    null,
                   kind:
                     savedLayer.kind ||
                     "raster",
@@ -3415,6 +3514,25 @@ document.addEventListener(
 
         layers =
           restoredLayers;
+
+        groupCounter =
+          layers.reduce(
+            (
+              highest,
+              layer
+            ) =>
+              Math.max(
+                highest,
+                Number(
+                  layer.groupId?.match(
+                    /\d+/
+                  )?.[0]
+                ) ||
+                0
+              ),
+            0
+          ) +
+          1;
 
         activeLayerId =
           saved.activeLayerId ||
@@ -3618,6 +3736,21 @@ document.addEventListener(
 
               locked:
                 layer.locked,
+
+              opacity:
+                Number.isFinite(
+                  layer.opacity
+                )
+                ? layer.opacity
+                : 1,
+
+              blendMode:
+                layer.blendMode ||
+                "source-over",
+
+              groupId:
+                layer.groupId ||
+                null,
 
               kind:
                 layer.kind ||
@@ -3950,11 +4083,26 @@ document.addEventListener(
             layer.visible
           ) {
 
+            compositeContext.save();
+
+            compositeContext.globalAlpha =
+              Number.isFinite(
+                layer.opacity
+              )
+              ? layer.opacity
+              : 1;
+
+            compositeContext.globalCompositeOperation =
+              layer.blendMode ||
+              "source-over";
+
             compositeContext.drawImage(
               layer.canvas,
               0,
               0
             );
+
+            compositeContext.restore();
           }
         }
       );
@@ -4220,7 +4368,13 @@ document.addEventListener(
             visible:
               true,
             locked:
-              false
+              false,
+            opacity:
+              1,
+            blendMode:
+              "source-over",
+            groupId:
+              null
           }
         ];
 
@@ -4239,6 +4393,126 @@ document.addEventListener(
       ) ||
       null;
     }
+
+    function syncLayerProperties(
+      layer =
+        activeLayer()
+    ) {
+
+      const available =
+        Boolean(
+          layer
+        );
+
+      layerNameInput.disabled =
+        !available;
+
+      layerOpacityInput.disabled =
+        !available;
+
+      layerBlendInput.disabled =
+        !available;
+
+      applyLayerProperties.disabled =
+        !available;
+
+      if (
+        !available
+      ) {
+
+        return;
+      }
+
+      layerNameInput.value =
+        layer.name;
+
+      layerOpacityInput.value =
+        Math.round(
+          (
+            Number.isFinite(
+              layer.opacity
+            )
+            ? layer.opacity
+            : 1
+          ) *
+          100
+        );
+
+      layerBlendInput.value =
+        layer.blendMode ||
+        "source-over";
+    }
+
+    function updateLayerProperties() {
+
+      const layer =
+        activeLayer();
+
+      if (
+        !layer
+      ) {
+
+        return;
+      }
+
+      const nextName =
+        layerNameInput.value.trim();
+
+      if (
+        !nextName
+      ) {
+
+        notify(
+          "Layer name cannot be empty.",
+          "warning"
+        );
+
+        return;
+      }
+
+      pushUndo(
+        "Before Layer Properties"
+      );
+
+      layer.name =
+        nextName;
+
+      layer.opacity =
+        Math.max(
+          0,
+          Math.min(
+            1,
+            Number(
+              layerOpacityInput.value
+            ) /
+            100
+          )
+        );
+
+      layer.blendMode =
+        layerBlendInput.value;
+
+      renderLayerList();
+      renderAll();
+
+      addHistoryMessage(
+        "Layer properties updated"
+      );
+
+      notify(
+        "Layer properties updated.",
+        "success"
+      );
+    }
+
+    applyLayerProperties.disabled =
+      true;
+
+    applyLayerProperties.addEventListener(
+      "click",
+      updateLayerProperties
+    );
+
 
     function selectLayer(
       id,
@@ -4288,6 +4562,10 @@ document.addEventListener(
       );
 
       syncContentControls(
+        layer
+      );
+
+      syncLayerProperties(
         layer
       );
 
@@ -4342,6 +4620,13 @@ document.addEventListener(
               activeLayerId
             );
 
+            item.classList.toggle(
+              "multi-selected",
+              selectedLayerIds.has(
+                layer.id
+              )
+            );
+
             item.innerHTML =
               `
           <div class="layer-thumb">
@@ -4381,12 +4666,107 @@ document.addEventListener(
                 ? "Overlay Image"
                 : `${layer.canvas.width}×${layer.canvas.height} Raster`;
 
+            if (
+              layer.groupId
+            ) {
+
+              item
+                .querySelector(
+                  ".layer-meta"
+                )
+                .textContent +=
+                  ` • ${layer.groupId}`;
+            }
+
+            if (
+              (
+                layer.opacity ??
+                1
+              ) !==
+              1
+            ) {
+
+              item
+                .querySelector(
+                  ".layer-meta"
+                )
+                .textContent +=
+                  ` • ${Math.round(layer.opacity * 100)}%`;
+            }
+
+            if (
+              layer.blendMode &&
+              layer.blendMode !==
+              "source-over"
+            ) {
+
+              item
+                .querySelector(
+                  ".layer-meta"
+                )
+                .textContent +=
+                  ` • ${formatOperation(layer.blendMode)}`;
+            }
+
             item.addEventListener(
               "click",
-              () =>
+              () => {
+
+                if (
+                  multiSelectMode
+                ) {
+
+                  if (
+                    selectedLayerIds.has(
+                      layer.id
+                    )
+                  ) {
+
+                    selectedLayerIds.delete(
+                      layer.id
+                    );
+
+                  } else {
+
+                    selectedLayerIds.add(
+                      layer.id
+                    );
+                  }
+
+                  activeLayerId =
+                    layer.id;
+
+                  work =
+                    layer.canvas;
+
+                  wctx =
+                    work.getContext(
+                      "2d",
+                      {
+                        willReadFrequently:
+                          true
+                      }
+                    );
+
+                  renderLayerList();
+
+                  syncLayerProperties(
+                    layer
+                  );
+
+                  notify(
+                    `${selectedLayerIds.size} layer${selectedLayerIds.size === 1 ? "" : "s"} selected.`
+                  );
+
+                  return;
+                }
+
+                selectedLayerIds.clear();
+
                 selectLayer(
                   layer.id
-                )
+                );
+              }
             );
 
             layerList.appendChild(
@@ -9356,6 +9736,11 @@ document.addEventListener(
       compareMode =
         false;
 
+      multiSelectMode =
+        false;
+
+      selectedLayerIds.clear();
+
       resetVisualState();
 
       clearHistory();
@@ -9478,7 +9863,16 @@ document.addEventListener(
                     true,
 
                   locked:
-                    false
+                    false,
+
+                  opacity:
+                    1,
+
+                  blendMode:
+                    "source-over",
+
+                  groupId:
+                    null
 
                 };
 
@@ -9495,6 +9889,142 @@ document.addEventListener(
 
                 addHistoryMessage(
                   "Layer added"
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "multi-select"
+              ) {
+
+                multiSelectMode =
+                  !multiSelectMode;
+
+                if (
+                  !multiSelectMode
+                ) {
+
+                  selectedLayerIds.clear();
+                }
+
+                button.classList.toggle(
+                  "active",
+                  multiSelectMode
+                );
+
+                renderLayerList();
+
+                notify(
+                  multiSelectMode
+                  ? "Multi-select enabled. Tap layers to select them."
+                  : "Multi-select disabled."
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "group"
+              ) {
+
+                const selected =
+                  layers.filter(
+                    layer =>
+                      selectedLayerIds.has(
+                        layer.id
+                      )
+                  );
+
+                if (
+                  selected.length <
+                  2
+                ) {
+
+                  notify(
+                    "Select at least two layers in Multi Select mode.",
+                    "warning"
+                  );
+
+                  return;
+                }
+
+                pushUndo(
+                  "Before Group Layers"
+                );
+
+                const groupId =
+                  `Group ${groupCounter++}`;
+
+                selected.forEach(
+                  layer =>
+                    layer.groupId =
+                      groupId
+                );
+
+                renderLayerList();
+
+                addHistoryMessage(
+                  `${groupId} created`
+                );
+
+                notify(
+                  `${selected.length} layers grouped as ${groupId}.`,
+                  "success"
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "ungroup"
+              ) {
+
+                const groupId =
+                  active?.groupId;
+
+                if (
+                  !groupId
+                ) {
+
+                  notify(
+                    "Select a grouped layer first.",
+                    "warning"
+                  );
+
+                  return;
+                }
+
+                pushUndo(
+                  "Before Ungroup Layers"
+                );
+
+                layers
+                  .filter(
+                    layer =>
+                      layer.groupId ===
+                      groupId
+                  )
+                  .forEach(
+                    layer =>
+                      layer.groupId =
+                        null
+                  );
+
+                selectedLayerIds.clear();
+
+                renderLayerList();
+
+                addHistoryMessage(
+                  `${groupId} removed`
+                );
+
+                notify(
+                  "Layer group removed.",
+                  "success"
                 );
 
                 return;
@@ -9567,7 +10097,22 @@ document.addEventListener(
                     active.visible,
 
                   locked:
-                    false
+                    false,
+
+                  opacity:
+                    Number.isFinite(
+                      active.opacity
+                    )
+                    ? active.opacity
+                    : 1,
+
+                  blendMode:
+                    active.blendMode ||
+                    "source-over",
+
+                  groupId:
+                    active.groupId ||
+                    null
 
                 };
 
