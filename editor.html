@@ -2039,6 +2039,46 @@ button{
         >
       </div>
 
+      <div class="property-row">
+        <span class="property-label">Highlights</span>
+        <input id="highlights-input" type="range" min="-100" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Shadows</span>
+        <input id="shadows-input" type="range" min="-100" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Temperature</span>
+        <input id="temperature-input" type="range" min="-100" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Tint</span>
+        <input id="tint-input" type="range" min="-100" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Sharpness</span>
+        <input id="sharpness-input" type="range" min="0" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Clarity</span>
+        <input id="clarity-input" type="range" min="-100" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Noise Reduction</span>
+        <input id="noise-reduction-input" type="range" min="0" max="100" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Vignette</span>
+        <input id="vignette-input" type="range" min="0" max="100" value="0">
+      </div>
+
     </section>
 
     <section class="property-group">
@@ -2771,7 +2811,31 @@ document.addEventListener(
         $("grayscale-input"),
 
       sepia:
-        $("sepia-input")
+        $("sepia-input"),
+
+      highlights:
+        $("highlights-input"),
+
+      shadows:
+        $("shadows-input"),
+
+      temperature:
+        $("temperature-input"),
+
+      tint:
+        $("tint-input"),
+
+      sharpness:
+        $("sharpness-input"),
+
+      clarity:
+        $("clarity-input"),
+
+      noiseReduction:
+        $("noise-reduction-input"),
+
+      vignette:
+        $("vignette-input")
 
     };
 
@@ -2910,6 +2974,30 @@ document.addEventListener(
           0,
 
         sepia:
+          0,
+
+        highlights:
+          0,
+
+        shadows:
+          0,
+
+        temperature:
+          0,
+
+        tint:
+          0,
+
+        sharpness:
+          0,
+
+        clarity:
+          0,
+
+        noiseReduction:
+          0,
+
+        vignette:
           0
       }
 
@@ -4222,6 +4310,469 @@ document.addEventListener(
       `;
     }
 
+    function applyAdvancedPixelAdjustments(
+      targetContext,
+      width,
+      height
+    ) {
+
+      const adjust =
+        state.adjust;
+
+      const active =
+        adjust.highlights ||
+        adjust.shadows ||
+        adjust.temperature ||
+        adjust.tint ||
+        adjust.sharpness ||
+        adjust.clarity ||
+        adjust.noiseReduction ||
+        adjust.vignette;
+
+      if (
+        !active ||
+        width < 1 ||
+        height < 1
+      ) {
+
+        return;
+      }
+
+      let imageData;
+
+      try {
+
+        imageData =
+          targetContext.getImageData(
+            0,
+            0,
+            width,
+            height
+          );
+
+      } catch (
+        error
+      ) {
+
+        console.warn(
+          "Advanced adjustment skipped:",
+          error
+        );
+
+        return;
+      }
+
+      const pixels =
+        imageData.data;
+
+      const source =
+        new Uint8ClampedArray(
+          pixels
+        );
+
+      const clamp =
+        value =>
+          Math.max(
+            0,
+            Math.min(
+              255,
+              value
+            )
+          );
+
+      const highlights =
+        Number(
+          adjust.highlights
+        ) /
+        100;
+
+      const shadows =
+        Number(
+          adjust.shadows
+        ) /
+        100;
+
+      const temperature =
+        Number(
+          adjust.temperature
+        );
+
+      const tint =
+        Number(
+          adjust.tint
+        );
+
+      const clarity =
+        Number(
+          adjust.clarity
+        ) /
+        100;
+
+      for (
+        let index =
+          0;
+        index <
+          pixels.length;
+        index +=
+          4
+      ) {
+
+        let red =
+          pixels[index];
+
+        let green =
+          pixels[index + 1];
+
+        let blue =
+          pixels[index + 2];
+
+        const luminance =
+          (
+            red *
+            .2126 +
+            green *
+            .7152 +
+            blue *
+            .0722
+          ) /
+          255;
+
+        const highlightWeight =
+          Math.max(
+            0,
+            (
+              luminance -
+              .45
+            ) /
+            .55
+          );
+
+        const shadowWeight =
+          Math.max(
+            0,
+            (
+              .55 -
+              luminance
+            ) /
+            .55
+          );
+
+        const tonalShift =
+          (
+            highlights *
+            highlightWeight +
+            shadows *
+            shadowWeight
+          ) *
+          90;
+
+        red +=
+          tonalShift;
+
+        green +=
+          tonalShift;
+
+        blue +=
+          tonalShift;
+
+        red +=
+          temperature *
+          .55;
+
+        green +=
+          temperature *
+          .08;
+
+        blue -=
+          temperature *
+          .55;
+
+        red +=
+          tint *
+          .28;
+
+        green -=
+          tint *
+          .32;
+
+        blue +=
+          tint *
+          .28;
+
+        if (
+          clarity
+        ) {
+
+          const average =
+            (
+              red +
+              green +
+              blue
+            ) /
+            3;
+
+          const factor =
+            1 +
+            clarity *
+            .7;
+
+          red =
+            average +
+            (
+              red -
+              average
+            ) *
+            factor;
+
+          green =
+            average +
+            (
+              green -
+              average
+            ) *
+            factor;
+
+          blue =
+            average +
+            (
+              blue -
+              average
+            ) *
+            factor;
+        }
+
+        pixels[index] =
+          clamp(
+            red
+          );
+
+        pixels[index + 1] =
+          clamp(
+            green
+          );
+
+        pixels[index + 2] =
+          clamp(
+            blue
+          );
+      }
+
+      const detailAmount =
+        (
+          Number(
+            adjust.sharpness
+          ) -
+          Number(
+            adjust.noiseReduction
+          )
+        ) /
+        100;
+
+      if (
+        detailAmount
+      ) {
+
+        const mix =
+          Math.min(
+            .85,
+            Math.abs(
+              detailAmount
+            ) *
+            .7
+          );
+
+        for (
+          let y =
+            1;
+          y <
+            height -
+            1;
+          y++
+        ) {
+
+          for (
+            let x =
+              1;
+            x <
+              width -
+              1;
+            x++
+          ) {
+
+            const index =
+              (
+                y *
+                width +
+                x
+              ) *
+              4;
+
+            for (
+              let channel =
+                0;
+              channel <
+                3;
+              channel++
+            ) {
+
+              const center =
+                source[
+                  index +
+                  channel
+                ];
+
+              const average =
+                (
+                  source[
+                    index -
+                    4 +
+                    channel
+                  ] +
+                  source[
+                    index +
+                    4 +
+                    channel
+                  ] +
+                  source[
+                    index -
+                    width *
+                    4 +
+                    channel
+                  ] +
+                  source[
+                    index +
+                    width *
+                    4 +
+                    channel
+                  ]
+                ) /
+                4;
+
+              const target =
+                detailAmount >
+                0
+                ? center +
+                  (
+                    center -
+                    average
+                  )
+                : average;
+
+              pixels[
+                index +
+                channel
+              ] =
+                clamp(
+                  pixels[
+                    index +
+                    channel
+                  ] *
+                  (
+                    1 -
+                    mix
+                  ) +
+                  target *
+                  mix
+                );
+            }
+          }
+        }
+      }
+
+      const vignette =
+        Number(
+          adjust.vignette
+        ) /
+        100;
+
+      if (
+        vignette >
+        0
+      ) {
+
+        const centerX =
+          width /
+          2;
+
+        const centerY =
+          height /
+          2;
+
+        const maximum =
+          Math.hypot(
+            centerX,
+            centerY
+          );
+
+        for (
+          let y =
+            0;
+          y <
+            height;
+          y++
+        ) {
+
+          for (
+            let x =
+              0;
+            x <
+              width;
+            x++
+          ) {
+
+            const distance =
+              Math.hypot(
+                x -
+                centerX,
+                y -
+                centerY
+              ) /
+              maximum;
+
+            const edge =
+              Math.max(
+                0,
+                (
+                  distance -
+                  .35
+                ) /
+                .65
+              );
+
+            const factor =
+              1 -
+              edge *
+              edge *
+              vignette *
+              .85;
+
+            const index =
+              (
+                y *
+                width +
+                x
+              ) *
+              4;
+
+            pixels[index] *=
+              factor;
+
+            pixels[index + 1] *=
+              factor;
+
+            pixels[index + 2] *=
+              factor;
+          }
+        }
+      }
+
+      targetContext.putImageData(
+        imageData,
+        0,
+        0
+      );
+    }
+
     function transformedSize() {
 
       const swap =
@@ -4356,6 +4907,12 @@ document.addEventListener(
       );
 
       rctx.restore();
+
+      applyAdvancedPixelAdjustments(
+        rctx,
+        render.width,
+        render.height
+      );
 
       canvas.width =
         render.width;
@@ -4535,6 +5092,30 @@ document.addEventListener(
             0,
 
           sepia:
+            0,
+
+          highlights:
+            0,
+
+          shadows:
+            0,
+
+          temperature:
+            0,
+
+          tint:
+            0,
+
+          sharpness:
+            0,
+
+          clarity:
+            0,
+
+          noiseReduction:
+            0,
+
+          vignette:
             0
 
         }
@@ -7772,14 +8353,6 @@ document.addEventListener(
                 [
                   "magic-select",
                   "perspective",
-                  "highlights",
-                  "shadows",
-                  "temperature",
-                  "tint",
-                  "sharpness",
-                  "clarity",
-                  "noise-reduction",
-                  "vignette",
                   "sticker",
                   "frame",
                   "collage",
