@@ -2043,6 +2043,40 @@ button{
 
     <section class="property-group">
 
+      <h3 class="property-title">Selection</h3>
+
+      <div class="property-row">
+        <span class="property-label">Feather</span>
+        <input id="selection-feather" type="range" min="0" max="50" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Adjustment</span>
+        <select id="selection-adjustment" class="editor-select">
+          <option value="brightness">Brightness</option>
+          <option value="contrast">Contrast</option>
+          <option value="saturate">Saturation</option>
+          <option value="grayscale">Grayscale</option>
+          <option value="sepia">Sepia</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Amount</span>
+        <input id="selection-amount" type="range" min="0" max="200" value="120">
+      </div>
+
+      <div class="modal-actions">
+        <button class="top-button" id="selection-copy" type="button">Copy</button>
+        <button class="top-button" id="selection-delete" type="button">Delete</button>
+        <button class="top-button" id="selection-clear" type="button">Clear</button>
+        <button class="top-button primary-button" id="selection-apply-adjustment" type="button">Apply</button>
+      </div>
+
+    </section>
+
+    <section class="property-group">
+
       <h3 class="property-title">
         Brush
       </h3>
@@ -2612,6 +2646,15 @@ document.addEventListener(
     const brushColor =
       $("brush-color");
 
+    const selectionFeather =
+      $("selection-feather");
+
+    const selectionAdjustment =
+      $("selection-adjustment");
+
+    const selectionAmount =
+      $("selection-amount");
+
     const textContent =
       $("text-content");
 
@@ -2735,6 +2778,25 @@ document.addEventListener(
 
     let cropRect =
       null;
+
+    let selectionStart =
+      null;
+
+    let selectionRect =
+      null;
+
+    let lassoPoints =
+      [];
+
+    const selectionMask =
+      document.createElement(
+        "canvas"
+      );
+
+    const selectionMaskContext =
+      selectionMask.getContext(
+        "2d"
+      );
 
     let contentDrag =
       null;
@@ -3316,6 +3378,32 @@ document.addEventListener(
 
           activeOperation,
 
+          selectionState: {
+
+            rect:
+              selectionRect
+              ? {
+                  ...selectionRect
+                }
+              : null,
+
+            lasso:
+              lassoPoints.map(
+                point => ({
+                  ...point
+                })
+              ),
+
+            feather:
+              selectionFeather.value,
+
+            adjustment:
+              selectionAdjustment.value,
+
+            amount:
+              selectionAmount.value
+          },
+
           brush: {
 
             size:
@@ -3592,6 +3680,40 @@ document.addEventListener(
             "#ffffff";
         }
 
+        if (
+          saved.selectionState
+        ) {
+
+          selectionRect =
+            saved.selectionState.rect
+            ? {
+                ...saved.selectionState.rect
+              }
+            : null;
+
+          lassoPoints =
+            saved.selectionState.lasso?.map(
+              point => ({
+                ...point
+              })
+            ) ||
+            [];
+
+          selectionFeather.value =
+            saved.selectionState.feather ||
+            0;
+
+          selectionAdjustment.value =
+            saved.selectionState.adjustment ||
+            "brightness";
+
+          selectionAmount.value =
+            saved.selectionState.amount ||
+            120;
+
+          rebuildSelectionMask();
+        }
+
         documentName.textContent =
           saved.name ||
           "Recovered Project";
@@ -3610,6 +3732,13 @@ document.addEventListener(
         updateDocumentMeta();
 
         renderAll();
+
+        if (
+          hasPixelSelection()
+        ) {
+
+          updatePixelSelectionOverlay();
+        }
 
         notify(
           "Previous project recovered.",
@@ -5166,6 +5295,10 @@ document.addEventListener(
 
         resetVisualState();
 
+        clearPixelSelection(
+          false
+        );
+
         clearHistory();
 
         documentName.textContent =
@@ -5377,6 +5510,11 @@ document.addEventListener(
         ? "crosshair"
         : operation ===
           "crop"
+        ? "crosshair"
+        : operation ===
+          "rectangle-select" ||
+          operation ===
+          "lasso"
         ? "crosshair"
         : operation ===
           "select" &&
@@ -7301,7 +7439,9 @@ document.addEventListener(
                   "eraser",
                   "fill",
                   "color-picker",
-                  "select"
+                  "select",
+                  "rectangle-select",
+                  "lasso"
                 ].includes(
                   operation
                 )
@@ -7324,6 +7464,20 @@ document.addEventListener(
                 setOperation(
                   operation
                 );
+
+                if (
+                  [
+                    "rectangle-select",
+                    "lasso"
+                  ].includes(
+                    operation
+                  )
+                ) {
+
+                  clearPixelSelection(
+                    false
+                  );
+                }
 
                 notify(
                   `${formatOperation(
@@ -7508,7 +7662,6 @@ document.addEventListener(
 
               const frontEndHooks =
                 [
-                  "lasso",
                   "magic-select",
                   "perspective",
                   "highlights",
@@ -7948,6 +8101,585 @@ document.addEventListener(
         }
       );
 
+    function hasPixelSelection() {
+
+      return Boolean(
+        selectionRect ||
+        lassoPoints.length >
+        2
+      );
+    }
+
+    function rebuildSelectionMask() {
+
+      selectionMask.width =
+        work.width;
+
+      selectionMask.height =
+        work.height;
+
+      selectionMaskContext.clearRect(
+        0,
+        0,
+        work.width,
+        work.height
+      );
+
+      selectionMaskContext.fillStyle =
+        "#fff";
+
+      if (
+        lassoPoints.length >
+        2
+      ) {
+
+        selectionMaskContext.beginPath();
+
+        selectionMaskContext.moveTo(
+          lassoPoints[0].x,
+          lassoPoints[0].y
+        );
+
+        lassoPoints
+          .slice(
+            1
+          )
+          .forEach(
+            point =>
+              selectionMaskContext.lineTo(
+                point.x,
+                point.y
+              )
+          );
+
+        selectionMaskContext.closePath();
+        selectionMaskContext.fill();
+
+      } else if (
+        selectionRect
+      ) {
+
+        selectionMaskContext.fillRect(
+          selectionRect.x,
+          selectionRect.y,
+          selectionRect.w,
+          selectionRect.h
+        );
+      }
+    }
+
+    function selectionBounds() {
+
+      if (
+        selectionRect
+      ) {
+
+        return selectionRect;
+      }
+
+      if (
+        lassoPoints.length <
+        3
+      ) {
+
+        return null;
+      }
+
+      const xs =
+        lassoPoints.map(
+          point =>
+            point.x
+        );
+
+      const ys =
+        lassoPoints.map(
+          point =>
+            point.y
+        );
+
+      const x =
+        Math.min(
+          ...xs
+        );
+
+      const y =
+        Math.min(
+          ...ys
+        );
+
+      return {
+        x,
+        y,
+        w:
+          Math.max(
+            ...xs
+          ) -
+          x,
+        h:
+          Math.max(
+            ...ys
+          ) -
+          y
+      };
+    }
+
+    function updatePixelSelectionOverlay() {
+
+      const bounds =
+        selectionBounds();
+
+      if (
+        !bounds
+      ) {
+
+        selection.classList.remove(
+          "visible"
+        );
+
+        return;
+      }
+
+      selection.classList.remove(
+        "content-transform"
+      );
+
+      const canvasRect =
+        canvas.getBoundingClientRect();
+
+      const documentRect =
+        canvasDocument.getBoundingClientRect();
+
+      const scaleX =
+        canvasRect.width /
+        work.width;
+
+      const scaleY =
+        canvasRect.height /
+        work.height;
+
+      selection.style.left =
+        `${canvasRect.left - documentRect.left + bounds.x * scaleX}px`;
+
+      selection.style.top =
+        `${canvasRect.top - documentRect.top + bounds.y * scaleY}px`;
+
+      selection.style.width =
+        `${bounds.w * scaleX}px`;
+
+      selection.style.height =
+        `${bounds.h * scaleY}px`;
+
+      selectionLabel.textContent =
+        `${Math.round(bounds.w)} × ${Math.round(bounds.h)}`;
+
+      selection.classList.add(
+        "visible"
+      );
+    }
+
+    function featheredSelectionMask() {
+
+      rebuildSelectionMask();
+
+      const feather =
+        Number(
+          selectionFeather.value
+        ) ||
+        0;
+
+      if (
+        feather <=
+        0
+      ) {
+
+        return selectionMask;
+      }
+
+      const softened =
+        document.createElement(
+          "canvas"
+        );
+
+      softened.width =
+        work.width;
+
+      softened.height =
+        work.height;
+
+      const context =
+        softened.getContext(
+          "2d"
+        );
+
+      context.filter =
+        `blur(${feather}px)`;
+
+      context.drawImage(
+        selectionMask,
+        0,
+        0
+      );
+
+      return softened;
+    }
+
+    function clearPixelSelection(
+      announce =
+        true
+    ) {
+
+      selectionStart =
+        null;
+
+      selectionRect =
+        null;
+
+      lassoPoints =
+        [];
+
+      selectionMaskContext.clearRect(
+        0,
+        0,
+        selectionMask.width,
+        selectionMask.height
+      );
+
+      selection.classList.remove(
+        "visible"
+      );
+
+      if (
+        announce
+      ) {
+
+        notify(
+          "Selection cleared."
+        );
+      }
+    }
+
+    function requireEditableSelection() {
+
+      const layer =
+        activeLayer();
+
+      if (
+        !hasPixelSelection()
+      ) {
+
+        notify(
+          "Create a rectangle or lasso selection first.",
+          "warning"
+        );
+
+        return null;
+      }
+
+      if (
+        !layer ||
+        layer.locked
+      ) {
+
+        notify(
+          "Select an unlocked layer first.",
+          "warning"
+        );
+
+        return null;
+      }
+
+      return layer;
+    }
+
+    function copyPixelSelection() {
+
+      const layer =
+        requireEditableSelection();
+
+      if (
+        !layer
+      ) {
+
+        return;
+      }
+
+      pushUndo(
+        "Before Copy Selection"
+      );
+
+      const copied =
+        document.createElement(
+          "canvas"
+        );
+
+      copied.width =
+        work.width;
+
+      copied.height =
+        work.height;
+
+      const context =
+        copied.getContext(
+          "2d"
+        );
+
+      context.drawImage(
+        layer.canvas,
+        0,
+        0
+      );
+
+      context.globalCompositeOperation =
+        "destination-in";
+
+      context.drawImage(
+        featheredSelectionMask(),
+        0,
+        0
+      );
+
+      const copyLayer = {
+        id:
+          `layer-${Date.now()}-${layerCounter++}`,
+        name:
+          `${layer.name} Selection`,
+        kind:
+          "raster",
+        canvas:
+          copied,
+        visible:
+          true,
+        locked:
+          false,
+        opacity:
+          1,
+        blendMode:
+          "source-over",
+        groupId:
+          null
+      };
+
+      layers.splice(
+        layers.indexOf(
+          layer
+        ) +
+        1,
+        0,
+        copyLayer
+      );
+
+      selectLayer(
+        copyLayer.id,
+        false
+      );
+
+      renderAll();
+
+      addHistoryMessage(
+        "Selection copied to new layer"
+      );
+
+      notify(
+        "Selection copied to a new layer.",
+        "success"
+      );
+    }
+
+    function deletePixelSelection() {
+
+      const layer =
+        requireEditableSelection();
+
+      if (
+        !layer
+      ) {
+
+        return;
+      }
+
+      pushUndo(
+        "Before Delete Selection"
+      );
+
+      const context =
+        layer.canvas.getContext(
+          "2d"
+        );
+
+      context.save();
+      context.globalCompositeOperation =
+        "destination-out";
+      context.drawImage(
+        featheredSelectionMask(),
+        0,
+        0
+      );
+      context.restore();
+
+      layer.kind =
+        "raster";
+
+      layer.contentData =
+        null;
+
+      renderLayerList();
+      syncTextControls(
+        layer
+      );
+      syncShapeControls(
+        layer
+      );
+      syncContentControls(
+        layer
+      );
+
+      renderAll();
+
+      addHistoryMessage(
+        "Selected area deleted"
+      );
+
+      notify(
+        "Selected area deleted.",
+        "success"
+      );
+    }
+
+    function applySelectionAdjustment() {
+
+      const layer =
+        requireEditableSelection();
+
+      if (
+        !layer
+      ) {
+
+        return;
+      }
+
+      pushUndo(
+        "Before Selection Adjustment"
+      );
+
+      const adjusted =
+        document.createElement(
+          "canvas"
+        );
+
+      adjusted.width =
+        work.width;
+
+      adjusted.height =
+        work.height;
+
+      const context =
+        adjusted.getContext(
+          "2d"
+        );
+
+      const type =
+        selectionAdjustment.value;
+
+      const amount =
+        Number(
+          selectionAmount.value
+        );
+
+      context.filter =
+        `${type}(${amount}%)`;
+
+      context.drawImage(
+        layer.canvas,
+        0,
+        0
+      );
+
+      context.globalCompositeOperation =
+        "destination-in";
+
+      context.filter =
+        "none";
+
+      const mask =
+        featheredSelectionMask();
+
+      context.drawImage(
+        mask,
+        0,
+        0
+      );
+
+      const layerContext =
+        layer.canvas.getContext(
+          "2d"
+        );
+
+      layerContext.save();
+      layerContext.globalCompositeOperation =
+        "destination-out";
+      layerContext.drawImage(
+        mask,
+        0,
+        0
+      );
+      layerContext.restore();
+      layerContext.drawImage(
+        adjusted,
+        0,
+        0
+      );
+
+      layer.kind =
+        "raster";
+
+      layer.contentData =
+        null;
+
+      renderLayerList();
+      syncTextControls(
+        layer
+      );
+      syncShapeControls(
+        layer
+      );
+      syncContentControls(
+        layer
+      );
+
+      renderAll();
+
+      addHistoryMessage(
+        `Selection ${formatOperation(type)} applied`
+      );
+
+      notify(
+        "Adjustment applied inside the selection.",
+        "success"
+      );
+    }
+
+    $("selection-copy").addEventListener(
+      "click",
+      copyPixelSelection
+    );
+
+    $("selection-delete").addEventListener(
+      "click",
+      deletePixelSelection
+    );
+
+    $("selection-clear").addEventListener(
+      "click",
+      () =>
+        clearPixelSelection()
+    );
+
+    $("selection-apply-adjustment").addEventListener(
+      "click",
+      applySelectionAdjustment
+    );
+
+
     function startCropMode() {
 
       setOperation(
@@ -8073,6 +8805,12 @@ document.addEventListener(
         ) {
 
           updateCropOverlay();
+
+        } else if (
+          hasPixelSelection()
+        ) {
+
+          updatePixelSelectionOverlay();
         }
       }
     );
@@ -8244,6 +8982,58 @@ document.addEventListener(
           };
 
           updateCropOverlay();
+
+          return;
+        }
+
+        if (
+          [
+            "rectangle-select",
+            "lasso"
+          ].includes(
+            activeOperation
+          )
+        ) {
+
+          const workPoint =
+            renderedToWorkPoint(
+              point
+            );
+
+          selectionStart =
+            workPoint;
+
+          if (
+            activeOperation ===
+            "rectangle-select"
+          ) {
+
+            lassoPoints =
+              [];
+
+            selectionRect = {
+              x:
+                workPoint.x,
+              y:
+                workPoint.y,
+              w:
+                1,
+              h:
+                1
+            };
+
+          } else {
+
+            selectionRect =
+              null;
+
+            lassoPoints =
+              [
+                workPoint
+              ];
+          }
+
+          updatePixelSelectionOverlay();
 
           return;
         }
@@ -8546,6 +9336,109 @@ document.addEventListener(
         }
 
         if (
+          selectionStart &&
+          activeOperation ===
+          "rectangle-select"
+        ) {
+
+          const workPoint =
+            renderedToWorkPoint(
+              point
+            );
+
+          selectionRect = {
+            x:
+              Math.max(
+                0,
+                Math.min(
+                  selectionStart.x,
+                  workPoint.x
+                )
+              ),
+            y:
+              Math.max(
+                0,
+                Math.min(
+                  selectionStart.y,
+                  workPoint.y
+                )
+              ),
+            w:
+              Math.min(
+                work.width,
+                Math.max(
+                  selectionStart.x,
+                  workPoint.x
+                )
+              ) -
+              Math.max(
+                0,
+                Math.min(
+                  selectionStart.x,
+                  workPoint.x
+                )
+              ),
+            h:
+              Math.min(
+                work.height,
+                Math.max(
+                  selectionStart.y,
+                  workPoint.y
+                )
+              ) -
+              Math.max(
+                0,
+                Math.min(
+                  selectionStart.y,
+                  workPoint.y
+                )
+              )
+          };
+
+          updatePixelSelectionOverlay();
+
+          return;
+        }
+
+        if (
+          selectionStart &&
+          activeOperation ===
+          "lasso"
+        ) {
+
+          const workPoint =
+            renderedToWorkPoint(
+              point
+            );
+
+          const previous =
+            lassoPoints[
+              lassoPoints.length -
+              1
+            ];
+
+          if (
+            !previous ||
+            Math.hypot(
+              workPoint.x -
+              previous.x,
+              workPoint.y -
+              previous.y
+            ) >=
+            2
+          ) {
+
+            lassoPoints.push(
+              workPoint
+            );
+
+            updatePixelSelectionOverlay();
+          }
+
+          return;
+        }
+
+        if (
           contentDrag
         ) {
 
@@ -8667,6 +9560,32 @@ document.addEventListener(
           null;
 
         if (
+          selectionStart
+        ) {
+
+          selectionStart =
+            null;
+
+          rebuildSelectionMask();
+
+          updatePixelSelectionOverlay();
+
+          addHistoryMessage(
+            activeOperation ===
+            "lasso"
+            ? "Lasso selection created"
+            : "Rectangle selection created"
+          );
+
+          notify(
+            "Selection ready. Use Copy, Delete or Apply in Properties.",
+            "success"
+          );
+
+          return;
+        }
+
+        if (
           contentDrag
         ) {
 
@@ -8709,6 +9628,9 @@ document.addEventListener(
       () => {
 
         cropStart =
+          null;
+
+        selectionStart =
           null;
 
         contentDrag =
@@ -9229,6 +10151,10 @@ document.addEventListener(
 
       cropRect =
         null;
+
+      clearPixelSelection(
+        false
+      );
 
       selection
         .classList
