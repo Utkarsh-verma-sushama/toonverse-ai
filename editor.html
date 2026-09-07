@@ -2028,6 +2028,17 @@ button{
         >
       </div>
 
+      <div class="property-row">
+        <span class="property-label">Brush Opacity</span>
+        <input
+          id="brush-opacity"
+          type="range"
+          min="1"
+          max="100"
+          value="100"
+        >
+      </div>
+
     </section>
 
     <section class="property-group">
@@ -2376,6 +2387,12 @@ document.addEventListener(
 
     const brushSize =
       $("brush-size");
+
+    const brushHardness =
+      $("brush-hardness");
+
+    const brushOpacity =
+      $("brush-opacity");
 
     const brushColor =
       $("brush-color");
@@ -2975,7 +2992,23 @@ document.addEventListener(
 
           activeTool,
 
-          activeOperation
+          activeOperation,
+
+          brush: {
+
+            size:
+              brushSize.value,
+
+            hardness:
+              brushHardness.value,
+
+            opacity:
+              brushOpacity.value,
+
+            color:
+              brushColor.value
+
+          }
 
         }
       );
@@ -3175,6 +3208,27 @@ document.addEventListener(
         activeOperation =
           saved.activeOperation ||
           "select";
+
+        if (
+          saved.brush
+        ) {
+
+          brushSize.value =
+            saved.brush.size ||
+            25;
+
+          brushHardness.value =
+            saved.brush.hardness ||
+            80;
+
+          brushOpacity.value =
+            saved.brush.opacity ||
+            100;
+
+          brushColor.value =
+            saved.brush.color ||
+            "#ffffff";
+        }
 
         documentName.textContent =
           saved.name ||
@@ -4396,6 +4450,8 @@ document.addEventListener(
                 "paint"
               ) {
 
+                ensurePaintLayer();
+
                 setOperation(
                   "brush"
                 );
@@ -4464,6 +4520,90 @@ document.addEventListener(
           "crop"
         ? "crosshair"
         : "default";
+    }
+
+    function ensurePaintLayer() {
+
+      if (
+        !currentFile
+      ) {
+
+        return false;
+      }
+
+      const current =
+        activeLayer();
+
+      if (
+        current &&
+        current.name.startsWith(
+          "Paint Layer"
+        ) &&
+        !current.locked
+      ) {
+
+        return true;
+      }
+
+      pushUndo(
+        "Before Paint Layer"
+      );
+
+      const layerCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      layerCanvas.width =
+        work.width;
+
+      layerCanvas.height =
+        work.height;
+
+      const paintNumber =
+        layers.filter(
+          layer =>
+            layer.name.startsWith(
+              "Paint Layer"
+            )
+        ).length +
+        1;
+
+      const paintLayer = {
+
+        id:
+          `layer-${Date.now()}-${layerCounter++}`,
+
+        name:
+          `Paint Layer ${paintNumber}`,
+
+        canvas:
+          layerCanvas,
+
+        visible:
+          true,
+
+        locked:
+          false
+
+      };
+
+      layers.push(
+        paintLayer
+      );
+
+      selectLayer(
+        paintLayer.id,
+        false
+      );
+
+      renderAll();
+
+      addHistoryMessage(
+        `${paintLayer.name} created`
+      );
+
+      return true;
     }
 
     document
@@ -4643,6 +4783,20 @@ document.addEventListener(
                   operation
                 )
               ) {
+
+                if (
+                  [
+                    "brush",
+                    "pencil",
+                    "eraser",
+                    "fill"
+                  ].includes(
+                    operation
+                  )
+                ) {
+
+                  ensurePaintLayer();
+                }
 
                 setOperation(
                   operation
@@ -5671,18 +5825,36 @@ document.addEventListener(
           isDrawing
         ) {
 
-          const workPoint =
-            renderedToWorkPoint(
-              point
-            );
+          const samples =
+            event.getCoalescedEvents
+            ? event.getCoalescedEvents()
+            : [event];
 
-          drawStroke(
-            lastPoint,
-            workPoint
+          samples.forEach(
+            sample => {
+
+              const samplePoint =
+                canvasPoint(
+                  sample
+                );
+
+              const workPoint =
+                renderedToWorkPoint(
+                  samplePoint
+                );
+
+              drawStroke(
+                lastPoint,
+                workPoint,
+                false
+              );
+
+              lastPoint =
+                workPoint;
+            }
           );
 
-          lastPoint =
-            workPoint;
+          renderAll();
         }
       }
     );
@@ -5730,7 +5902,9 @@ document.addEventListener(
 
     function drawStroke(
       from,
-      to
+      to,
+      renderNow =
+        true
     ) {
 
       wctx.save();
@@ -5758,6 +5932,30 @@ document.addEventListener(
       wctx.strokeStyle =
         brushColor.value;
 
+      wctx.globalAlpha =
+        Number(
+          brushOpacity.value
+        ) /
+        100;
+
+      const softness =
+        1 -
+        Number(
+          brushHardness.value
+        ) /
+        100;
+
+      wctx.shadowBlur =
+        activeOperation ===
+        "eraser"
+        ? 0
+        : softness *
+          wctx.lineWidth *
+          .65;
+
+      wctx.shadowColor =
+        brushColor.value;
+
       wctx.globalCompositeOperation =
         activeOperation ===
         "eraser"
@@ -5780,7 +5978,12 @@ document.addEventListener(
 
       wctx.restore();
 
-      renderAll();
+      if (
+        renderNow
+      ) {
+
+        renderAll();
+      }
     }
 
     function hexToRgb(
@@ -7245,6 +7448,16 @@ document.addEventListener(
     );
 
     checkRecovery();
+
+    if (new URLSearchParams(location.search).get("qa") === "paint") {
+      const qaCanvas = document.createElement("canvas");
+      qaCanvas.width = 320;
+      qaCanvas.height = 240;
+      const qaContext = qaCanvas.getContext("2d");
+      qaContext.fillStyle = "#202840";
+      qaContext.fillRect(0, 0, 320, 240);
+      qaCanvas.toBlob(blob => blob && loadImage(new File([blob], "paint-qa.png", {type:"image/png"})), "image/png");
+    }
 
   }
 );
