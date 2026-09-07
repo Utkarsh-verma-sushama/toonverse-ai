@@ -10,29 +10,41 @@
 
   <meta
     name="description"
-    content="ToonVerse AI Unified AI Editor — professional creative workspace for image, video and AI-assisted editing."
+    content="ToonVerse AI Unified Creative Editor"
   >
 
-  <meta name="theme-color" content="#070b17">
-  <meta name="color-scheme" content="dark">
+  <meta
+    name="theme-color"
+    content="#070b17"
+  >
 
-  <title>Unified AI Editor — ToonVerse AI</title>
-
-  <link rel="stylesheet" href="./assets/css/main.css">
-  <link rel="stylesheet" href="./assets/css/components.css">
+  <title>
+    ToonVerse AI — Unified Creative Editor
+  </title>
 
   <style>
-    /* =====================================================
-       TOONVERSE AI — UNIFIED EDITOR
-       Stable V1 Workspace Foundation
-       ===================================================== */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --editor-topbar: 64px;
-      --editor-tools: 78px;
-      --editor-left: 260px;
-      --editor-right: 310px;
-      --editor-bottom: 48px;
+      --bg: #070b17;
+      --panel: #10182d;
+      --panel-2: #151c38;
+      --border: rgba(255,255,255,.10);
+      --primary: #765cff;
+      --primary-2: #ff3d9a;
+      --text: #ffffff;
+      --muted: #aeb8d6;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --topbar: 62px;
+      --commandbar: 48px;
+      --bottomnav: 58px;
     }
 
     html,
@@ -42,15 +54,24 @@
     }
 
     body {
-      margin: 0;
       overflow: hidden;
-      background: #070b17;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
     }
 
     button,
     input,
-    select {
+    select,
+    textarea {
       font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
     }
 
     .editor-app {
@@ -58,96 +79,189 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background: #070b17;
-      color: #fff;
+
+      background:
+        radial-gradient(
+          circle at 15% 10%,
+          rgba(118,92,255,.18),
+          transparent 30%
+        ),
+        radial-gradient(
+          circle at 90% 20%,
+          rgba(0,210,255,.12),
+          transparent 30%
+        ),
+        linear-gradient(
+          135deg,
+          #070b17,
+          #0c1430 55%,
+          #0b0f22
+        );
     }
 
-    /* =====================================================
+    /* =========================
        TOP BAR
-       ===================================================== */
+       ========================= */
 
     .editor-topbar {
-      min-height: var(--editor-topbar);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      min-height: var(--topbar);
 
-      padding:
-        max(8px, env(safe-area-inset-top))
-        12px
-        8px;
-
-      background: rgba(10, 15, 29, 0.97);
-      border-bottom: 1px solid rgba(255,255,255,.09);
-
-      z-index: 1000;
-    }
-
-    .editor-topbar-group {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .editor-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #fff;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .document-info {
-      min-width: 0;
-      margin-left: 5px;
-    }
-
-    .document-name {
-      max-width: 230px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: .88rem;
-      font-weight: 750;
-    }
-
-    .document-meta {
-      margin-top: 1px;
-      color: var(--text-muted);
-      font-size: .68rem;
-    }
-
-    .topbar-divider {
-      width: 1px;
-      height: 28px;
-      margin: 0 3px;
-      background: rgba(255,255,255,.1);
-    }
-
-    /* =====================================================
-       COMMAND TOOLBAR
-       ===================================================== */
-
-    .editor-commandbar {
-      min-height: 46px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
 
-      padding: 5px 10px;
+      padding:
+        max(8px, env(safe-area-inset-top))
+        10px
+        8px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(17,24,54,.97),
+          rgba(35,25,75,.96)
+        );
+
+      border-bottom:
+        1px solid var(--border);
+
+      z-index: 100;
+    }
+
+    .topbar-group {
+      min-width: 0;
+
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .home-button,
+    .top-button,
+    .command-button,
+    .rail-button,
+    .tool-button,
+    .mobile-button,
+    .small-button {
+
+      border:
+        1px solid rgba(255,255,255,.09);
+
+      color: #fff;
+
+      background:
+        rgba(255,255,255,.045);
+
+      cursor: pointer;
+    }
+
+    .home-button {
+      width: 38px;
+      height: 38px;
+
+      display: grid;
+      place-items: center;
+
+      border-radius: 10px;
+
+      text-decoration: none;
+
+      font-size: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      color: #fff;
+
+      font-size: 15px;
+      font-weight: 800;
+
+      text-decoration: none;
+
+      white-space: nowrap;
+    }
+
+    .document-info {
+      min-width: 0;
+    }
+
+    .document-name {
+      max-width: 200px;
+
+      overflow: hidden;
+
+      text-overflow: ellipsis;
+
+      white-space: nowrap;
+
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .document-meta {
+      margin-top: 2px;
+
+      color: var(--muted);
+
+      font-size: 10px;
+    }
+
+    .top-button {
+      min-height: 36px;
+
+      padding:
+        7px 10px;
+
+      border-radius: 9px;
+
+      font-size: 12px;
+
+      white-space: nowrap;
+    }
+
+    .primary-button {
+      background:
+        linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-2)
+        );
+
+      box-shadow:
+        0 8px 20px
+        rgba(118,92,255,.22);
+    }
+
+    /* =========================
+       COMMAND BAR
+       ========================= */
+
+    .commandbar {
+      min-height: var(--commandbar);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+
+      padding: 5px 8px;
 
       overflow-x: auto;
 
-      background: #0d1426;
-      border-bottom: 1px solid rgba(255,255,255,.08);
+      background:
+        rgba(11,17,34,.97);
+
+      border-bottom:
+        1px solid var(--border);
     }
 
     .command-group {
       flex: 0 0 auto;
+
       display: flex;
       align-items: center;
       gap: 5px;
@@ -155,202 +269,250 @@
 
     .command-button {
       min-height: 34px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
 
-      padding: 5px 9px;
+      padding:
+        6px 9px;
 
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: 9px;
+      border-radius: 8px;
 
-      background: rgba(255,255,255,.035);
-      color: var(--text-secondary);
+      font-size: 12px;
 
-      cursor: pointer;
-    }
-
-    .command-button:hover {
-      background: rgba(255,255,255,.075);
-      color: #fff;
+      white-space: nowrap;
     }
 
     .command-button:disabled {
-      opacity: .42;
+      opacity: .35;
       cursor: not-allowed;
     }
 
-    .command-label {
-      font-size: .76rem;
-      font-weight: 650;
+    .zoom-display {
+      min-width: 48px;
+
+      text-align: center;
+
+      color: var(--muted);
+
+      font-size: 11px;
     }
 
-    /* =====================================================
+    /* =========================
        MAIN EDITOR GRID
-       ===================================================== */
+       ========================= */
 
     .editor-body {
       min-height: 0;
+
       flex: 1;
 
       display: grid;
+
       grid-template-columns:
-        var(--editor-tools)
-        var(--editor-left)
-        minmax(0,1fr)
-        var(--editor-right);
+        72px
+        250px
+        minmax(0, 1fr)
+        285px;
     }
 
-    /* =====================================================
-       PRIMARY TOOL RAIL
-       ===================================================== */
+    /* =========================
+       TOOL RAIL
+       ========================= */
 
     .tool-rail {
       min-height: 0;
+
       overflow-y: auto;
 
-      padding: 8px 6px;
+      padding:
+        8px 5px;
 
-      background: #0b1120;
-      border-right: 1px solid rgba(255,255,255,.08);
+      background:
+        rgba(9,15,31,.97);
+
+      border-right:
+        1px solid var(--border);
     }
 
     .rail-button {
       width: 100%;
+
       min-height: 58px;
+
+      margin-bottom: 5px;
 
       display: grid;
       place-items: center;
+
       gap: 2px;
 
-      margin-bottom: 5px;
-      padding: 6px 3px;
+      padding:
+        6px 2px;
 
-      border: 1px solid transparent;
-      border-radius: 11px;
+      border-color:
+        transparent;
 
-      background: transparent;
-      color: var(--text-muted);
+      border-radius: 10px;
 
-      cursor: pointer;
+      color: var(--muted);
+
+      background:
+        transparent;
     }
 
-    .rail-button:hover,
-    .rail-button.active {
+    .rail-button.active,
+    .rail-button:hover {
       color: #fff;
-      background: rgba(124,92,255,.13);
-      border-color: rgba(124,92,255,.28);
+
+      border-color:
+        rgba(118,92,255,.35);
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(118,92,255,.23),
+          rgba(255,61,154,.10)
+        );
     }
 
     .rail-icon {
-      font-size: 1.25rem;
-      line-height: 1;
+      font-size: 20px;
     }
 
     .rail-label {
-      font-size: .61rem;
+      font-size: 9px;
       font-weight: 700;
     }
 
-    /* =====================================================
+    /* =========================
        LEFT PANEL
-       ===================================================== */
+       ========================= */
 
-    .editor-left {
+    .left-panel {
       min-width: 0;
+
       overflow-y: auto;
 
-      background: #0d1426;
-      border-right: 1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(
+          180deg,
+          rgba(14,21,42,.98),
+          rgba(19,18,49,.98)
+        );
+
+      border-right:
+        1px solid var(--border);
     }
 
-    .editor-panel-header {
+    .panel-header {
       position: sticky;
+
       top: 0;
-      z-index: 10;
 
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      z-index: 5;
 
-      padding: 10px 12px;
+      padding:
+        12px;
 
-      background: rgba(13,20,38,.97);
-      border-bottom: 1px solid rgba(255,255,255,.08);
+      background:
+        rgba(17,24,52,.98);
+
+      border-bottom:
+        1px solid var(--border);
     }
 
-    .editor-panel-title {
-      margin: 0;
-      font-size: .87rem;
+    .panel-title {
+      font-size: 14px;
       font-weight: 800;
     }
 
-    .editor-panel-content {
-      padding: 12px;
+    .panel-subtitle {
+      margin-top: 3px;
+
+      color: var(--muted);
+
+      font-size: 10px;
     }
 
-    .tool-section + .tool-section {
-      margin-top: 18px;
+    .panel-content {
+      padding:
+        12px;
+    }
+
+    .tool-section {
+      margin-bottom:
+        20px;
     }
 
     .tool-section-title {
-      margin: 0 0 8px;
-      color: var(--text-muted);
-      font-size: .69rem;
+      margin-bottom:
+        9px;
+
+      color: #dfe5ff;
+
+      font-size: 10px;
       font-weight: 800;
-      letter-spacing: .07em;
+
       text-transform: uppercase;
+
+      letter-spacing: .08em;
     }
 
-    .editor-tool-grid {
+    .tool-grid {
       display: grid;
-      grid-template-columns: repeat(2,minmax(0,1fr));
+
+      grid-template-columns:
+        repeat(2, minmax(0,1fr));
+
       gap: 7px;
     }
 
-    .editor-tool-card {
-      min-height: 78px;
+    .tool-button {
+      min-height: 66px;
+
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+
       gap: 8px;
 
-      padding: 10px;
+      padding:
+        9px;
 
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 11px;
-
-      background: rgba(255,255,255,.03);
-      color: #fff;
+      border-radius:
+        10px;
 
       text-align: left;
-      cursor: pointer;
+
+      background:
+        rgba(255,255,255,.035);
     }
 
-    .editor-tool-card:hover,
-    .editor-tool-card.active {
-      border-color: rgba(124,92,255,.36);
-      background: rgba(124,92,255,.09);
+    .tool-button:hover,
+    .tool-button.active {
+      border-color:
+        rgba(118,92,255,.40);
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(118,92,255,.20),
+          rgba(255,61,154,.08)
+        );
     }
 
-    .tool-card-icon {
-      font-size: 1.25rem;
+    .tool-icon {
+      font-size: 20px;
     }
 
-    .tool-card-name {
-      font-size: .73rem;
+    .tool-name {
+      font-size: 11px;
       font-weight: 700;
     }
 
-    /* =====================================================
-       CANVAS WORKSPACE
-       ===================================================== */
+    /* =========================
+       CANVAS AREA
+       ========================= */
 
     .canvas-workspace {
-      position: relative;
       min-width: 0;
       min-height: 0;
 
@@ -359,36 +521,48 @@
 
       overflow: hidden;
 
-      background: #080c17;
+      background:
+        #080d1b;
     }
 
     .canvas-toolbar {
       min-height: 42px;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
 
-      padding: 5px 10px;
+      padding:
+        5px 8px;
 
       overflow-x: auto;
 
-      background: rgba(11,17,32,.95);
-      border-bottom: 1px solid rgba(255,255,255,.07);
+      background:
+        rgba(11,17,34,.96);
+
+      border-bottom:
+        1px solid var(--border);
     }
 
     .canvas-toolbar-group {
       flex: 0 0 auto;
+
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+    }
+
+    .canvas-info {
+      color: var(--muted);
+
+      font-size: 10px;
     }
 
     .canvas-stage {
-      position: relative;
-
       min-width: 0;
       min-height: 0;
+
       flex: 1;
 
       display: grid;
@@ -396,32 +570,37 @@
 
       overflow: auto;
 
-      padding: 40px;
+      padding:
+        35px;
 
-      background-color: #090e1b;
+      background-color:
+        #090e1b;
+
       background-image:
         linear-gradient(
           45deg,
-          rgba(255,255,255,.025) 25%,
+          rgba(255,255,255,.02) 25%,
           transparent 25%
         ),
         linear-gradient(
           -45deg,
-          rgba(255,255,255,.025) 25%,
+          rgba(255,255,255,.02) 25%,
           transparent 25%
         ),
         linear-gradient(
           45deg,
           transparent 75%,
-          rgba(255,255,255,.025) 75%
+          rgba(255,255,255,.02) 75%
         ),
         linear-gradient(
           -45deg,
           transparent 75%,
-          rgba(255,255,255,.025) 75%
+          rgba(255,255,255,.02) 75%
         );
 
-      background-size: 24px 24px;
+      background-size:
+        24px 24px;
+
       background-position:
         0 0,
         0 12px,
@@ -432,295 +611,457 @@
     .canvas-document {
       position: relative;
 
-      width: min(760px, 78vw);
-      aspect-ratio: 4 / 3;
+      width:
+        min(760px, 78vw);
+
+      aspect-ratio:
+        4 / 3;
 
       display: grid;
       place-items: center;
 
       overflow: hidden;
 
-      background: #111827;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 4px;
+      background:
+        linear-gradient(
+          145deg,
+          #121a31,
+          #191332
+        );
+
+      border:
+        1px solid
+        rgba(118,92,255,.25);
+
+      border-radius:
+        5px;
 
       box-shadow:
-        0 28px 80px rgba(0,0,0,.48);
+        0 30px 80px
+        rgba(0,0,0,.50);
 
-      transform-origin: center;
+      transform-origin:
+        center center;
     }
 
     .canvas-document.has-media {
-      background: #000;
+      background:
+        #05070d;
     }
 
     .canvas-placeholder {
-      max-width: 460px;
-      padding: 28px;
-      text-align: center;
+      max-width:
+        430px;
+
+      padding:
+        25px;
+
+      text-align:
+        center;
     }
 
-    .canvas-placeholder-icon {
-      font-size: 3rem;
+    .placeholder-icon {
+      font-size:
+        48px;
     }
 
     .canvas-placeholder h2 {
-      margin: 12px 0 7px;
-      font-size: 1.15rem;
+      margin:
+        12px 0 7px;
+
+      font-size:
+        18px;
     }
 
     .canvas-placeholder p {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: .83rem;
-      line-height: 1.55;
+      color:
+        var(--muted);
+
+      font-size:
+        12px;
+
+      line-height:
+        1.55;
     }
 
     .canvas-image {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: contain;
-      user-select: none;
-      -webkit-user-drag: none;
+      width:
+        100%;
+
+      height:
+        100%;
+
+      display:
+        block;
+
+      object-fit:
+        contain;
+
+      user-select:
+        none;
+
+      -webkit-user-drag:
+        none;
+
+      transform-origin:
+        center center;
     }
 
     .canvas-selection {
-      position: absolute;
-      inset: 15%;
-      display: none;
-      border: 1px dashed #fff;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,.28);
-      pointer-events: none;
+      position:
+        absolute;
+
+      inset:
+        15%;
+
+      display:
+        none;
+
+      border:
+        2px dashed
+        #fff;
+
+      box-shadow:
+        0 0 0 9999px
+        rgba(0,0,0,.25);
+
+      pointer-events:
+        none;
     }
 
     .canvas-selection.visible {
-      display: block;
+      display:
+        block;
     }
 
-    /* =====================================================
-       RIGHT PROPERTIES / LAYERS
-       ===================================================== */
+    /* =========================
+       RIGHT PANEL
+       ========================= */
 
-    .editor-right {
-      min-width: 0;
-      overflow-y: auto;
+    .right-panel {
+      min-width:
+        0;
 
-      background: #0d1426;
-      border-left: 1px solid rgba(255,255,255,.08);
+      overflow-y:
+        auto;
+
+      background:
+        rgba(14,20,42,.98);
+
+      border-left:
+        1px solid var(--border);
     }
 
-    .property-tabs {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 4px;
+    .right-tabs {
+      position:
+        sticky;
 
-      padding: 7px;
+      top:
+        0;
 
-      border-bottom: 1px solid rgba(255,255,255,.08);
+      z-index:
+        5;
+
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(3, 1fr);
+
+      gap:
+        4px;
+
+      padding:
+        7px;
+
+      background:
+        rgba(17,24,52,.98);
+
+      border-bottom:
+        1px solid var(--border);
     }
 
-    .property-tab {
-      min-height: 34px;
+    .tab-button {
+      min-height:
+        34px;
 
-      border: 0;
-      border-radius: 8px;
+      border:
+        0;
 
-      background: transparent;
-      color: var(--text-muted);
+      border-radius:
+        8px;
 
-      font-size: .72rem;
-      font-weight: 700;
+      color:
+        var(--muted);
 
-      cursor: pointer;
+      background:
+        transparent;
+
+      cursor:
+        pointer;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
     }
 
-    .property-tab.active {
-      background: rgba(124,92,255,.14);
-      color: #fff;
+    .tab-button.active {
+      color:
+        #fff;
+
+      background:
+        rgba(118,92,255,.22);
     }
 
     .property-panel {
-      padding: 12px;
+      padding:
+        12px;
     }
 
     .property-group {
-      padding: 12px;
-      margin-bottom: 10px;
+      margin-bottom:
+        11px;
 
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 12px;
+      padding:
+        11px;
 
-      background: rgba(255,255,255,.025);
+      border:
+        1px solid var(--border);
+
+      border-radius:
+        10px;
+
+      background:
+        rgba(255,255,255,.03);
     }
 
-    .property-heading {
-      margin: 0 0 10px;
-      font-size: .78rem;
-      font-weight: 800;
+    .property-title {
+      margin-bottom:
+        9px;
+
+      font-size:
+        11px;
+
+      font-weight:
+        800;
     }
 
     .property-row {
-      display: grid;
-      grid-template-columns: 1fr 90px;
-      align-items: center;
-      gap: 8px;
+      display:
+        grid;
 
-      margin-top: 8px;
+      grid-template-columns:
+        1fr 95px;
+
+      gap:
+        7px;
+
+      align-items:
+        center;
+
+      margin-top:
+        7px;
     }
 
     .property-label {
-      color: var(--text-secondary);
-      font-size: .72rem;
+      color:
+        var(--muted);
+
+      font-size:
+        10px;
     }
 
     .editor-input,
     .editor-select {
-      width: 100%;
-      min-height: 34px;
+      width:
+        100%;
 
-      padding: 5px 8px;
+      min-height:
+        32px;
 
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: 8px;
+      padding:
+        5px 7px;
 
-      outline: 0;
+      border:
+        1px solid
+        rgba(255,255,255,.10);
 
-      background: #0a1121;
-      color: #fff;
+      border-radius:
+        7px;
 
-      font-size: .73rem;
-    }
+      outline:
+        0;
 
-    .editor-input:focus,
-    .editor-select:focus {
-      border-color: rgba(124,92,255,.55);
+      color:
+        #fff;
+
+      background:
+        #0b1226;
+
+      font-size:
+        10px;
     }
 
     .layer-list {
-      display: grid;
-      gap: 6px;
+      display:
+        grid;
+
+      gap:
+        6px;
     }
 
     .layer-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      min-height:
+        44px;
 
-      min-height: 46px;
-      padding: 7px;
+      display:
+        flex;
 
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 9px;
+      align-items:
+        center;
 
-      background: rgba(255,255,255,.025);
+      gap:
+        7px;
+
+      padding:
+        7px;
+
+      border:
+        1px solid var(--border);
+
+      border-radius:
+        8px;
+
+      background:
+        rgba(255,255,255,.03);
     }
 
     .layer-item.active {
-      border-color: rgba(124,92,255,.34);
-      background: rgba(124,92,255,.08);
+      border-color:
+        rgba(118,92,255,.40);
+
+      background:
+        rgba(118,92,255,.12);
     }
 
     .layer-thumb {
-      width: 34px;
-      height: 34px;
+      width:
+        32px;
 
-      flex: 0 0 auto;
-      display: grid;
-      place-items: center;
+      height:
+        32px;
 
-      border-radius: 7px;
+      flex:
+        0 0 auto;
 
-      background: #18233a;
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      border-radius:
+        6px;
+
+      background:
+        #1b2748;
     }
 
     .layer-info {
-      min-width: 0;
-      flex: 1;
+      min-width:
+        0;
+
+      flex:
+        1;
     }
 
     .layer-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow:
+        hidden;
 
-      font-size: .72rem;
-      font-weight: 700;
+      text-overflow:
+        ellipsis;
+
+      white-space:
+        nowrap;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
     }
 
     .layer-meta {
-      margin-top: 2px;
-      color: var(--text-muted);
-      font-size: .62rem;
+      margin-top:
+        2px;
+
+      color:
+        var(--muted);
+
+      font-size:
+        9px;
     }
 
-    /* =====================================================
-       BOTTOM STATUS BAR
-       ===================================================== */
+    .history-list {
+      display:
+        grid;
 
-    .editor-statusbar {
-      min-height: var(--editor-bottom);
+      gap:
+        6px;
+    }
 
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-
+    .history-item {
       padding:
-        6px
-        12px
-        max(6px, env(safe-area-inset-bottom));
+        8px;
 
-      background: #0b1120;
-      border-top: 1px solid rgba(255,255,255,.08);
+      border:
+        1px solid var(--border);
 
-      color: var(--text-muted);
-      font-size: .68rem;
+      border-radius:
+        7px;
+
+      color:
+        var(--muted);
+
+      font-size:
+        10px;
+
+      background:
+        rgba(255,255,255,.025);
     }
 
-    .status-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    /* =========================
+       MOBILE NAV
+       ========================= */
+
+    .mobile-nav {
+      display:
+        none;
     }
 
-    .online-dot {
-      width: 7px;
-      height: 7px;
-      display: inline-block;
-      border-radius: 50%;
-      background: #22c55e;
-    }
-
-    /* =====================================================
-       MOBILE NAVIGATION
-       ===================================================== */
-
-    .editor-mobile-nav {
-      display: none;
-    }
-
-    /* =====================================================
+    /* =========================
        RESPONSIVE
-       ===================================================== */
+       ========================= */
 
     @media (max-width: 1200px) {
+
       .editor-body {
         grid-template-columns:
-          var(--editor-tools)
+          70px
           220px
           minmax(0,1fr);
       }
 
-      .editor-right {
-        display: none;
+      .right-panel {
+        display:
+          none;
       }
     }
 
     @media (max-width: 900px) {
-      body {
-        overflow: hidden;
-      }
 
       .editor-body {
         grid-template-columns:
@@ -728,593 +1069,183 @@
           minmax(0,1fr);
       }
 
-      .editor-left,
-      .editor-right {
-        display: none;
-      }
-
-      .document-meta,
-      .topbar-divider {
-        display: none;
+      .left-panel,
+      .right-panel {
+        display:
+          none;
       }
 
       .canvas-stage {
-        padding: 20px;
+        padding:
+          18px;
       }
 
       .canvas-document {
-        width: min(760px, 88vw);
+        width:
+          90vw;
       }
     }
 
     @media (max-width: 650px) {
-      :root {
-        --editor-topbar: 58px;
+
+      body {
+        overflow:
+          hidden;
       }
 
       .editor-topbar {
-        min-height: 58px;
-        padding-inline: 8px;
+        min-height:
+          58px;
+
+        padding-inline:
+          7px;
       }
 
-      .editor-brand span:last-child {
-        display: none;
+      .brand span:last-child {
+        display:
+          none;
+      }
+
+      .document-meta {
+        display:
+          none;
       }
 
       .document-name {
-        max-width: 110px;
+        max-width:
+          105px;
       }
 
-      .editor-topbar .command-label {
-        display: none;
+      .top-button span.label {
+        display:
+          none;
       }
 
       .editor-body {
-        display: block;
+        display:
+          block;
       }
 
-      .tool-rail {
-        display: none;
+      .tool-rail,
+      .left-panel,
+      .right-panel {
+        display:
+          none;
       }
 
       .canvas-workspace {
-        height: calc(
-          100dvh -
-          58px -
-          46px -
-          52px -
-          env(safe-area-inset-bottom)
-        );
+        height:
+          calc(
+            100dvh
+            - 58px
+            - var(--commandbar)
+            - var(--bottomnav)
+            - env(safe-area-inset-bottom)
+          );
+      }
+
+      .commandbar {
+        min-height:
+          var(--commandbar);
+      }
+
+      .command-label {
+        display:
+          none;
       }
 
       .canvas-stage {
-        padding: 12px;
+        padding:
+          10px;
       }
 
       .canvas-document {
-        width: 94vw;
-        max-height: 70vh;
+        width:
+          94vw;
+
+        max-height:
+          70vh;
       }
 
-      .editor-statusbar {
-        display: none;
-      }
+      .mobile-nav {
+        min-height:
+          var(--bottomnav);
 
-      .editor-mobile-nav {
-        min-height: 52px;
+        display:
+          flex;
 
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        gap: 3px;
+        align-items:
+          center;
+
+        justify-content:
+          space-around;
+
+        gap:
+          3px;
 
         padding:
-          4px
-          5px
-          max(4px, env(safe-area-inset-bottom));
+          4px 4px
+          max(
+            4px,
+            env(safe-area-inset-bottom)
+          );
 
-        background: #0d1426;
-        border-top: 1px solid rgba(255,255,255,.09);
+        background:
+          rgba(13,20,42,.98);
+
+        border-top:
+          1px solid var(--border);
       }
 
-      .mobile-tool {
-        flex: 1;
-        min-width: 0;
+      .mobile-button {
+        min-width:
+          0;
 
-        display: grid;
-        place-items: center;
-        gap: 1px;
+        flex:
+          1;
 
-        padding: 5px 2px;
+        display:
+          grid;
 
-        border: 0;
-        border-radius: 8px;
+        place-items:
+          center;
 
-        background: transparent;
-        color: var(--text-muted);
+        gap:
+          2px;
 
-        font-size: .6rem;
+        padding:
+          5px 2px;
+
+        border-color:
+          transparent;
+
+        border-radius:
+          8px;
+
+        color:
+          var(--muted);
+
+        background:
+          transparent;
+
+        font-size:
+          9px;
       }
 
-      .mobile-tool.active {
-        background: rgba(124,92,255,.13);
-        color: #fff;
+      .mobile-button.active {
+        color:
+          #fff;
+
+        background:
+          rgba(118,92,255,.18);
       }
 
-      .mobile-tool span:first-child {
-        font-size: 1rem;
+      .mobile-icon {
+        font-size:
+          17px;
       }
     }
 
-    @media (max-width: 390px) {
-      .document-info {
-        display: none;
-      }
-
-      .canvas-placeholder {
-        padding: 18px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        transition: none !important;
-        animation: none !important;
-        scroll-behavior: auto !important;
-      }
-    }
-  /* =====================================================
-   TOONVERSE AI — COLORFUL EDITOR OVERRIDE
-   Safe visual-only layer
-   Colorful visual override layer 
-   ===================================================== */
-
-body,
-.editor-app {
-  background:
-    radial-gradient(circle at 12% 15%, rgba(124, 92, 255, 0.26), transparent 28%),
-    radial-gradient(circle at 88% 18%, rgba(0, 210, 255, 0.20), transparent 30%),
-    radial-gradient(circle at 52% 88%, rgba(255, 61, 154, 0.18), transparent 34%),
-    linear-gradient(135deg, #070b17 0%, #0d1530 48%, #090d1d 100%);
-}
-
-/* TOP BAR */
-
-.editor-topbar {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(17, 24, 54, 0.96),
-      rgba(34, 24, 72, 0.94)
-    );
-
-  border-bottom:
-    1px solid rgba(147, 117, 255, 0.22);
-
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.28),
-    0 0 28px rgba(124, 92, 255, 0.08);
-
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.editor-brand {
-  color: #ffffff;
-  text-shadow:
-    0 0 16px rgba(124, 92, 255, 0.35);
-}
-
-/* COMMAND BAR */
-
-.editor-commandbar {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(13, 20, 38, 0.96),
-      rgba(23, 24, 58, 0.94)
-    );
-
-  border-bottom:
-    1px solid rgba(255, 255, 255, 0.08);
-}
-
-.command-button {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124, 92, 255, 0.10),
-      rgba(0, 210, 255, 0.06)
-    );
-
-  border:
-    1px solid rgba(151, 126, 255, 0.16);
-
-  color: #dfe6ff;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.04);
-}
-
-.command-button:hover {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124, 92, 255, 0.22),
-      rgba(255, 61, 154, 0.12)
-    );
-
-  border-color:
-    rgba(151, 126, 255, 0.32);
-
-  color: #ffffff;
-
-  box-shadow:
-    0 8px 20px rgba(124, 92, 255, 0.12);
-}
-
-/* TOOL RAIL */
-
-.tool-rail {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(10, 17, 34, 0.98),
-      rgba(16, 17, 46, 0.98)
-    );
-
-  border-right:
-    1px solid rgba(151, 126, 255, 0.12);
-}
-
-.rail-button:hover,
-.rail-button.active {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124, 92, 255, 0.22),
-      rgba(255, 61, 154, 0.10)
-    );
-
-  border-color:
-    rgba(151, 126, 255, 0.34);
-
-  box-shadow:
-    0 8px 18px rgba(124, 92, 255, 0.10);
-}
-
-/* LEFT PANEL */
-
-.editor-left {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(13, 20, 38, 0.96),
-      rgba(20, 18, 52, 0.94)
-    );
-
-  border-right:
-    1px solid rgba(151, 126, 255, 0.12);
-}
-
-.editor-panel-header {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(17, 24, 52, 0.98),
-      rgba(31, 22, 67, 0.97)
-    );
-}
-
-.editor-tool-card {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,0.045),
-      rgba(124,92,255,0.035)
-    );
-
-  border:
-    1px solid rgba(255,255,255,0.08);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-.editor-tool-card:hover,
-.editor-tool-card.active {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124, 92, 255, 0.18),
-      rgba(255, 61, 154, 0.09)
-    );
-
-  border-color:
-    rgba(151, 126, 255, 0.34);
-
-  box-shadow:
-    0 10px 24px rgba(124, 92, 255, 0.10);
-}
-
-/* CANVAS WORKSPACE */
-
-.canvas-workspace {
-  background:
-    radial-gradient(circle at 50% 18%, rgba(124,92,255,0.11), transparent 35%),
-    linear-gradient(145deg, #080d1b 0%, #0b1022 58%, #101127 100%);
-}
-
-.canvas-toolbar {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(11,17,32,0.96),
-      rgba(22,21,54,0.95)
-    );
-
-  border-bottom:
-    1px solid rgba(151,126,255,0.10);
-}
-
-.canvas-stage {
-  background-color: #090e1b;
-
-  background-image:
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(124,92,255,0.08),
-      transparent 42%
-    ),
-    linear-gradient(
-      45deg,
-      rgba(255,255,255,.025) 25%,
-      transparent 25%
-    ),
-    linear-gradient(
-      -45deg,
-      rgba(255,255,255,.025) 25%,
-      transparent 25%
-    ),
-    linear-gradient(
-      45deg,
-      transparent 75%,
-      rgba(255,255,255,.025) 75%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 75%,
-      rgba(255,255,255,.025) 75%
-    );
-
-  background-size:
-    auto,
-    24px 24px,
-    24px 24px,
-    24px 24px,
-    24px 24px;
-}
-
-.canvas-document {
-  background:
-    linear-gradient(
-      145deg,
-      #121a31,
-      #16132f
-    );
-
-  border:
-    1px solid rgba(159, 133, 255, 0.22);
-
-  box-shadow:
-    0 28px 80px rgba(0,0,0,.48),
-    0 0 50px rgba(124,92,255,0.08);
-}
-
-.canvas-document.has-media {
-  background: #05070d;
-}
-
-.canvas-placeholder-icon {
-  filter:
-    drop-shadow(0 0 12px rgba(124,92,255,0.35));
-}
-
-.canvas-placeholder h2 {
-  color: #ffffff;
-}
-
-.canvas-placeholder p {
-  color: #aeb8d6;
-}
-
-/* RIGHT PANEL */
-
-.editor-right {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(13,20,38,0.96),
-      rgba(22,18,53,0.95)
-    );
-
-  border-left:
-    1px solid rgba(151,126,255,0.12);
-}
-
-.property-tabs {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(17,23,47,0.92),
-      rgba(27,22,60,0.92)
-    );
-}
-
-.property-tab.active {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124,92,255,0.24),
-      rgba(255,61,154,0.10)
-    );
-
-  color: #ffffff;
-}
-
-.property-group {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,0.035),
-      rgba(124,92,255,0.035)
-    );
-
-  border:
-    1px solid rgba(255,255,255,0.08);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-.editor-input,
-.editor-select {
-  background:
-    rgba(8, 15, 31, 0.92);
-
-  border:
-    1px solid rgba(151,126,255,0.14);
-}
-
-.editor-input:focus,
-.editor-select:focus {
-  border-color:
-    rgba(124,92,255,0.62);
-
-  box-shadow:
-    0 0 0 3px rgba(124,92,255,0.08);
-}
-
-/* LAYERS */
-
-.layer-item {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,0.035),
-      rgba(124,92,255,0.028)
-    );
-}
-
-.layer-item.active {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124,92,255,0.16),
-      rgba(0,210,255,0.06)
-    );
-
-  border-color:
-    rgba(151,126,255,0.28);
-}
-
-.layer-thumb {
-  background:
-    linear-gradient(
-      135deg,
-      #1a2744,
-      #28205a
-    );
-}
-
-/* STATUS BAR */
-
-.editor-statusbar {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(11,17,32,0.98),
-      rgba(21,18,49,0.98)
-    );
-
-  border-top:
-    1px solid rgba(151,126,255,0.10);
-}
-
-/* MOBILE NAV */
-
-.editor-mobile-nav {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(13,20,38,0.98),
-      rgba(25,20,58,0.98)
-    );
-
-  border-top:
-    1px solid rgba(151,126,255,0.12);
-}
-
-.mobile-tool.active {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124,92,255,0.20),
-      rgba(255,61,154,0.08)
-    );
-
-  color: #ffffff;
-}
-
-/* PRIMARY / SPECIAL BUTTONS */
-
-.btn-primary,
-[data-editor-action="import"],
-[data-editor-action="export"] {
-  background:
-    linear-gradient(
-      135deg,
-      #6f5cff 0%,
-      #8b5cf6 45%,
-      #ff3d9a 100%
-    );
-
-  border:
-    1px solid rgba(255,255,255,0.10);
-
-  color: #ffffff;
-
-  box-shadow:
-    0 10px 24px rgba(111,92,255,0.20),
-    inset 0 1px 0 rgba(255,255,255,0.16);
-}
-
-.btn-primary:hover,
-[data-editor-action="import"]:hover,
-[data-editor-action="export"]:hover {
-  box-shadow:
-    0 14px 30px rgba(111,92,255,0.28),
-    0 0 22px rgba(255,61,154,0.10);
-}
-
-/* TEXT ACCENTS */
-
-.editor-panel-title,
-.property-heading,
-.tool-section-title {
-  color: #eef1ff;
-}
-
-.text-muted,
-.document-meta,
-.layer-meta,
-.property-label,
-#canvas-info,
-#editor-status {
-  color: #aeb7d4;
-}
   </style>
 </head>
 
@@ -1322,35 +1253,32 @@ body,
 
 <div class="editor-app">
 
-  <!-- ===================================================
+  <!-- =========================
        TOP BAR
-       =================================================== -->
+       ========================= -->
 
   <header class="editor-topbar">
 
-    <div class="editor-topbar-group">
+    <div class="topbar-group">
 
       <a
         href="./index.html"
-        class="icon-btn"
-        aria-label="Back to ToonVerse AI home"
-        title="Home"
+        class="home-button"
+        aria-label="Home"
       >
         ←
       </a>
 
       <a
         href="./index.html"
-        class="editor-brand"
-        aria-label="ToonVerse AI"
+        class="brand"
       >
         <span>✨</span>
         <span>ToonVerse AI</span>
       </a>
 
-      <div class="topbar-divider"></div>
-
       <div class="document-info">
+
         <div
           class="document-name"
           id="document-name"
@@ -1362,54 +1290,58 @@ body,
           class="document-meta"
           id="document-meta"
         >
-          Unified AI Editor
+          Unified Creative Editor
         </div>
+
       </div>
 
     </div>
 
-
-    <div class="editor-topbar-group">
+    <div class="topbar-group">
 
       <button
+        class="top-button"
         type="button"
-        class="command-button"
         data-editor-action="save"
       >
         💾
-        <span class="command-label">Save</span>
+        <span class="label">
+          Save
+        </span>
       </button>
 
       <button
+        class="top-button primary-button"
         type="button"
-        class="command-button"
         data-editor-action="export"
       >
         📤
-        <span class="command-label">Export</span>
+        <span class="label">
+          Export
+        </span>
       </button>
 
     </div>
 
   </header>
 
-
-  <!-- ===================================================
+  <!-- =========================
        COMMAND BAR
-       =================================================== -->
+       ========================= -->
 
-  <div class="editor-commandbar">
+  <div class="commandbar">
 
     <div class="command-group">
 
       <button
-        class="command-button"
+        class="command-button primary-button"
         type="button"
-        id="import-button"
         data-editor-action="import"
       >
         📁
-        <span class="command-label">Import</span>
+        <span class="command-label">
+          Import
+        </span>
       </button>
 
       <button
@@ -1418,10 +1350,10 @@ body,
         data-editor-action="new"
       >
         ＋
-        <span class="command-label">New</span>
+        <span class="command-label">
+          New
+        </span>
       </button>
-
-      <span class="topbar-divider"></span>
 
       <button
         class="command-button"
@@ -1431,7 +1363,9 @@ body,
         disabled
       >
         ↶
-        <span class="command-label">Undo</span>
+        <span class="command-label">
+          Undo
+        </span>
       </button>
 
       <button
@@ -1442,11 +1376,23 @@ body,
         disabled
       >
         ↷
-        <span class="command-label">Redo</span>
+        <span class="command-label">
+          Redo
+        </span>
+      </button>
+
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="print"
+      >
+        🖨️
+        <span class="command-label">
+          Print
+        </span>
       </button>
 
     </div>
-
 
     <div class="command-group">
 
@@ -1459,12 +1405,8 @@ body,
       </button>
 
       <span
+        class="zoom-display"
         id="zoom-display"
-        style="
-          min-width: 48px;
-          text-align: center;
-          font-size: .72rem;
-        "
       >
         100%
       </span>
@@ -1485,22 +1427,42 @@ body,
         Fit
       </button>
 
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="compare"
+      >
+        ◐
+        <span class="command-label">
+          Compare
+        </span>
+      </button>
+
+      <button
+        class="command-button"
+        type="button"
+        data-editor-action="fullscreen"
+      >
+        ⛶
+      </button>
+
     </div>
 
   </div>
 
-
-  <!-- ===================================================
+  <!-- =========================
        EDITOR BODY
-       =================================================== -->
+       ========================= -->
 
   <div class="editor-body">
 
-    <!-- TOOL RAIL -->
+    <!-- =========================
+         LEFT TOOL RAIL
+         ========================= -->
 
     <nav
       class="tool-rail"
-      aria-label="Editor tools"
+      aria-label="Editor Tools"
     >
 
       <button
@@ -1515,6 +1477,15 @@ body,
       <button
         class="rail-button"
         type="button"
+        data-editor-tool="transform"
+      >
+        <span class="rail-icon">🔄</span>
+        <span class="rail-label">Transform</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
         data-editor-tool="crop"
       >
         <span class="rail-icon">✂️</span>
@@ -1524,19 +1495,28 @@ body,
       <button
         class="rail-button"
         type="button"
-        data-editor-tool="brush"
+        data-editor-tool="adjust"
       >
-        <span class="rail-icon">🖌️</span>
-        <span class="rail-label">Brush</span>
+        <span class="rail-icon">🎚️</span>
+        <span class="rail-label">Adjust</span>
       </button>
 
       <button
         class="rail-button"
         type="button"
-        data-editor-tool="erase"
+        data-editor-tool="retouch"
       >
-        <span class="rail-icon">🧽</span>
-        <span class="rail-label">Erase</span>
+        <span class="rail-icon">🪄</span>
+        <span class="rail-label">Retouch</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="paint"
+      >
+        <span class="rail-icon">🖌️</span>
+        <span class="rail-label">Paint</span>
       </button>
 
       <button
@@ -1551,10 +1531,19 @@ body,
       <button
         class="rail-button"
         type="button"
-        data-editor-tool="adjust"
+        data-editor-tool="content"
       >
-        <span class="rail-icon">🎚️</span>
-        <span class="rail-label">Adjust</span>
+        <span class="rail-icon">➕</span>
+        <span class="rail-label">Content</span>
+      </button>
+
+      <button
+        class="rail-button"
+        type="button"
+        data-editor-tool="layers"
+      >
+        <span class="rail-icon">📚</span>
+        <span class="rail-label">Layers</span>
       </button>
 
       <button
@@ -1577,31 +1566,80 @@ body,
 
     </nav>
 
+    <!-- =========================
+         LEFT OPTIONS PANEL
+         ========================= -->
 
-    <!-- LEFT PANEL -->
+    <aside class="left-panel">
 
-    <aside
-      class="editor-left"
-      aria-label="Editor tool options"
-    >
+      <div class="panel-header">
 
-      <div class="editor-panel-header">
-
-        <h2
-          class="editor-panel-title"
+        <div
+          class="panel-title"
           id="tool-panel-title"
         >
-          Select & Transform
-        </h2>
+          Editor Tools
+        </div>
 
-        <span class="badge">
-          Tools
-        </span>
+        <div class="panel-subtitle">
+          Unified ToonVerse AI editing foundation
+        </div>
 
       </div>
 
+      <div class="panel-content">
 
-      <div class="editor-panel-content">
+        <!-- SELECTION -->
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            Selection
+          </h3>
+
+          <div class="tool-grid">
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="select"
+            >
+              <span class="tool-icon">↖️</span>
+              <span class="tool-name">Select</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="rectangle-select"
+            >
+              <span class="tool-icon">▭</span>
+              <span class="tool-name">Rectangle</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="lasso"
+            >
+              <span class="tool-icon">➰</span>
+              <span class="tool-name">Lasso</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="magic-select"
+            >
+              <span class="tool-icon">🪄</span>
+              <span class="tool-name">Magic Select</span>
+            </button>
+
+          </div>
+
+        </section>
+
+        <!-- TRANSFORM -->
 
         <section class="tool-section">
 
@@ -1609,48 +1647,94 @@ body,
             Transform
           </h3>
 
-          <div class="editor-tool-grid">
+          <div class="tool-grid">
 
             <button
-              class="editor-tool-card"
+              class="tool-button"
               type="button"
               data-editor-operation="crop"
             >
-              <span class="tool-card-icon">✂️</span>
-              <span class="tool-card-name">Crop</span>
+              <span class="tool-icon">✂️</span>
+              <span class="tool-name">Crop</span>
             </button>
 
             <button
-              class="editor-tool-card"
+              class="tool-button"
               type="button"
               data-editor-operation="resize"
             >
-              <span class="tool-card-icon">↔️</span>
-              <span class="tool-card-name">Resize</span>
+              <span class="tool-icon">↔️</span>
+              <span class="tool-name">Resize</span>
             </button>
 
             <button
-              class="editor-tool-card"
+              class="tool-button"
               type="button"
-              data-editor-operation="rotate"
+              data-editor-operation="rotate-left"
             >
-              <span class="tool-card-icon">🔄</span>
-              <span class="tool-card-name">Rotate</span>
+              <span class="tool-icon">↶</span>
+              <span class="tool-name">Rotate Left</span>
             </button>
 
             <button
-              class="editor-tool-card"
+              class="tool-button"
               type="button"
-              data-editor-operation="flip"
+              data-editor-operation="rotate-right"
             >
-              <span class="tool-card-icon">↔</span>
-              <span class="tool-card-name">Flip</span>
+              <span class="tool-icon">↷</span>
+              <span class="tool-name">Rotate Right</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="flip-horizontal"
+            >
+              <span class="tool-icon">↔</span>
+              <span class="tool-name">Flip Horizontal</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="flip-vertical"
+            >
+              <span class="tool-icon">↕</span>
+              <span class="tool-name">Flip Vertical</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="straighten"
+            >
+              <span class="tool-icon">📐</span>
+              <span class="tool-name">Straighten</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="perspective"
+            >
+              <span class="tool-icon">◇</span>
+              <span class="tool-name">Perspective</span>
+            </button>
+
+            <button
+              class="tool-button"
+              type="button"
+              data-editor-operation="reset-transform"
+            >
+              <span class="tool-icon">⟳</span>
+              <span class="tool-name">Reset Transform</span>
             </button>
 
           </div>
 
         </section>
 
+        <!-- ADJUSTMENTS -->
 
         <section class="tool-section">
 
@@ -1658,140 +1742,346 @@ body,
             Adjustments
           </h3>
 
-          <div class="editor-tool-grid">
+          <div class="tool-grid">
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="brightness"
-            >
-              <span class="tool-card-icon">☀️</span>
-              <span class="tool-card-name">Brightness</span>
+            <button class="tool-button" type="button" data-editor-operation="brightness">
+              <span class="tool-icon">☀️</span>
+              <span class="tool-name">Brightness</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="contrast"
-            >
-              <span class="tool-card-icon">◐</span>
-              <span class="tool-card-name">Contrast</span>
+            <button class="tool-button" type="button" data-editor-operation="contrast">
+              <span class="tool-icon">◐</span>
+              <span class="tool-name">Contrast</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="color"
-            >
-              <span class="tool-card-icon">🎨</span>
-              <span class="tool-card-name">Color</span>
+            <button class="tool-button" type="button" data-editor-operation="exposure">
+              <span class="tool-icon">🌤️</span>
+              <span class="tool-name">Exposure</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="sharpness"
-            >
-              <span class="tool-card-icon">🔍</span>
-              <span class="tool-card-name">Sharpness</span>
+            <button class="tool-button" type="button" data-editor-operation="highlights">
+              <span class="tool-icon">🔆</span>
+              <span class="tool-name">Highlights</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="shadows">
+              <span class="tool-icon">🌑</span>
+              <span class="tool-name">Shadows</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="saturation">
+              <span class="tool-icon">🎨</span>
+              <span class="tool-name">Saturation</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="vibrance">
+              <span class="tool-icon">🌈</span>
+              <span class="tool-name">Vibrance</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="temperature">
+              <span class="tool-icon">🌡️</span>
+              <span class="tool-name">Temperature</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="tint">
+              <span class="tool-icon">🟣</span>
+              <span class="tool-name">Tint</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="hue">
+              <span class="tool-icon">🎨</span>
+              <span class="tool-name">Hue</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="sharpness">
+              <span class="tool-icon">🔍</span>
+              <span class="tool-name">Sharpness</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="clarity">
+              <span class="tool-icon">💎</span>
+              <span class="tool-name">Clarity</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="blur">
+              <span class="tool-icon">💧</span>
+              <span class="tool-name">Blur</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="noise-reduction">
+              <span class="tool-icon">✨</span>
+              <span class="tool-name">Noise Reduce</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="grayscale">
+              <span class="tool-icon">⚫</span>
+              <span class="tool-name">Grayscale</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="sepia">
+              <span class="tool-icon">🟤</span>
+              <span class="tool-name">Sepia</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="vignette">
+              <span class="tool-icon">🌘</span>
+              <span class="tool-name">Vignette</span>
             </button>
 
           </div>
 
         </section>
 
+        <!-- RETOUCH -->
 
         <section class="tool-section">
 
           <h3 class="tool-section-title">
-            AI Tools
+            Retouch
           </h3>
 
-          <div class="editor-tool-grid">
+          <div class="tool-grid">
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="ai-enhance"
-            >
-              <span class="tool-card-icon">✨</span>
-              <span class="tool-card-name">AI Enhance</span>
+            <button class="tool-button" type="button" data-editor-operation="heal">
+              <span class="tool-icon">🩹</span>
+              <span class="tool-name">Heal</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="background"
-            >
-              <span class="tool-card-icon">🪄</span>
-              <span class="tool-card-name">Background</span>
+            <button class="tool-button" type="button" data-editor-operation="clone">
+              <span class="tool-icon">🧬</span>
+              <span class="tool-name">Clone</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="cartoon"
-            >
-              <span class="tool-card-icon">🎭</span>
-              <span class="tool-card-name">Cartoon</span>
+            <button class="tool-button" type="button" data-editor-operation="dodge">
+              <span class="tool-icon">🔆</span>
+              <span class="tool-name">Dodge</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="lighting"
-            >
-              <span class="tool-card-icon">💡</span>
-              <span class="tool-card-name">Lighting</span>
+            <button class="tool-button" type="button" data-editor-operation="burn">
+              <span class="tool-icon">🔥</span>
+              <span class="tool-name">Burn</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="red-eye">
+              <span class="tool-icon">👁️</span>
+              <span class="tool-name">Red Eye</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="skin-smooth">
+              <span class="tool-icon">🙂</span>
+              <span class="tool-name">Skin Smooth</span>
             </button>
 
           </div>
 
         </section>
 
+        <!-- DRAWING -->
 
         <section class="tool-section">
 
           <h3 class="tool-section-title">
-            Content
+            Drawing & Painting
           </h3>
 
-          <div class="editor-tool-grid">
+          <div class="tool-grid">
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="text"
-            >
-              <span class="tool-card-icon">T</span>
-              <span class="tool-card-name">Add Text</span>
+            <button class="tool-button" type="button" data-editor-operation="brush">
+              <span class="tool-icon">🖌️</span>
+              <span class="tool-name">Brush</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="image"
-            >
-              <span class="tool-card-icon">🖼️</span>
-              <span class="tool-card-name">Add Image</span>
+            <button class="tool-button" type="button" data-editor-operation="pencil">
+              <span class="tool-icon">✏️</span>
+              <span class="tool-name">Pencil</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="shape"
-            >
-              <span class="tool-card-icon">⬡</span>
-              <span class="tool-card-name">Shape</span>
+            <button class="tool-button" type="button" data-editor-operation="eraser">
+              <span class="tool-icon">🧽</span>
+              <span class="tool-name">Eraser</span>
             </button>
 
-            <button
-              class="editor-tool-card"
-              type="button"
-              data-editor-operation="layers"
-            >
-              <span class="tool-card-icon">📚</span>
-              <span class="tool-card-name">Layers</span>
+            <button class="tool-button" type="button" data-editor-operation="fill">
+              <span class="tool-icon">🪣</span>
+              <span class="tool-name">Fill</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="color-picker">
+              <span class="tool-icon">💧</span>
+              <span class="tool-name">Color Picker</span>
+            </button>
+
+          </div>
+
+        </section>
+
+        <!-- CONTENT -->
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            Text & Content
+          </h3>
+
+          <div class="tool-grid">
+
+            <button class="tool-button" type="button" data-editor-operation="add-text">
+              <span class="tool-icon">T</span>
+              <span class="tool-name">Add Text</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="add-image">
+              <span class="tool-icon">🖼️</span>
+              <span class="tool-name">Add Image</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="shape">
+              <span class="tool-icon">⬡</span>
+              <span class="tool-name">Shapes</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="sticker">
+              <span class="tool-icon">🌟</span>
+              <span class="tool-name">Stickers</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="frame">
+              <span class="tool-icon">🖼</span>
+              <span class="tool-name">Frames</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="collage">
+              <span class="tool-icon">▦</span>
+              <span class="tool-name">Collage</span>
+            </button>
+
+          </div>
+
+        </section>
+
+        <!-- LAYERS -->
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            Layers
+          </h3>
+
+          <div class="tool-grid">
+
+            <button class="tool-button" type="button" data-layer-action="add">
+              <span class="tool-icon">＋</span>
+              <span class="tool-name">Add Layer</span>
+            </button>
+
+            <button class="tool-button" type="button" data-layer-action="duplicate">
+              <span class="tool-icon">📑</span>
+              <span class="tool-name">Duplicate</span>
+            </button>
+
+            <button class="tool-button" type="button" data-layer-action="delete">
+              <span class="tool-icon">🗑️</span>
+              <span class="tool-name">Delete</span>
+            </button>
+
+            <button class="tool-button" type="button" data-layer-action="toggle">
+              <span class="tool-icon">👁️</span>
+              <span class="tool-name">Show / Hide</span>
+            </button>
+
+            <button class="tool-button" type="button" data-layer-action="lock">
+              <span class="tool-icon">🔒</span>
+              <span class="tool-name">Lock</span>
+            </button>
+
+            <button class="tool-button" type="button" data-layer-action="up">
+              <span class="tool-icon">⬆️</span>
+              <span class="tool-name">Move Up</span>
+            </button>
+
+            <button class="tool-button" type="button" data-layer-action="down">
+              <span class="tool-icon">⬇️</span>
+              <span class="tool-name">Move Down</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="blend-mode">
+              <span class="tool-icon">◉</span>
+              <span class="tool-name">Blend Mode</span>
+            </button>
+
+          </div>
+
+        </section>
+
+        <!-- AI -->
+
+        <section class="tool-section">
+
+          <h3 class="tool-section-title">
+            AI Studio
+          </h3>
+
+          <div class="tool-grid">
+
+            <button class="tool-button" type="button" data-editor-operation="ai-enhance">
+              <span class="tool-icon">✨</span>
+              <span class="tool-name">AI Enhance</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="auto-fix">
+              <span class="tool-icon">⚡</span>
+              <span class="tool-name">Auto Fix</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="background-remove">
+              <span class="tool-icon">✂️</span>
+              <span class="tool-name">Remove BG</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="background-change">
+              <span class="tool-icon">🌄</span>
+              <span class="tool-name">Change BG</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="object-remove">
+              <span class="tool-icon">🧹</span>
+              <span class="tool-name">Object Remove</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="upscale">
+              <span class="tool-icon">⬆️</span>
+              <span class="tool-name">AI Upscale</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="restore">
+              <span class="tool-icon">🛠️</span>
+              <span class="tool-name">Restore Photo</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="colorize">
+              <span class="tool-icon">🎨</span>
+              <span class="tool-name">Colorize</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="cartoon">
+              <span class="tool-icon">🎭</span>
+              <span class="tool-name">Cartoon</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="portrait">
+              <span class="tool-icon">🙂</span>
+              <span class="tool-name">AI Portrait</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="lighting">
+              <span class="tool-icon">💡</span>
+              <span class="tool-name">AI Lighting</span>
+            </button>
+
+            <button class="tool-button" type="button" data-editor-operation="prompt-edit">
+              <span class="tool-icon">💬</span>
+              <span class="tool-name">Prompt Edit</span>
             </button>
 
           </div>
@@ -1802,10 +2092,9 @@ body,
 
     </aside>
 
-
-    <!-- =================================================
+    <!-- =========================
          CANVAS
-         ================================================= -->
+         ========================= -->
 
     <main class="canvas-workspace">
 
@@ -1813,32 +2102,27 @@ body,
 
         <div class="canvas-toolbar-group">
 
-          <span class="badge badge-info">
-            Canvas
+          <span class="canvas-info">
+            Canvas:
           </span>
 
           <span
+            class="canvas-info"
             id="canvas-info"
-            class="text-muted"
-            style="font-size:.7rem;"
           >
             No media loaded
           </span>
 
         </div>
 
-
         <div class="canvas-toolbar-group">
 
           <button
             class="command-button"
             type="button"
-            data-editor-action="before-after"
+            data-editor-action="compare"
           >
-            ◐
-            <span class="command-label">
-              Compare
-            </span>
+            ◐ Compare
           </button>
 
           <button
@@ -1852,7 +2136,6 @@ body,
         </div>
 
       </div>
-
 
       <div
         class="canvas-stage"
@@ -1869,7 +2152,7 @@ body,
             id="canvas-placeholder"
           >
 
-            <div class="canvas-placeholder-icon">
+            <div class="placeholder-icon">
               🖼️
             </div>
 
@@ -1878,23 +2161,21 @@ body,
             </h2>
 
             <p>
-              Import a photo or supported creative file.
-              ToonVerse AI will keep the original source
-              unchanged while the editing workspace works
-              with a project copy.
+              Import an image to begin editing.
+              ToonVerse AI keeps the original source
+              separate from the working project.
             </p>
 
             <button
-              class="btn btn-primary"
+              class="top-button primary-button"
+              style="margin-top:16px;"
               type="button"
               data-editor-action="import"
-              style="margin-top:16px;"
             >
-              Import Media
+              📁 Import Media
             </button>
 
           </div>
-
 
           <img
             id="canvas-image"
@@ -1902,7 +2183,6 @@ body,
             alt="Editing canvas"
             hidden
           >
-
 
           <div
             class="canvas-selection"
@@ -1916,23 +2196,16 @@ body,
 
     </main>
 
-
-    <!-- =================================================
+    <!-- =========================
          RIGHT PANEL
-         ================================================= -->
+         ========================= -->
 
-    <aside
-      class="editor-right"
-      aria-label="Properties and layers"
-    >
+    <aside class="right-panel">
 
-      <div
-        class="property-tabs"
-        role="tablist"
-      >
+      <div class="right-tabs">
 
         <button
-          class="property-tab active"
+          class="tab-button active"
           type="button"
           data-property-tab="properties"
         >
@@ -1940,7 +2213,7 @@ body,
         </button>
 
         <button
-          class="property-tab"
+          class="tab-button"
           type="button"
           data-property-tab="layers"
         >
@@ -1948,7 +2221,7 @@ body,
         </button>
 
         <button
-          class="property-tab"
+          class="tab-button"
           type="button"
           data-property-tab="history"
         >
@@ -1957,12 +2230,11 @@ body,
 
       </div>
 
-
       <div class="property-panel">
 
         <section class="property-group">
 
-          <h3 class="property-heading">
+          <h3 class="property-title">
             Document
           </h3>
 
@@ -1973,15 +2245,14 @@ body,
             </span>
 
             <input
-              class="editor-input"
               id="document-width"
+              class="editor-input"
               type="number"
               value="1200"
               min="1"
             >
 
           </div>
-
 
           <div class="property-row">
 
@@ -1990,8 +2261,8 @@ body,
             </span>
 
             <input
-              class="editor-input"
               id="document-height"
+              class="editor-input"
               type="number"
               value="900"
               min="1"
@@ -1999,6 +2270,20 @@ body,
 
           </div>
 
+          <div class="property-row">
+
+            <span class="property-label">
+              Resolution
+            </span>
+
+            <input
+              class="editor-input"
+              type="number"
+              value="300"
+              min="1"
+            >
+
+          </div>
 
           <div class="property-row">
 
@@ -2007,48 +2292,181 @@ body,
             </span>
 
             <select class="editor-select">
-              <option>Pixels</option>
-              <option>Inches</option>
-              <option>Centimeters</option>
+
+              <option>
+                Pixels
+              </option>
+
+              <option>
+                Inches
+              </option>
+
+              <option>
+                Centimeters
+              </option>
+
+            </select>
+
+          </div>
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Aspect
+            </span>
+
+            <select class="editor-select">
+
+              <option>
+                Original
+              </option>
+
+              <option>
+                1:1
+              </option>
+
+              <option>
+                4:3
+              </option>
+
+              <option>
+                16:9
+              </option>
+
+              <option>
+                9:16
+              </option>
+
             </select>
 
           </div>
 
         </section>
 
-
         <section class="property-group">
 
-          <h3 class="property-heading">
+          <h3 class="property-title">
             Transform
           </h3>
 
           <div class="property-row">
-            <span class="property-label">X</span>
-            <input class="editor-input" type="number" value="0">
+
+            <span class="property-label">
+              Rotation
+            </span>
+
+            <input
+              id="rotation-input"
+              class="editor-input"
+              type="number"
+              value="0"
+              readonly
+            >
+
           </div>
 
           <div class="property-row">
-            <span class="property-label">Y</span>
-            <input class="editor-input" type="number" value="0">
+
+            <span class="property-label">
+              Flip X
+            </span>
+
+            <input
+              id="flip-x-input"
+              class="editor-input"
+              value="No"
+              readonly
+            >
+
           </div>
 
           <div class="property-row">
-            <span class="property-label">Rotation</span>
-            <input class="editor-input" type="number" value="0">
+
+            <span class="property-label">
+              Flip Y
+            </span>
+
+            <input
+              id="flip-y-input"
+              class="editor-input"
+              value="No"
+              readonly
+            >
+
           </div>
 
           <div class="property-row">
-            <span class="property-label">Opacity</span>
-            <input type="range" min="0" max="100" value="100">
+
+            <span class="property-label">
+              Opacity
+            </span>
+
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value="100"
+            >
+
           </div>
 
         </section>
 
+        <section class="property-group">
+
+          <h3 class="property-title">
+            Brush
+          </h3>
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Size
+            </span>
+
+            <input
+              type="range"
+              min="1"
+              max="200"
+              value="25"
+            >
+
+          </div>
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Hardness
+            </span>
+
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value="80"
+            >
+
+          </div>
+
+          <div class="property-row">
+
+            <span class="property-label">
+              Color
+            </span>
+
+            <input
+              class="editor-input"
+              type="color"
+              value="#ffffff"
+            >
+
+          </div>
+
+        </section>
 
         <section class="property-group">
 
-          <h3 class="property-heading">
+          <h3 class="property-title">
             Layers
           </h3>
 
@@ -2057,7 +2475,10 @@ body,
             id="layer-list"
           >
 
-            <div class="layer-item active">
+            <div
+              class="layer-item active"
+              data-layer-id="background"
+            >
 
               <div class="layer-thumb">
                 📄
@@ -2070,12 +2491,12 @@ body,
                 </div>
 
                 <div class="layer-meta">
-                  Base layer
+                  Base Layer
                 </div>
 
               </div>
 
-              <span title="Visible">
+              <span>
                 👁
               </span>
 
@@ -2085,27 +2506,19 @@ body,
 
         </section>
 
-
         <section class="property-group">
 
-          <h3 class="property-heading">
-            Project Safety
+          <h3 class="property-title">
+            History
           </h3>
 
-          <div class="alert alert-info">
+          <div
+            class="history-list"
+            id="history-list"
+          >
 
-            <span>🛡️</span>
-
-            <div
-              class="text-muted"
-              style="
-                font-size:.7rem;
-                line-height:1.45;
-              "
-            >
-              Original media remains separate.
-              Future AI operations will connect through
-              controlled processing and safety services.
+            <div class="history-item">
+              Project ready
             </div>
 
           </div>
@@ -2118,106 +2531,69 @@ body,
 
   </div>
 
+  <!-- =========================
+       MOBILE NAV
+       ========================= -->
 
-  <!-- ===================================================
-       STATUS BAR
-       =================================================== -->
-
-  <footer class="editor-statusbar">
-
-    <div class="status-group">
-
-      <span>
-        <span class="online-dot"></span>
-        <span id="network-status">Online</span>
-      </span>
-
-      <span id="editor-status">
-        Ready
-      </span>
-
-    </div>
-
-
-    <div class="status-group">
-
-      <span id="media-dimensions">
-        —
-      </span>
-
-      <span>
-        RGB
-      </span>
-
-      <span>
-        ToonVerse AI Editor V1
-      </span>
-
-    </div>
-
-  </footer>
-
-
-  <!-- MOBILE TOOLBAR -->
-
-  <nav
-    class="editor-mobile-nav"
-    aria-label="Mobile editor tools"
-  >
+  <nav class="mobile-nav">
 
     <button
-      class="mobile-tool active"
+      class="mobile-button active"
       type="button"
       data-editor-tool="select"
     >
-      <span>↖️</span>
+      <span class="mobile-icon">↖️</span>
       <span>Select</span>
     </button>
 
     <button
-      class="mobile-tool"
+      class="mobile-button"
       type="button"
       data-editor-tool="crop"
     >
-      <span>✂️</span>
+      <span class="mobile-icon">✂️</span>
       <span>Crop</span>
     </button>
 
     <button
-      class="mobile-tool"
+      class="mobile-button"
       type="button"
       data-editor-tool="adjust"
     >
-      <span>🎚️</span>
+      <span class="mobile-icon">🎚️</span>
       <span>Adjust</span>
     </button>
 
     <button
-      class="mobile-tool"
+      class="mobile-button"
       type="button"
-      data-editor-tool="effects"
+      data-editor-tool="paint"
     >
-      <span>✨</span>
-      <span>Effects</span>
+      <span class="mobile-icon">🖌️</span>
+      <span>Paint</span>
     </button>
 
     <button
-      class="mobile-tool"
+      class="mobile-button"
       type="button"
       data-editor-tool="ai"
     >
-      <span>🧠</span>
+      <span class="mobile-icon">🧠</span>
       <span>AI</span>
+    </button>
+
+    <button
+      class="mobile-button"
+      type="button"
+      data-editor-tool="layers"
+    >
+      <span class="mobile-icon">📚</span>
+      <span>Layers</span>
     </button>
 
   </nav>
 
 </div>
-
-
-<!-- =====================================================
-     FILE INPUT
-     ===================================================== -->
 
 <input
   id="editor-file-input"
@@ -2226,1002 +2602,636 @@ body,
   hidden
 >
 
-
-<!-- ACCESSIBILITY -->
-
-<div
-  id="app-status"
-  class="visually-hidden"
-  role="status"
-  aria-live="polite"
-  aria-atomic="true"
-></div>
-
-
-<!-- =====================================================
-     GLOBAL FOUNDATION
-     ===================================================== -->
-
-<script src="./assets/js/config.js" defer></script>
-<script src="./assets/js/main.js" defer></script>
-
-
-<!-- =====================================================
-     EDITOR V1 CONTROLLER
-
-     This provides safe local frontend behavior.
-     Advanced destructive/non-destructive processing
-     will later move into dedicated editor modules.
-     ===================================================== -->
-
 <script>
+
 "use strict";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
 
-  const fileInput =
-    document.getElementById("editor-file-input");
+    /* =========================
+       ELEMENT REFERENCES
+       ========================= */
 
-  const canvasDocument =
-    document.getElementById("canvas-document");
-
-  const canvasImage =
-    document.getElementById("canvas-image");
-
-  const placeholder =
-    document.getElementById("canvas-placeholder");
-
-  const selection =
-    document.getElementById("canvas-selection");
-
-  const zoomDisplay =
-    document.getElementById("zoom-display");
-
-  const documentName =
-    document.getElementById("document-name");
-
-  const documentMeta =
-    document.getElementById("document-meta");
-
-  const canvasInfo =
-    document.getElementById("canvas-info");
-
-  const dimensions =
-    document.getElementById("media-dimensions");
-
-  const widthInput =
-    document.getElementById("document-width");
-
-  const heightInput =
-    document.getElementById("document-height");
-
-  const layerList =
-    document.getElementById("layer-list");
-
-  const editorStatus =
-    document.getElementById("editor-status");
-
-  const networkStatus =
-    document.getElementById("network-status");
-
-  let currentFile = null;
-  let objectURL = null;
-  let zoom = 1;
-  let activeTool = "select";
-
-
-  /* ===================================================
-     NOTIFICATIONS
-     =================================================== */
-
-  function notify(message, type = "info") {
-
-    if (
-      window.ToonVerseAI &&
-      typeof window.ToonVerseAI.showToast === "function"
-    ) {
-
-      window.ToonVerseAI.showToast(
-        message,
-        type
+    const fileInput =
+      document.getElementById(
+        "editor-file-input"
       );
 
-      return;
-    }
+    const canvasDocument =
+      document.getElementById(
+        "canvas-document"
+      );
 
-    console.info(
-      "ToonVerse AI:",
-      message
-    );
-  }
+    const canvasImage =
+      document.getElementById(
+        "canvas-image"
+      );
 
+    const placeholder =
+      document.getElementById(
+        "canvas-placeholder"
+      );
 
-  function setStatus(message) {
+    const selection =
+      document.getElementById(
+        "canvas-selection"
+      );
 
-    if (editorStatus) {
-      editorStatus.textContent = message;
-    }
-  }
+    const zoomDisplay =
+      document.getElementById(
+        "zoom-display"
+      );
 
+    const documentName =
+      document.getElementById(
+        "document-name"
+      );
 
-  /* ===================================================
-     FILE IMPORT
-     =================================================== */
+    const documentMeta =
+      document.getElementById(
+        "document-meta"
+      );
 
-  document
-  .querySelectorAll(
-    '[data-editor-action="import"]'
-  )
-  .forEach(button => {
+    const canvasInfo =
+      document.getElementById(
+        "canvas-info"
+      );
 
-    button.addEventListener("click", () => {
+    const widthInput =
+      document.getElementById(
+        "document-width"
+      );
 
-      if (!fileInput) {
-        notify("Import input is not available.", "error");
+    const heightInput =
+      document.getElementById(
+        "document-height"
+      );
+
+    const rotationInput =
+      document.getElementById(
+        "rotation-input"
+      );
+
+    const flipXInput =
+      document.getElementById(
+        "flip-x-input"
+      );
+
+    const flipYInput =
+      document.getElementById(
+        "flip-y-input"
+      );
+
+    const undoButton =
+      document.getElementById(
+        "undo-button"
+      );
+
+    const redoButton =
+      document.getElementById(
+        "redo-button"
+      );
+
+    const layerList =
+      document.getElementById(
+        "layer-list"
+      );
+
+    const historyList =
+      document.getElementById(
+        "history-list"
+      );
+
+    const toolPanelTitle =
+      document.getElementById(
+        "tool-panel-title"
+      );
+
+    /* =========================
+       EDITOR STATE
+       ========================= */
+
+    let currentFile =
+      null;
+
+    let objectURL =
+      null;
+
+    let zoom =
+      1;
+
+    let activeTool =
+      "select";
+
+    let layerCounter =
+      1;
+
+    const undoStack =
+      [];
+
+    const redoStack =
+      [];
+
+    const HISTORY_LIMIT =
+      60;
+
+    const transformState = {
+
+      rotation:
+        0,
+
+      flipX:
+        false,
+
+      flipY:
+        false
+    };
+
+    /* =========================
+       HELPERS
+       ========================= */
+
+    function notify(
+      message,
+      type = "info"
+    ) {
+
+      console.log(
+        `[${type}]`,
+        message
+      );
+
+      if (
+        window.ToonVerseAI &&
+        typeof
+        window.ToonVerseAI.showToast ===
+        "function"
+      ) {
+
+        window.ToonVerseAI.showToast(
+          message,
+          type
+        );
+
         return;
       }
 
-      fileInput.value = "";
+      const old =
+        document.getElementById(
+          "tv-toast"
+        );
 
-      if (typeof fileInput.showPicker === "function") {
-        try {
-          fileInput.showPicker();
-          return;
-        } catch (error) {
-          console.warn("showPicker fallback:", error);
-        }
+      if (old) {
+        old.remove();
       }
 
-      fileInput.click();
-    });
+      const toast =
+        document.createElement(
+          "div"
+        );
 
-  });
-  
-  
-    
-  
+      toast.id =
+        "tv-toast";
 
-  
+      toast.textContent =
+        message;
 
+      toast.style.position =
+        "fixed";
 
+      toast.style.left =
+        "50%";
 
+      toast.style.bottom =
+        "85px";
 
-  
+      toast.style.transform =
+        "translateX(-50%)";
 
-  
+      toast.style.zIndex =
+        "99999";
 
-  
-  
-    
-    
-    
-    
-    
-  
+      toast.style.maxWidth =
+        "90vw";
 
-  
+      toast.style.padding =
+        "10px 14px";
 
-      
-      
-      
-    
+      toast.style.borderRadius =
+        "10px";
 
+      toast.style.background =
+        "#111a31";
 
-  fileInput?.addEventListener(
-    "change",
-    () => {
+      toast.style.color =
+        "#fff";
 
-      const file =
-        fileInput.files?.[0];
+      toast.style.border =
+        "1px solid rgba(255,255,255,.15)";
 
-      if (!file) {
-        return;
+      toast.style.boxShadow =
+        "0 14px 35px rgba(0,0,0,.35)";
+
+      toast.style.fontSize =
+        "12px";
+
+      document.body.appendChild(
+        toast
+      );
+
+      setTimeout(
+        () => {
+
+          toast.remove();
+
+        },
+        2200
+      );
+    }
+
+    function formatBytes(bytes) {
+
+      if (
+        !Number.isFinite(bytes)
+      ) {
+        return "";
       }
 
       if (
-        ![
-          "image/jpeg",
-          "image/png",
-          "image/webp"
-        ].includes(file.type)
+        bytes < 1024
       ) {
 
-        notify(
-          "This V1 editor currently accepts JPG, PNG and WebP images.",
-          "warning"
-        );
-
-        return;
+        return `${bytes} B`;
       }
 
-      loadImage(file);
-    }
-  );
-
-
-  function loadImage(file) {
-
-    if (objectURL) {
-      URL.revokeObjectURL(objectURL);
-    }
-
-    objectURL =
-      URL.createObjectURL(file);
-
-    currentFile = file;
-canvasImage.dataset.rotation = "0";
-canvasImage.dataset.flip = "false";
-canvasImage.style.transform = "rotate(0deg)";
-
-
-    canvasImage.onload =
-      () => {
-
-        const width =
-          canvasImage.naturalWidth;
-
-        const height =
-          canvasImage.naturalHeight;
-
-        canvasDocument.style.aspectRatio =
-          `${width} / ${height}`;
-
-        canvasDocument.classList.add(
-          "has-media"
-        );
-
-        placeholder.hidden = true;
-        canvasImage.hidden = false;
-
-        documentName.textContent =
-          file.name;
-
-        documentMeta.textContent =
-          `${formatBytes(file.size)} • ${file.type}`;
-
-        canvasInfo.textContent =
-          `${width} × ${height}px`;
-
-        dimensions.textContent =
-          `${width} × ${height}px`;
-
-        widthInput.value =
-          width;
-
-        heightInput.value =
-          height;
-
-        updateLayer(file.name);
-
-        zoom = 1;
-
-        updateZoom();
-
-        setStatus(
-          "Image loaded"
-        );
-
-        notify(
-          "Image imported into the editor.",
-          "success"
-        );
-      };
-
-
-    canvasImage.onerror =
-      () => {
-
-        notify(
-          "The selected image could not be loaded.",
-          "error"
-        );
-      };
-
-
-    canvasImage.src =
-      objectURL;
-  }
-
-
-  /* ===================================================
-     LAYERS
-     =================================================== */
-
-  function updateLayer(name) {
-
-    if (!layerList) {
-      return;
-    }
-
-    layerList.innerHTML = "";
-
-    const layer =
-      document.createElement("div");
-
-    layer.className =
-      "layer-item active";
-
-    const thumb =
-      document.createElement("div");
-
-    thumb.className =
-      "layer-thumb";
-
-    thumb.textContent =
-      "🖼️";
-
-    const info =
-      document.createElement("div");
-
-    info.className =
-      "layer-info";
-
-    const title =
-      document.createElement("div");
-
-    title.className =
-      "layer-name";
-
-    title.textContent =
-      name;
-
-    const meta =
-      document.createElement("div");
-
-    meta.className =
-      "layer-meta";
-
-    meta.textContent =
-      "Image layer";
-
-    const visibility =
-      document.createElement("span");
-
-    visibility.textContent =
-      "👁";
-
-    info.appendChild(title);
-    info.appendChild(meta);
-
-    layer.appendChild(thumb);
-    layer.appendChild(info);
-    layer.appendChild(visibility);
-
-    layerList.appendChild(layer);
-  }
-
-
-  /* ===================================================
-     TOOL SELECTION
-     =================================================== */
-
-  const toolNames = {
-    select: "Select & Transform",
-    crop: "Crop & Selection",
-    brush: "Brush & Painting",
-    erase: "Erase",
-    text: "Text",
-    adjust: "Adjustments",
-    effects: "Effects & Lighting",
-    ai: "AI Tools"
-  };
-
-
-  document
-    .querySelectorAll(
-      "[data-editor-tool]"
-    )
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          activeTool =
-            button.dataset.editorTool;
-
-          document
-            .querySelectorAll(
-              "[data-editor-tool]"
-            )
-            .forEach(item => {
-
-              item.classList.toggle(
-                "active",
-                item.dataset.editorTool === activeTool
-              );
-            });
-
-
-          const panelTitle =
-            document.getElementById(
-              "tool-panel-title"
-            );
-
-          if (panelTitle) {
-
-            panelTitle.textContent =
-              toolNames[activeTool] ||
-              "Editor Tools";
-          }
-
-
-          selection?.classList.toggle(
-            "visible",
-            activeTool === "crop" &&
-            Boolean(currentFile)
-          );
-
-
-          setStatus(
-            `${toolNames[activeTool] || activeTool} selected`
-          );
-        }
-      );
-    });
-
-
-  /* ===================================================
-     TOOL OPERATIONS
-     =================================================== */
-
-  document
-    .querySelectorAll(
-      "[data-editor-operation]"
-    )
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const operation =
-            button.dataset.editorOperation;
-
-          if (!currentFile) {
-
-            notify(
-              "Import an image before using editing tools.",
-              "info"
-            );
-
-            return;
-          }
-
-
-          
-
-            
-              
-            if (operation === "rotate") {
-
-  const currentRotation =
-    Number(canvasImage.dataset.rotation || 0);
-
-  const nextRotation =
-    (currentRotation + 90) % 360;
-
-  canvasImage.dataset.rotation =
-    String(nextRotation);
-
-  canvasImage.style.transform =
-    `rotate(${nextRotation}deg)`;
-
-  canvasImage.style.transformOrigin =
-    "center center";
-
-  setStatus(
-    `Rotated ${nextRotation}°`
-  );
-
-  notify(
-    `Image rotated to ${nextRotation}°`,
-    "success"
-  );
-
-  return;
-}
-if (operation === "flip") {
-
-  const currentFlip =
-    canvasImage.dataset.flip === "true";
-
-  const nextFlip =
-    !currentFlip;
-
-  canvasImage.dataset.flip =
-    String(nextFlip);
-
-  const rotation =
-    Number(canvasImage.dataset.rotation || 0);
-
-  canvasImage.style.transform =
-    `rotate(${rotation}deg) scaleX(${nextFlip ? -1 : 1})`;
-
-  canvasImage.style.transformOrigin =
-    "center center";
-
-  setStatus(
-    nextFlip
-      ? "Image flipped horizontally"
-      : "Image flip reset"
-  );
-
-  notify(
-    nextFlip
-      ? "Image flipped horizontally."
-      : "Image flip reset.",
-    "success"
-  );
-
-  return;
-}
-            
-          
-
-
-          if (operation === "crop") {
-
-            activeTool = "crop";
-
-            selection?.classList.add(
-              "visible"
-            );
-
-            notify(
-              "Crop workspace selected."
-            );
-
-            return;
-          }
-
-
-          notify(
-            `${formatOperationName(operation)} foundation is ready for the editing engine.`
-          );
-        }
-      );
-    });
-
-
-  /* ===================================================
-     GLOBAL EDITOR ACTIONS
-     =================================================== */
-
-  document
-    .querySelectorAll(
-      "[data-editor-action]"
-    )
-    .forEach(button => {
-
-      const action =
-        button.dataset.editorAction;
-
-      if (action === "import") {
-        return;
+      if (
+        bytes <
+        1024 * 1024
+      ) {
+
+        return `${(
+          bytes / 1024
+        ).toFixed(1)} KB`;
       }
-
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          switch (action) {
-
-            case "save":
-
-              saveProject();
-
-              break;
-
-
-            case "export":
-
-              exportProject();
-
-              break;
-
-
-            case "new":
-
-              resetProject();
-
-              break;
-
-
-            case "undo":
-
-              notify(
-                "Undo history engine will activate with editable operations."
-              );
-
-              break;
-
-
-            case "redo":
-
-              notify(
-                "Redo history engine will activate with editable operations."
-              );
-
-              break;
-
-
-            case "zoom-in":
-
-              zoom =
-                Math.min(
-                  4,
-                  zoom + 0.1
-                );
-
-              updateZoom();
-
-              break;
-
-
-            case "zoom-out":
-
-              zoom =
-                Math.max(
-                  0.2,
-                  zoom - 0.1
-                );
-
-              updateZoom();
-
-              break;
-
-
-            case "fit":
-
-              zoom = 1;
-
-              updateZoom();
-
-              break;
-
-
-            case "before-after":
-
-              notify(
-                "Before/after comparison will activate when edits are applied."
-              );
-
-              break;
-
-
-            case "fullscreen":
-
-              toggleFullscreen();
-
-              break;
-
-          }
-        }
-      );
-    });
-
-
-  /* ===================================================
-     ZOOM
-     =================================================== */
-
-  function updateZoom() {
-
-    if (canvasDocument) {
-
-      canvasDocument.style.transform =
-        `scale(${zoom})`;
-    }
-
-    if (zoomDisplay) {
-
-      zoomDisplay.textContent =
-        `${Math.round(zoom * 100)}%`;
-    }
-  }
-
-
-  /* ===================================================
-     LOCAL PROJECT SAVE
-     =================================================== */
-
-  function saveProject() {
-
-    const project = {
-
-      version: 1,
-
-      name:
-        currentFile?.name ||
-        "Untitled Project",
-
-      sourceType:
-        currentFile?.type ||
-        null,
-
-      sourceSize:
-        currentFile?.size ||
-        null,
-
-      width:
-        Number(widthInput?.value) || null,
-
-      height:
-        Number(heightInput?.value) || null,
-
-      activeTool,
-
-      zoom,
-
-      savedAt:
-        new Date().toISOString()
-    };
-
-
-    try {
-
-      localStorage.setItem(
-        "toonverse:editor:last-project",
-        JSON.stringify(project)
-      );
-
-
-      setStatus(
-        "Project metadata saved"
-      );
-
-
-      notify(
-        "Project metadata saved on this device.",
-        "success"
-      );
-
-
-    } catch {
-
-      notify(
-        "Project metadata could not be saved on this device.",
-        "error"
-      );
-    }
-  }
-
-
-  /* ===================================================
-     EXPORT
-
-     V1 safely exports the currently loaded original image.
-     Actual rendered edited export comes with the image
-     processing engine.
-     =================================================== */
-
-  function exportProject() {
-
-    if (
-      !currentFile ||
-      !objectURL
-    ) {
-
-      notify(
-        "Import media before exporting.",
-        "info"
-      );
-
-      return;
-    }
-
-
-    const anchor =
-      document.createElement("a");
-
-    anchor.href =
-      objectURL;
-
-    anchor.download =
-      currentFile.name;
-
-    document.body.appendChild(
-      anchor
-    );
-
-    anchor.click();
-
-    anchor.remove();
-
-
-    notify(
-      "Original working image exported. Rendered edited export will connect with the processing engine.",
-      "success"
-    );
-  }
-
-
-  /* ===================================================
-     NEW PROJECT
-     =================================================== */
-
-  function resetProject() {
-
-    if (objectURL) {
-
-      URL.revokeObjectURL(
-        objectURL
-      );
-
-      objectURL = null;
-    }
-
-
-    currentFile = null;
-
-    fileInput.value = "";
-
-    canvasImage.removeAttribute(
-      "src"
-    );
-canvasImage.dataset.rotation = "0";
-canvasImage.style.transform = "rotate(0deg)";
-    canvasImage.hidden = true;
-
-    placeholder.hidden = false;
-
-    canvasDocument.classList.remove(
-      "has-media"
-    );
-
-    canvasDocument.style.aspectRatio =
-      "4 / 3";
-
-    selection?.classList.remove(
-      "visible"
-    );
-
-    documentName.textContent =
-      "Untitled Project";
-
-    documentMeta.textContent =
-      "Unified AI Editor";
-
-    canvasInfo.textContent =
-      "No media loaded";
-
-    dimensions.textContent =
-      "—";
-
-    widthInput.value =
-      1200;
-
-    heightInput.value =
-      900;
-
-    zoom = 1;
-
-    updateZoom();
-
-    updateLayer(
-      "Background"
-    );
-
-    setStatus(
-      "New project"
-    );
-
-
-    notify(
-      "New editor project started.",
-      "success"
-    );
-  }
-
-
-  /* ===================================================
-     FULLSCREEN
-     =================================================== */
-
-  async function toggleFullscreen() {
-
-    try {
-
-      if (!document.fullscreenElement) {
-
-        await document.documentElement
-          .requestFullscreen?.();
-
-      } else {
-
-        await document
-          .exitFullscreen?.();
-      }
-
-    } catch {
-
-      notify(
-        "Fullscreen is not available in this browser.",
-        "warning"
-      );
-    }
-  }
-
-
-  /* ===================================================
-     NETWORK STATUS
-     =================================================== */
-
-  function updateNetworkStatus() {
-
-    if (!networkStatus) {
-      return;
-    }
-
-    networkStatus.textContent =
-      navigator.onLine
-        ? "Online"
-        : "Offline";
-  }
-
-
-  window.addEventListener(
-    "online",
-    updateNetworkStatus
-  );
-
-  window.addEventListener(
-    "offline",
-    updateNetworkStatus
-  );
-
-  updateNetworkStatus();
-
-
-  /* ===================================================
-     HELPERS
-     =================================================== */
-
-  function formatBytes(bytes) {
-
-    if (!Number.isFinite(bytes)) {
-      return "";
-    }
-
-    if (bytes < 1024) {
-      return `${bytes} B`;
-    }
-
-    if (bytes < 1024 * 1024) {
 
       return `${(
-        bytes / 1024
-      ).toFixed(1)} KB`;
+        bytes /
+        (
+          1024 *
+          1024
+        )
+      ).toFixed(1)} MB`;
     }
 
-    return `${(
-      bytes /
-      (1024 * 1024)
-    ).toFixed(1)} MB`;
-  }
+    function formatOperation(
+      value
+    ) {
 
-
-  function formatOperationName(value) {
-
-    return String(value || "")
-      .replace(/-/g, " ")
+      return String(
+        value || ""
+      )
+      .replace(
+        /-/g,
+        " "
+      )
       .replace(
         /\b\w/g,
         letter =>
           letter.toUpperCase()
       );
-  }
+    }
 
+    function addHistoryMessage(
+      message
+    ) {
 
-  /* ===================================================
-     CLEANUP
-     =================================================== */
+      if (!historyList) {
+        return;
+      }
 
-  window.addEventListener(
-    "beforeunload",
-    () => {
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "history-item";
+
+      item.textContent =
+        message;
+
+      historyList.prepend(
+        item
+      );
+
+      while (
+        historyList.children.length >
+        20
+      ) {
+
+        historyList.lastElementChild
+          ?.remove();
+      }
+    }
+
+    /* =========================
+       TRANSFORM STATE
+       ========================= */
+
+    function getTransformSnapshot() {
+
+      return {
+
+        rotation:
+          transformState.rotation,
+
+        flipX:
+          transformState.flipX,
+
+        flipY:
+          transformState.flipY
+      };
+    }
+
+    function applyTransform() {
+
+      canvasImage.dataset.rotation =
+        String(
+          transformState.rotation
+        );
+
+      canvasImage.dataset.flipX =
+        String(
+          transformState.flipX
+        );
+
+      canvasImage.dataset.flipY =
+        String(
+          transformState.flipY
+        );
+
+      canvasImage.style.transform =
+        `
+          rotate(
+            ${transformState.rotation}deg
+          )
+          scaleX(
+            ${transformState.flipX ? -1 : 1}
+          )
+          scaleY(
+            ${transformState.flipY ? -1 : 1}
+          )
+        `;
+
+      canvasImage.style.transformOrigin =
+        "center center";
+
+      if (rotationInput) {
+
+        rotationInput.value =
+          transformState.rotation;
+      }
+
+      if (flipXInput) {
+
+        flipXInput.value =
+          transformState.flipX
+          ? "Yes"
+          : "No";
+      }
+
+      if (flipYInput) {
+
+        flipYInput.value =
+          transformState.flipY
+          ? "Yes"
+          : "No";
+      }
+    }
+
+    function resetTransformState() {
+
+      transformState.rotation =
+        0;
+
+      transformState.flipX =
+        false;
+
+      transformState.flipY =
+        false;
+
+      applyTransform();
+    }
+
+    function pushUndo(
+      previousState
+    ) {
+
+      undoStack.push(
+        previousState
+      );
+
+      if (
+        undoStack.length >
+        HISTORY_LIMIT
+      ) {
+
+        undoStack.shift();
+      }
+
+      redoStack.length =
+        0;
+
+      updateHistoryButtons();
+    }
+
+    function clearHistory() {
+
+      undoStack.length =
+        0;
+
+      redoStack.length =
+        0;
+
+      updateHistoryButtons();
+    }
+
+    function updateHistoryButtons() {
+
+      undoButton.disabled =
+        undoStack.length === 0;
+
+      redoButton.disabled =
+        redoStack.length === 0;
+    }
+
+    function undo() {
+
+      if (
+        !currentFile ||
+        undoStack.length === 0
+      ) {
+        return;
+      }
+
+      redoStack.push(
+        getTransformSnapshot()
+      );
+
+      const previous =
+        undoStack.pop();
+
+      transformState.rotation =
+        previous.rotation;
+
+      transformState.flipX =
+        previous.flipX;
+
+      transformState.flipY =
+        previous.flipY;
+
+      applyTransform();
+
+      updateHistoryButtons();
+
+      addHistoryMessage(
+        "Undo"
+      );
+
+      notify(
+        "Undo applied.",
+        "success"
+      );
+    }
+
+    function redo() {
+
+      if (
+        !currentFile ||
+        redoStack.length === 0
+      ) {
+        return;
+      }
+
+      undoStack.push(
+        getTransformSnapshot()
+      );
+
+      const next =
+        redoStack.pop();
+
+      transformState.rotation =
+        next.rotation;
+
+      transformState.flipX =
+        next.flipX;
+
+      transformState.flipY =
+        next.flipY;
+
+      applyTransform();
+
+      updateHistoryButtons();
+
+      addHistoryMessage(
+        "Redo"
+      );
+
+      notify(
+        "Redo applied.",
+        "success"
+      );
+    }
+
+    /* =========================
+       IMPORT
+       ========================= */
+
+    document
+      .querySelectorAll(
+        '[data-editor-action="import"]'
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              fileInput.value =
+                "";
+
+              if (
+                typeof
+                fileInput.showPicker ===
+                "function"
+              ) {
+
+                try {
+
+                  fileInput.showPicker();
+
+                  return;
+
+                } catch (
+                  error
+                ) {
+
+                  console.warn(
+                    error
+                  );
+                }
+              }
+
+              fileInput.click();
+            }
+          );
+        }
+      );
+
+    fileInput.addEventListener(
+      "change",
+      () => {
+
+        const file =
+          fileInput.files?.[0];
+
+        if (!file) {
+          return;
+        }
+
+        const supported =
+          [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ];
+
+        if (
+          !supported.includes(
+            file.type
+          )
+        ) {
+
+          notify(
+            "Use JPG, PNG or WebP image.",
+            "warning"
+          );
+
+          return;
+        }
+
+        loadImage(
+          file
+        );
+      }
+    );
+
+    function loadImage(
+      file
+    ) {
 
       if (objectURL) {
 
@@ -3229,13 +3239,1234 @@ canvasImage.style.transform = "rotate(0deg)";
           objectURL
         );
       }
+
+      objectURL =
+        URL.createObjectURL(
+          file
+        );
+
+      currentFile =
+        file;
+
+      resetTransformState();
+
+      clearHistory();
+
+      canvasImage.onload =
+        () => {
+
+          const width =
+            canvasImage.naturalWidth;
+
+          const height =
+            canvasImage.naturalHeight;
+
+          canvasDocument
+            .classList
+            .add(
+              "has-media"
+            );
+
+          canvasDocument.style.aspectRatio =
+            `${width} / ${height}`;
+
+          placeholder.hidden =
+            true;
+
+          canvasImage.hidden =
+            false;
+
+          documentName.textContent =
+            file.name;
+
+          documentMeta.textContent =
+            `${formatBytes(file.size)} • ${file.type}`;
+
+          canvasInfo.textContent =
+            `${width} × ${height}px`;
+
+          widthInput.value =
+            width;
+
+          heightInput.value =
+            height;
+
+          zoom =
+            1;
+
+          updateZoom();
+
+          setMainLayer(
+            file.name
+          );
+
+          addHistoryMessage(
+            "Image imported"
+          );
+
+          notify(
+            "Image imported successfully.",
+            "success"
+          );
+        };
+
+      canvasImage.onerror =
+        () => {
+
+          notify(
+            "Image could not be loaded.",
+            "error"
+          );
+        };
+
+      canvasImage.src =
+        objectURL;
     }
-  );
 
+    /* =========================
+       TOOL SELECTION
+       ========================= */
 
-  updateZoom();
+    const toolNames = {
 
-});
+      select:
+        "Selection",
+
+      transform:
+        "Transform",
+
+      crop:
+        "Crop & Selection",
+
+      adjust:
+        "Adjustments",
+
+      retouch:
+        "Retouch",
+
+      paint:
+        "Drawing & Painting",
+
+      text:
+        "Text",
+
+      content:
+        "Content",
+
+      layers:
+        "Layers",
+
+      effects:
+        "Effects",
+
+      ai:
+        "AI Studio"
+    };
+
+    document
+      .querySelectorAll(
+        "[data-editor-tool]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              activeTool =
+                button.dataset.editorTool;
+
+              document
+                .querySelectorAll(
+                  "[data-editor-tool]"
+                )
+                .forEach(
+                  item => {
+
+                    item.classList.toggle(
+                      "active",
+                      item.dataset.editorTool ===
+                      activeTool
+                    );
+                  }
+                );
+
+              if (
+                toolPanelTitle
+              ) {
+
+                toolPanelTitle.textContent =
+                  toolNames[
+                    activeTool
+                  ] ||
+                  "Editor Tools";
+              }
+
+              selection.classList.toggle(
+                "visible",
+                activeTool ===
+                "crop" &&
+                Boolean(currentFile)
+              );
+            }
+          );
+        }
+      );
+
+    /* =========================
+       EDITING OPERATIONS
+       ========================= */
+
+    document
+      .querySelectorAll(
+        "[data-editor-operation]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const operation =
+                button.dataset.editorOperation;
+
+              if (
+                !currentFile
+              ) {
+
+                notify(
+                  "Import an image first.",
+                  "info"
+                );
+
+                return;
+              }
+
+              /* ROTATE RIGHT */
+
+              if (
+                operation ===
+                "rotate-right"
+              ) {
+
+                const previous =
+                  getTransformSnapshot();
+
+                transformState.rotation =
+                  (
+                    transformState.rotation +
+                    90
+                  ) % 360;
+
+                pushUndo(
+                  previous
+                );
+
+                applyTransform();
+
+                addHistoryMessage(
+                  `Rotate Right ${transformState.rotation}°`
+                );
+
+                notify(
+                  `Rotated to ${transformState.rotation}°`,
+                  "success"
+                );
+
+                return;
+              }
+
+              /* ROTATE LEFT */
+
+              if (
+                operation ===
+                "rotate-left"
+              ) {
+
+                const previous =
+                  getTransformSnapshot();
+
+                transformState.rotation =
+                  (
+                    transformState.rotation -
+                    90 +
+                    360
+                  ) % 360;
+
+                pushUndo(
+                  previous
+                );
+
+                applyTransform();
+
+                addHistoryMessage(
+                  `Rotate Left ${transformState.rotation}°`
+                );
+
+                notify(
+                  `Rotated to ${transformState.rotation}°`,
+                  "success"
+                );
+
+                return;
+              }
+
+              /* FLIP HORIZONTAL */
+
+              if (
+                operation ===
+                "flip-horizontal"
+              ) {
+
+                const previous =
+                  getTransformSnapshot();
+
+                transformState.flipX =
+                  !transformState.flipX;
+
+                pushUndo(
+                  previous
+                );
+
+                applyTransform();
+
+                addHistoryMessage(
+                  "Flip Horizontal"
+                );
+
+                notify(
+                  "Horizontal flip applied.",
+                  "success"
+                );
+
+                return;
+              }
+
+              /* FLIP VERTICAL */
+
+              if (
+                operation ===
+                "flip-vertical"
+              ) {
+
+                const previous =
+                  getTransformSnapshot();
+
+                transformState.flipY =
+                  !transformState.flipY;
+
+                pushUndo(
+                  previous
+                );
+
+                applyTransform();
+
+                addHistoryMessage(
+                  "Flip Vertical"
+                );
+
+                notify(
+                  "Vertical flip applied.",
+                  "success"
+                );
+
+                return;
+              }
+
+              /* RESET */
+
+              if (
+                operation ===
+                "reset-transform"
+              ) {
+
+                const previous =
+                  getTransformSnapshot();
+
+                pushUndo(
+                  previous
+                );
+
+                resetTransformState();
+
+                addHistoryMessage(
+                  "Transform reset"
+                );
+
+                notify(
+                  "Transform reset.",
+                  "success"
+                );
+
+                return;
+              }
+
+              /* CROP FOUNDATION */
+
+              if (
+                operation ===
+                "crop"
+              ) {
+
+                selection.classList.add(
+                  "visible"
+                );
+
+                addHistoryMessage(
+                  "Crop selected"
+                );
+
+                notify(
+                  "Crop workspace ready."
+                );
+
+                return;
+              }
+
+              /* OTHER FOUNDATION BUTTONS */
+
+              addHistoryMessage(
+                `${formatOperation(operation)} selected`
+              );
+
+              notify(
+                `${formatOperation(operation)} tool is installed in the editor foundation. Processing engine will connect here.`
+              );
+            }
+          );
+        }
+      );
+
+    /* =========================
+       COMMAND ACTIONS
+       ========================= */
+
+    document
+      .querySelectorAll(
+        "[data-editor-action]"
+      )
+      .forEach(
+        button => {
+
+          const action =
+            button.dataset.editorAction;
+
+          if (
+            action ===
+            "import"
+          ) {
+            return;
+          }
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              switch (
+                action
+              ) {
+
+                case "new":
+
+                  resetProject();
+
+                  break;
+
+                case "save":
+
+                  saveProject();
+
+                  break;
+
+                case "export":
+
+                  exportProject();
+
+                  break;
+
+                case "undo":
+
+                  undo();
+
+                  break;
+
+                case "redo":
+
+                  redo();
+
+                  break;
+
+                case "zoom-in":
+
+                  zoom =
+                    Math.min(
+                      4,
+                      Number(
+                        (
+                          zoom +
+                          .1
+                        ).toFixed(2)
+                      )
+                    );
+
+                  updateZoom();
+
+                  break;
+
+                case "zoom-out":
+
+                  zoom =
+                    Math.max(
+                      .2,
+                      Number(
+                        (
+                          zoom -
+                          .1
+                        ).toFixed(2)
+                      )
+                    );
+
+                  updateZoom();
+
+                  break;
+
+                case "fit":
+
+                  zoom =
+                    1;
+
+                  updateZoom();
+
+                  break;
+
+                case "compare":
+
+                  notify(
+                    "Before / After comparison foundation ready."
+                  );
+
+                  break;
+
+                case "fullscreen":
+
+                  toggleFullscreen();
+
+                  break;
+
+                case "print":
+
+                  window.print();
+
+                  break;
+              }
+            }
+          );
+        }
+      );
+
+    /* =========================
+       ZOOM
+       ========================= */
+
+    function updateZoom() {
+
+      canvasDocument.style.transform =
+        `scale(${zoom})`;
+
+      zoomDisplay.textContent =
+        `${Math.round(
+          zoom * 100
+        )}%`;
+    }
+
+    /* =========================
+       SAVE
+       ========================= */
+
+    function saveProject() {
+
+      const project = {
+
+        version:
+          1,
+
+        name:
+          currentFile?.name ||
+          "Untitled Project",
+
+        type:
+          currentFile?.type ||
+          null,
+
+        size:
+          currentFile?.size ||
+          null,
+
+        width:
+          Number(
+            widthInput.value
+          ),
+
+        height:
+          Number(
+            heightInput.value
+          ),
+
+        activeTool,
+
+        zoom,
+
+        transform:
+          getTransformSnapshot(),
+
+        savedAt:
+          new Date()
+          .toISOString()
+      };
+
+      try {
+
+        localStorage.setItem(
+          "toonverse:editor:last-project",
+          JSON.stringify(
+            project
+          )
+        );
+
+        addHistoryMessage(
+          "Project saved"
+        );
+
+        notify(
+          "Project metadata saved.",
+          "success"
+        );
+
+      } catch (
+        error
+      ) {
+
+        notify(
+          "Project could not be saved.",
+          "error"
+        );
+      }
+    }
+
+    /* =========================
+       EXPORT
+       ========================= */
+
+    function exportProject() {
+
+      if (
+        !currentFile ||
+        !objectURL
+      ) {
+
+        notify(
+          "Import an image before export.",
+          "info"
+        );
+
+        return;
+      }
+
+      const anchor =
+        document.createElement(
+          "a"
+        );
+
+      anchor.href =
+        objectURL;
+
+      anchor.download =
+        currentFile.name;
+
+      document.body.appendChild(
+        anchor
+      );
+
+      anchor.click();
+
+      anchor.remove();
+
+      notify(
+        "Original working image exported. Rendered edited export engine will connect later.",
+        "success"
+      );
+    }
+
+    /* =========================
+       NEW PROJECT
+       ========================= */
+
+    function resetProject() {
+
+      if (
+        objectURL
+      ) {
+
+        URL.revokeObjectURL(
+          objectURL
+        );
+
+        objectURL =
+          null;
+      }
+
+      currentFile =
+        null;
+
+      fileInput.value =
+        "";
+
+      canvasImage.removeAttribute(
+        "src"
+      );
+
+      resetTransformState();
+
+      clearHistory();
+
+      canvasImage.hidden =
+        true;
+
+      placeholder.hidden =
+        false;
+
+      canvasDocument
+        .classList
+        .remove(
+          "has-media"
+        );
+
+      canvasDocument.style.aspectRatio =
+        "4 / 3";
+
+      selection
+        .classList
+        .remove(
+          "visible"
+        );
+
+      documentName.textContent =
+        "Untitled Project";
+
+      documentMeta.textContent =
+        "Unified Creative Editor";
+
+      canvasInfo.textContent =
+        "No media loaded";
+
+      widthInput.value =
+        1200;
+
+      heightInput.value =
+        900;
+
+      zoom =
+        1;
+
+      updateZoom();
+
+      activeTool =
+        "select";
+
+      document
+        .querySelectorAll(
+          "[data-editor-tool]"
+        )
+        .forEach(
+          item => {
+
+            item.classList.toggle(
+              "active",
+              item.dataset.editorTool ===
+              "select"
+            );
+          }
+        );
+
+      toolPanelTitle.textContent =
+        "Editor Tools";
+
+      setMainLayer(
+        "Background"
+      );
+
+      historyList.innerHTML =
+        "";
+
+      addHistoryMessage(
+        "New project"
+      );
+
+      notify(
+        "New project started.",
+        "success"
+      );
+    }
+
+    /* =========================
+       LAYERS FOUNDATION
+       ========================= */
+
+    function setMainLayer(
+      name
+    ) {
+
+      layerList.innerHTML =
+        "";
+
+      const item =
+        createLayerElement(
+          name,
+          "Image Layer"
+        );
+
+      item.classList.add(
+        "active"
+      );
+
+      layerList.appendChild(
+        item
+      );
+    }
+
+    function createLayerElement(
+      name,
+      meta = "Layer"
+    ) {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "layer-item";
+
+      item.dataset.layerId =
+        `layer-${Date.now()}-${layerCounter++}`;
+
+      const thumb =
+        document.createElement(
+          "div"
+        );
+
+      thumb.className =
+        "layer-thumb";
+
+      thumb.textContent =
+        "🖼️";
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+      info.className =
+        "layer-info";
+
+      const title =
+        document.createElement(
+          "div"
+        );
+
+      title.className =
+        "layer-name";
+
+      title.textContent =
+        name;
+
+      const details =
+        document.createElement(
+          "div"
+        );
+
+      details.className =
+        "layer-meta";
+
+      details.textContent =
+        meta;
+
+      const eye =
+        document.createElement(
+          "span"
+        );
+
+      eye.textContent =
+        "👁";
+
+      info.appendChild(
+        title
+      );
+
+      info.appendChild(
+        details
+      );
+
+      item.appendChild(
+        thumb
+      );
+
+      item.appendChild(
+        info
+      );
+
+      item.appendChild(
+        eye
+      );
+
+      item.addEventListener(
+        "click",
+        () => {
+
+          layerList
+            .querySelectorAll(
+              ".layer-item"
+            )
+            .forEach(
+              layer => {
+
+                layer.classList.remove(
+                  "active"
+                );
+              }
+            );
+
+          item.classList.add(
+            "active"
+          );
+        }
+      );
+
+      return item;
+    }
+
+    document
+      .querySelectorAll(
+        "[data-layer-action]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const action =
+                button.dataset.layerAction;
+
+              const activeLayer =
+                layerList.querySelector(
+                  ".layer-item.active"
+                );
+
+              if (
+                action ===
+                "add"
+              ) {
+
+                const layer =
+                  createLayerElement(
+                    `Layer ${layerCounter}`,
+                    "New Layer"
+                  );
+
+                layerList.prepend(
+                  layer
+                );
+
+                layer.click();
+
+                addHistoryMessage(
+                  "Layer added"
+                );
+
+                return;
+              }
+
+              if (
+                !activeLayer
+              ) {
+
+                notify(
+                  "Select a layer first."
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "duplicate"
+              ) {
+
+                const name =
+                  activeLayer
+                    .querySelector(
+                      ".layer-name"
+                    )
+                    ?.textContent ||
+                  "Layer";
+
+                const copy =
+                  createLayerElement(
+                    `${name} Copy`,
+                    "Duplicate Layer"
+                  );
+
+                activeLayer.after(
+                  copy
+                );
+
+                copy.click();
+
+                addHistoryMessage(
+                  "Layer duplicated"
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "delete"
+              ) {
+
+                if (
+                  layerList.children.length <=
+                  1
+                ) {
+
+                  notify(
+                    "At least one layer must remain.",
+                    "warning"
+                  );
+
+                  return;
+                }
+
+                activeLayer.remove();
+
+                layerList.firstElementChild
+                  ?.classList.add(
+                    "active"
+                  );
+
+                addHistoryMessage(
+                  "Layer deleted"
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "toggle"
+              ) {
+
+                const eye =
+                  activeLayer.lastElementChild;
+
+                const hidden =
+                  activeLayer.dataset.hidden ===
+                  "true";
+
+                activeLayer.dataset.hidden =
+                  String(
+                    !hidden
+                  );
+
+                eye.textContent =
+                  hidden
+                  ? "👁"
+                  : "🚫";
+
+                return;
+              }
+
+              if (
+                action ===
+                "lock"
+              ) {
+
+                const locked =
+                  activeLayer.dataset.locked ===
+                  "true";
+
+                activeLayer.dataset.locked =
+                  String(
+                    !locked
+                  );
+
+                notify(
+                  locked
+                  ? "Layer unlocked."
+                  : "Layer locked."
+                );
+
+                return;
+              }
+
+              if (
+                action ===
+                "up"
+              ) {
+
+                const previous =
+                  activeLayer
+                    .previousElementSibling;
+
+                if (
+                  previous
+                ) {
+
+                  layerList.insertBefore(
+                    activeLayer,
+                    previous
+                  );
+                }
+
+                return;
+              }
+
+              if (
+                action ===
+                "down"
+              ) {
+
+                const next =
+                  activeLayer
+                    .nextElementSibling;
+
+                if (
+                  next
+                ) {
+
+                  layerList.insertBefore(
+                    next,
+                    activeLayer
+                  );
+                }
+              }
+            }
+          );
+        }
+      );
+
+    /* =========================
+       RIGHT TABS
+       ========================= */
+
+    document
+      .querySelectorAll(
+        "[data-property-tab]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              document
+                .querySelectorAll(
+                  "[data-property-tab]"
+                )
+                .forEach(
+                  tab => {
+
+                    tab.classList.remove(
+                      "active"
+                    );
+                  }
+                );
+
+              button.classList.add(
+                "active"
+              );
+
+              notify(
+                `${formatOperation(
+                  button.dataset.propertyTab
+                )} panel selected.`
+              );
+            }
+          );
+        }
+      );
+
+    /* =========================
+       FULLSCREEN
+       ========================= */
+
+    async function toggleFullscreen() {
+
+      try {
+
+        if (
+          !document.fullscreenElement
+        ) {
+
+          await
+          document.documentElement
+          .requestFullscreen?.();
+
+        } else {
+
+          await
+          document
+          .exitFullscreen?.();
+        }
+
+      } catch (
+        error
+      ) {
+
+        notify(
+          "Fullscreen is not available in this browser.",
+          "warning"
+        );
+      }
+    }
+
+    /* =========================
+       CLEANUP
+       ========================= */
+
+    window.addEventListener(
+      "beforeunload",
+      () => {
+
+        if (
+          objectURL
+        ) {
+
+          URL.revokeObjectURL(
+            objectURL
+          );
+        }
+      }
+    );
+
+    /* =========================
+       INITIALIZE
+       ========================= */
+
+    resetTransformState();
+
+    clearHistory();
+
+    updateZoom();
+
+  }
+);
+
 </script>
 
 </body>
