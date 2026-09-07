@@ -1971,14 +1971,13 @@ button{
 
       <div class="property-row">
         <span class="property-label">Rotation</span>
-        <input
-          id="rotation-input"
-          class="editor-input"
-          type="number"
-          value="0"
-          readonly
-        >
+        <input id="rotation-input" class="editor-input" type="number" value="0" readonly>
       </div>
+      <div class="property-row">
+        <span class="property-label">Straighten</span>
+        <input id="straighten-input" type="range" min="-45" max="45" step="0.1" value="0">
+      </div>
+      <button class="top-button" id="reset-straighten" type="button">Reset Straighten</button>
 
       <div class="property-row">
         <span class="property-label">Flip X</span>
@@ -2862,6 +2861,9 @@ document.addEventListener(
     const rotationInput =
       $("rotation-input");
 
+    const straightenInput =
+      $("straighten-input");
+
     const flipXInput =
       $("flip-x-input");
 
@@ -3167,6 +3169,9 @@ document.addEventListener(
     const state = {
 
       rotation:
+        0,
+
+      straighten:
         0,
 
       flipX:
@@ -5262,27 +5267,18 @@ document.addEventListener(
       );
     }
 
-    function transformedSize() {
+    function effectiveRotation() {
+      return (Number(state.rotation) || 0) + (Number(state.straighten) || 0);
+    }
 
-      const swap =
-        Math.abs(
-          state.rotation %
-          180
-        ) ===
-        90;
+    function transformedSize() {
+      const radians = effectiveRotation() * Math.PI / 180;
+      const cosine = Math.abs(Math.cos(radians));
+      const sine = Math.abs(Math.sin(radians));
 
       return {
-
-        w:
-          swap
-          ? work.height
-          : work.width,
-
-        h:
-          swap
-          ? work.width
-          : work.height
-
+        w: Math.max(1, Math.ceil(work.width * cosine + work.height * sine)),
+        h: Math.max(1, Math.ceil(work.width * sine + work.height * cosine))
       };
     }
 
@@ -5369,7 +5365,7 @@ document.addEventListener(
       );
 
       rctx.rotate(
-        state.rotation *
+        effectiveRotation() *
         Math.PI /
         180
       );
@@ -5473,7 +5469,10 @@ document.addEventListener(
     function syncTransformReadouts() {
 
       rotationInput.value =
-        state.rotation;
+        Number(effectiveRotation().toFixed(1));
+
+      straightenInput.value =
+        state.straighten || 0;
 
       flipXInput.value =
         state.flipX
@@ -5571,6 +5570,9 @@ document.addEventListener(
     function resetVisualState() {
 
       state.rotation =
+        0;
+
+      state.straighten =
         0;
 
       state.flipX =
@@ -8814,7 +8816,7 @@ document.addEventListener(
           layer
         ) ||
         layer.locked ||
-        state.rotation !==
+        effectiveRotation() !==
         0 ||
         state.flipX ||
         state.flipY
@@ -9542,7 +9544,7 @@ document.addEventListener(
                 renderAll();
 
                 addHistoryMessage(
-                  `Rotate Right ${state.rotation}°`
+                  `Rotate Right ${effectiveRotation()}°`
                 );
 
                 return;
@@ -9568,7 +9570,7 @@ document.addEventListener(
                 renderAll();
 
                 addHistoryMessage(
-                  `Rotate Left ${state.rotation}°`
+                  `Rotate Left ${effectiveRotation()}°`
                 );
 
                 return;
@@ -9626,6 +9628,9 @@ document.addEventListener(
                 );
 
                 state.rotation =
+                  0;
+
+                state.straighten =
                   0;
 
                 state.flipX =
@@ -9823,12 +9828,9 @@ document.addEventListener(
                 operation ===
                 "straighten"
               ) {
-
-                notify(
-                  "Straighten hook is ready; use Rotate for now.",
-                  "info"
-                );
-
+                setOperation(operation);
+                straightenInput.focus();
+                notify("Use the Straighten slider in Properties for precision rotation.");
                 return;
               }
 
@@ -10039,6 +10041,38 @@ document.addEventListener(
           );
         }
       );
+
+    let straightenStarted = false;
+
+    straightenInput.addEventListener("pointerdown", () => {
+      if (currentFile && !straightenStarted) {
+        pushUndo("Before Straighten");
+        straightenStarted = true;
+      }
+    });
+
+    straightenInput.addEventListener("input", () => {
+      if (!currentFile) return;
+      state.straighten = Number(straightenInput.value);
+      renderAll();
+    });
+
+    straightenInput.addEventListener("change", () => {
+      if (currentFile) {
+        addHistoryMessage(`Straighten ${Number(state.straighten).toFixed(1)}°`);
+      }
+      straightenStarted = false;
+    });
+
+    $("reset-straighten").addEventListener("click", () => {
+      if (!currentFile || !state.straighten) return;
+      pushUndo("Before Straighten Reset");
+      state.straighten = 0;
+      syncControls();
+      renderAll();
+      addHistoryMessage("Straighten reset");
+      notify("Straighten reset.", "success");
+    });
 
     function applyEffectPreset(
       preset,
@@ -11629,7 +11663,7 @@ document.addEventListener(
         2;
 
       const radians =
-        -state.rotation *
+        -effectiveRotation() *
         Math.PI /
         180;
 
@@ -13524,7 +13558,7 @@ document.addEventListener(
           );
 
           layerContext.rotate(
-            state.rotation *
+            effectiveRotation() *
             Math.PI /
             180
           );
@@ -13582,6 +13616,9 @@ document.addEventListener(
       );
 
       state.rotation =
+        0;
+
+      state.straighten =
         0;
 
       state.flipX =
