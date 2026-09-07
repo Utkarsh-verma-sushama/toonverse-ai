@@ -6200,6 +6200,94 @@ document.addEventListener(
       "select"
     );
 
+    if (
+      new URLSearchParams(
+        window.location.search
+      ).get(
+        "qa"
+      ) ===
+      "1"
+    ) {
+
+      const qaCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      qaCanvas.width =
+        400;
+
+      qaCanvas.height =
+        300;
+
+      const qaContext =
+        qaCanvas.getContext(
+          "2d"
+        );
+
+      const qaGradient =
+        qaContext.createLinearGradient(
+          0,
+          0,
+          400,
+          300
+        );
+
+      qaGradient.addColorStop(
+        0,
+        "#ff3366"
+      );
+
+      qaGradient.addColorStop(
+        1,
+        "#3366ff"
+      );
+
+      qaContext.fillStyle =
+        qaGradient;
+
+      qaContext.fillRect(
+        0,
+        0,
+        400,
+        300
+      );
+
+      qaContext.fillStyle =
+        "#ffee33";
+
+      qaContext.fillRect(
+        45,
+        55,
+        120,
+        90
+      );
+
+      qaCanvas.toBlob(
+        blob => {
+
+          if (
+            blob
+          ) {
+
+            loadImage(
+              new File(
+                [
+                  blob
+                ],
+                "toonverse-qa.png",
+                {
+                  type:
+                    "image/png"
+                }
+              )
+            );
+          }
+        },
+        "image/png"
+      );
+    }
+
   }
 );
 
