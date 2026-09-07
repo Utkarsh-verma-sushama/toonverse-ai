@@ -2245,6 +2245,54 @@ button{
 
 </div>
 
+<div
+  class="modal"
+  id="recovery-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="recovery-title"
+>
+
+  <div class="modal-card">
+
+    <div
+      class="modal-title"
+      id="recovery-title"
+    >
+      Continue your previous project?
+    </div>
+
+    <p
+      id="recovery-meta"
+      style="color:var(--muted);font-size:12px;line-height:1.55"
+    >
+      ToonVerse AI found an automatically saved project.
+    </p>
+
+    <div class="modal-actions">
+
+      <button
+        class="top-button"
+        id="recovery-new"
+        type="button"
+      >
+        Start New
+      </button>
+
+      <button
+        class="top-button primary-button"
+        id="recovery-continue"
+        type="button"
+      >
+        Continue
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
 <script>
 
 "use strict";
@@ -2395,6 +2443,12 @@ document.addEventListener(
 
     let resizeRatio =
       1;
+
+    let autoSaveTimer =
+      null;
+
+    let recoveryInProgress =
+      false;
 
     const HISTORY_LIMIT =
       30;
@@ -2689,6 +2743,463 @@ document.addEventListener(
         .toDataURL(
           "image/png"
         );
+    }
+
+    const RECOVERY_DATABASE =
+      "toonverse-editor";
+
+    const RECOVERY_STORE =
+      "projects";
+
+    const RECOVERY_KEY =
+      "last-project";
+
+    function openRecoveryDatabase() {
+
+      return new Promise(
+        (
+          resolve,
+          reject
+        ) => {
+
+          const request =
+            indexedDB.open(
+              RECOVERY_DATABASE,
+              1
+            );
+
+          request.onupgradeneeded =
+            () => {
+
+              const database =
+                request.result;
+
+              if (
+                !database.objectStoreNames.contains(
+                  RECOVERY_STORE
+                )
+              ) {
+
+                database.createObjectStore(
+                  RECOVERY_STORE
+                );
+              }
+            };
+
+          request.onsuccess =
+            () =>
+              resolve(
+                request.result
+              );
+
+          request.onerror =
+            () =>
+              reject(
+                request.error
+              );
+        }
+      );
+    }
+
+    async function recoveryRequest(
+      mode,
+      value
+    ) {
+
+      const database =
+        await openRecoveryDatabase();
+
+      try {
+
+        return await new Promise(
+          (
+            resolve,
+            reject
+          ) => {
+
+            const transaction =
+              database.transaction(
+                RECOVERY_STORE,
+                mode === "read"
+                ? "readonly"
+                : "readwrite"
+              );
+
+            const store =
+              transaction.objectStore(
+                RECOVERY_STORE
+              );
+
+            const request =
+              mode === "read"
+              ? store.get(
+                  RECOVERY_KEY
+                )
+              : mode === "delete"
+              ? store.delete(
+                  RECOVERY_KEY
+                )
+              : store.put(
+                  value,
+                  RECOVERY_KEY
+                );
+
+            request.onsuccess =
+              () =>
+                resolve(
+                  request.result
+                );
+
+            request.onerror =
+              () =>
+                reject(
+                  request.error
+                );
+          }
+        );
+
+      } finally {
+
+        database.close();
+      }
+    }
+
+    function canvasToBlob(
+      targetCanvas
+    ) {
+
+      return new Promise(
+        (
+          resolve,
+          reject
+        ) => {
+
+          targetCanvas.toBlob(
+            blob =>
+              blob
+              ? resolve(
+                  blob
+                )
+              : reject(
+                  new Error(
+                    "Canvas snapshot failed."
+                  )
+                ),
+            "image/png"
+          );
+        }
+      );
+    }
+
+    async function writeRecovery() {
+
+      if (
+        !currentFile ||
+        recoveryInProgress
+      ) {
+
+        return false;
+      }
+
+      const workingBlob =
+        await canvasToBlob(
+          work
+        );
+
+      await recoveryRequest(
+        "write",
+        {
+
+          version:
+            1,
+
+          name:
+            documentName.textContent,
+
+          savedAt:
+            new Date()
+              .toISOString(),
+
+          workingBlob,
+
+          originalBlob:
+            currentFile,
+
+          state:
+            cloneState(),
+
+          zoom,
+
+          activeTool,
+
+          activeOperation
+
+        }
+      );
+
+      return true;
+    }
+
+    function scheduleAutoSave() {
+
+      if (
+        !currentFile ||
+        recoveryInProgress
+      ) {
+
+        return;
+      }
+
+      clearTimeout(
+        autoSaveTimer
+      );
+
+      autoSaveTimer =
+        setTimeout(
+          () => {
+
+            writeRecovery()
+              .catch(
+                error =>
+                  console.warn(
+                    "Auto-save failed.",
+                    error
+                  )
+              );
+          },
+          800
+        );
+    }
+
+    async function deleteRecovery() {
+
+      clearTimeout(
+        autoSaveTimer
+      );
+
+      autoSaveTimer =
+        null;
+
+      await recoveryRequest(
+        "delete"
+      );
+    }
+
+    async function restoreRecovery(
+      saved
+    ) {
+
+      recoveryInProgress =
+        true;
+
+      try {
+
+        const workingBitmap =
+          await decodeImageFile(
+            saved.workingBlob
+          );
+
+        const recoveredOriginal =
+          await decodeImageFile(
+            saved.originalBlob
+          );
+
+        originalBitmap
+          ?.close
+          ?.();
+
+        originalBitmap =
+          recoveredOriginal;
+
+        currentFile =
+          saved.originalBlob instanceof File
+          ? saved.originalBlob
+          : new File(
+              [
+                saved.originalBlob
+              ],
+              saved.name ||
+              "Recovered Project.png",
+              {
+                type:
+                  saved.originalBlob.type ||
+                  "image/png"
+              }
+            );
+
+        work.width =
+          workingBitmap.naturalWidth ||
+          workingBitmap.width;
+
+        work.height =
+          workingBitmap.naturalHeight ||
+          workingBitmap.height;
+
+        wctx.clearRect(
+          0,
+          0,
+          work.width,
+          work.height
+        );
+
+        wctx.drawImage(
+          workingBitmap,
+          0,
+          0
+        );
+
+        Object.assign(
+          state,
+          saved.state ||
+          {}
+        );
+
+        state.adjust = {
+
+          ...state.adjust,
+          ...saved.state?.adjust
+
+        };
+
+        zoom =
+          Number.isFinite(
+            saved.zoom
+          )
+          ? saved.zoom
+          : 1;
+
+        activeTool =
+          saved.activeTool ||
+          "select";
+
+        activeOperation =
+          saved.activeOperation ||
+          "select";
+
+        documentName.textContent =
+          saved.name ||
+          "Recovered Project";
+
+        clearHistory();
+
+        historyList.innerHTML =
+          "";
+
+        setMainLayer(
+          documentName.textContent
+        );
+
+        addHistoryMessage(
+          "Project recovered"
+        );
+
+        syncControls();
+
+        updateDocumentMeta();
+
+        renderAll();
+
+        notify(
+          "Previous project recovered.",
+          "success"
+        );
+
+      } finally {
+
+        recoveryInProgress =
+          false;
+
+        scheduleAutoSave();
+      }
+    }
+
+    async function checkRecovery() {
+
+      try {
+
+        const saved =
+          await recoveryRequest(
+            "read"
+          );
+
+        if (
+          !saved?.workingBlob ||
+          !saved?.originalBlob
+        ) {
+
+          return;
+        }
+
+        const savedDate =
+          new Date(
+            saved.savedAt
+          );
+
+        $("recovery-meta").textContent =
+          `${saved.name || "Untitled Project"} • ${savedDate.toLocaleString()}`;
+
+        $("recovery-modal")
+          .classList
+          .add(
+            "open"
+          );
+
+        $("recovery-continue").onclick =
+          async () => {
+
+            $("recovery-modal")
+              .classList
+              .remove(
+                "open"
+              );
+
+            try {
+
+              await restoreRecovery(
+                saved
+              );
+
+            } catch (
+              error
+            ) {
+
+              console.error(
+                error
+              );
+
+              notify(
+                "Recovery could not be opened. Start a new project.",
+                "error"
+              );
+            }
+          };
+
+        $("recovery-new").onclick =
+          async () => {
+
+            $("recovery-modal")
+              .classList
+              .remove(
+                "open"
+              );
+
+            await deleteRecovery();
+
+            notify(
+              "Recovery cleared. Start a new project.",
+              "success"
+            );
+          };
+
+      } catch (
+        error
+      ) {
+
+        console.warn(
+          "Recovery check failed.",
+          error
+        );
+      }
     }
 
     function snapshot() {
@@ -3039,6 +3550,8 @@ document.addEventListener(
       syncTransformReadouts();
 
       updateZoom();
+
+      scheduleAutoSave();
     }
 
     function syncTransformReadouts() {
@@ -5521,7 +6034,7 @@ document.addEventListener(
         )}%`;
     }
 
-    function saveProject() {
+    async function saveProject() {
 
       if (
         !currentFile
@@ -5569,6 +6082,26 @@ document.addEventListener(
 
       try {
 
+        await writeRecovery();
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          error
+        );
+
+        notify(
+          "Project could not be saved on this device. Export the image to keep a copy.",
+          "error"
+        );
+
+        return;
+      }
+
+      try {
+
         localStorage.setItem(
           "toonverse:editor:last-project",
           JSON.stringify(
@@ -5576,24 +6109,24 @@ document.addEventListener(
           )
         );
 
-        addHistoryMessage(
-          "Project saved"
-        );
-
-        notify(
-          "Project saved locally.",
-          "success"
-        );
-
       } catch (
         error
       ) {
 
-        notify(
-          "Project is too large for browser local storage. Export the image instead.",
-          "warning"
+        console.warn(
+          "Legacy project preview was not stored.",
+          error
         );
       }
+
+      addHistoryMessage(
+        "Project saved"
+      );
+
+      notify(
+        "Project saved locally.",
+        "success"
+      );
     }
 
     function exportProject() {
@@ -5728,6 +6261,22 @@ document.addEventListener(
     }
 
     function resetProject() {
+
+      clearTimeout(
+        autoSaveTimer
+      );
+
+      autoSaveTimer =
+        null;
+
+      deleteRecovery()
+        .catch(
+          error =>
+            console.warn(
+              "Recovery cleanup failed.",
+              error
+            )
+        );
 
       currentFile =
         null;
@@ -6199,6 +6748,8 @@ document.addEventListener(
     setOperation(
       "select"
     );
+
+    checkRecovery();
 
   }
 );
