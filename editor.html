@@ -7449,16 +7449,6 @@ document.addEventListener(
 
     checkRecovery();
 
-    if (new URLSearchParams(location.search).get("qa") === "paint") {
-      const qaCanvas = document.createElement("canvas");
-      qaCanvas.width = 320;
-      qaCanvas.height = 240;
-      const qaContext = qaCanvas.getContext("2d");
-      qaContext.fillStyle = "#202840";
-      qaContext.fillRect(0, 0, 320, 240);
-      qaCanvas.toBlob(blob => blob && loadImage(new File([blob], "paint-qa.png", {type:"image/png"})), "image/png");
-    }
-
   }
 );
 
