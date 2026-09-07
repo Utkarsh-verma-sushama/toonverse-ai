@@ -2090,6 +2090,52 @@ button{
 
     <section class="property-group">
 
+      <h3 class="property-title">Shape</h3>
+
+      <div class="property-row">
+        <span class="property-label">Type</span>
+        <select id="shape-type" class="editor-select">
+          <option value="rectangle">Rectangle</option>
+          <option value="rounded">Rounded</option>
+          <option value="circle">Circle</option>
+          <option value="triangle">Triangle</option>
+          <option value="line">Line</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Width</span>
+        <input id="shape-width" class="editor-input" type="number" min="10" max="4000" value="240">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Height</span>
+        <input id="shape-height" class="editor-input" type="number" min="10" max="4000" value="160">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Fill</span>
+        <input id="shape-fill" class="editor-input" type="color" value="#7c5cff">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Border</span>
+        <input id="shape-stroke" class="editor-input" type="color" value="#ffffff">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Border Size</span>
+        <input id="shape-stroke-width" class="editor-input" type="number" min="0" max="100" value="4">
+      </div>
+
+      <button class="top-button primary-button" id="apply-shape" type="button">
+        Apply Shape
+      </button>
+
+    </section>
+
+    <section class="property-group">
+
       <h3 class="property-title">
         Layers
       </h3>
@@ -2211,6 +2257,13 @@ button{
 
 <input
   id="editor-file-input"
+  type="file"
+  accept="image/jpeg,image/png,image/webp"
+  hidden
+>
+
+<input
+  id="overlay-file-input"
   type="file"
   accept="image/jpeg,image/png,image/webp"
   hidden
@@ -2366,6 +2419,9 @@ document.addEventListener(
     const fileInput =
       $("editor-file-input");
 
+    const overlayFileInput =
+      $("overlay-file-input");
+
     const canvasDocument =
       $("canvas-document");
 
@@ -2461,6 +2517,27 @@ document.addEventListener(
 
     const applyTextButton =
       $("apply-text");
+
+    const shapeType =
+      $("shape-type");
+
+    const shapeWidth =
+      $("shape-width");
+
+    const shapeHeight =
+      $("shape-height");
+
+    const shapeFill =
+      $("shape-fill");
+
+    const shapeStroke =
+      $("shape-stroke");
+
+    const shapeStrokeWidth =
+      $("shape-stroke-width");
+
+    const applyShapeButton =
+      $("apply-shape");
 
     const opacityInput =
       $("opacity-input");
@@ -4124,6 +4201,10 @@ document.addEventListener(
         layer
       );
 
+      syncShapeControls(
+        layer
+      );
+
       if (
         announce
       ) {
@@ -4178,7 +4259,7 @@ document.addEventListener(
             item.innerHTML =
               `
           <div class="layer-thumb">
-            ${layer.kind === "text" ? "T" : "🖼️"}
+            ${layer.kind === "text" ? "T" : layer.kind === "shape" ? "⬡" : "🖼️"}
           </div>
 
           <div class="layer-info">
@@ -4208,6 +4289,10 @@ document.addEventListener(
               .textContent =
                 layer.kind === "text"
                 ? `${layer.contentData?.size || 64}px Text`
+                : layer.kind === "shape"
+                ? `${layer.contentData?.type || "Shape"} Vector`
+                : layer.kind === "image"
+                ? "Overlay Image"
                 : `${layer.canvas.width}×${layer.canvas.height} Raster`;
 
             item.addEventListener(
@@ -4302,6 +4387,203 @@ document.addEventListener(
         loadImage(
           file
         );
+      }
+    );
+
+    overlayFileInput.addEventListener(
+      "change",
+      async () => {
+
+        const file =
+          overlayFileInput.files?.[0];
+
+        if (
+          !file
+        ) {
+
+          return;
+        }
+
+        if (
+          ![
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ].includes(
+            file.type
+          )
+        ) {
+
+          notify(
+            "Use JPG, PNG or WebP image.",
+            "warning"
+          );
+
+          return;
+        }
+
+        try {
+
+          const bitmap =
+            await decodeImageFile(
+              file
+            );
+
+          const sourceWidth =
+            bitmap.naturalWidth ||
+            bitmap.width;
+
+          const sourceHeight =
+            bitmap.naturalHeight ||
+            bitmap.height;
+
+          const maximumWidth =
+            work.width *
+            .7;
+
+          const maximumHeight =
+            work.height *
+            .7;
+
+          const scale =
+            Math.min(
+              1,
+              maximumWidth /
+              sourceWidth,
+              maximumHeight /
+              sourceHeight
+            );
+
+          const drawWidth =
+            Math.max(
+              1,
+              Math.round(
+                sourceWidth *
+                scale
+              )
+            );
+
+          const drawHeight =
+            Math.max(
+              1,
+              Math.round(
+                sourceHeight *
+                scale
+              )
+            );
+
+          pushUndo(
+            "Before Add Image Layer"
+          );
+
+          const layerCanvas =
+            document.createElement(
+              "canvas"
+            );
+
+          layerCanvas.width =
+            work.width;
+
+          layerCanvas.height =
+            work.height;
+
+          const x =
+            Math.round(
+              (
+                work.width -
+                drawWidth
+              ) /
+              2
+            );
+
+          const y =
+            Math.round(
+              (
+                work.height -
+                drawHeight
+              ) /
+              2
+            );
+
+          layerCanvas
+            .getContext(
+              "2d"
+            )
+            .drawImage(
+              bitmap,
+              x,
+              y,
+              drawWidth,
+              drawHeight
+            );
+
+          bitmap.close?.();
+
+          const imageLayer = {
+
+            id:
+              `layer-${Date.now()}-${layerCounter++}`,
+
+            name:
+              file.name,
+
+            kind:
+              "image",
+
+            contentData: {
+              sourceWidth,
+              sourceHeight,
+              x,
+              y,
+              width:
+                drawWidth,
+              height:
+                drawHeight
+            },
+
+            canvas:
+              layerCanvas,
+
+            visible:
+              true,
+
+            locked:
+              false
+          };
+
+          layers.push(
+            imageLayer
+          );
+
+          selectLayer(
+            imageLayer.id,
+            false
+          );
+
+          renderAll();
+
+          addHistoryMessage(
+            "Image layer added"
+          );
+
+          notify(
+            "Image added as a new layer.",
+            "success"
+          );
+
+        } catch (
+          error
+        ) {
+
+          console.error(
+            error
+          );
+
+          notify(
+            "Image layer could not be added.",
+            "error"
+          );
+        }
       }
     );
 
@@ -4973,6 +5255,470 @@ document.addEventListener(
     );
 
 
+    function syncShapeControls(
+      layer =
+        activeLayer()
+    ) {
+
+      const editable =
+        layer?.kind ===
+        "shape";
+
+      applyShapeButton.disabled =
+        !editable ||
+        layer.locked;
+
+      if (
+        !editable
+      ) {
+
+        return;
+      }
+
+      const content =
+        layer.contentData;
+
+      shapeType.value =
+        content.type;
+
+      shapeWidth.value =
+        content.width;
+
+      shapeHeight.value =
+        content.height;
+
+      shapeFill.value =
+        content.fill;
+
+      shapeStroke.value =
+        content.stroke;
+
+      shapeStrokeWidth.value =
+        content.strokeWidth;
+    }
+
+    function renderShapeLayer(
+      layer
+    ) {
+
+      const context =
+        layer.canvas.getContext(
+          "2d"
+        );
+
+      const content =
+        layer.contentData;
+
+      const width =
+        Math.min(
+          layer.canvas.width -
+          2,
+          Math.max(
+            10,
+            content.width
+          )
+        );
+
+      const height =
+        Math.min(
+          layer.canvas.height -
+          2,
+          Math.max(
+            10,
+            content.height
+          )
+        );
+
+      const x =
+        Math.max(
+          1,
+          Math.min(
+            layer.canvas.width -
+            width -
+            1,
+            content.x ??
+            (
+              layer.canvas.width -
+              width
+            ) /
+            2
+          )
+        );
+
+      const y =
+        Math.max(
+          1,
+          Math.min(
+            layer.canvas.height -
+            height -
+            1,
+            content.y ??
+            (
+              layer.canvas.height -
+              height
+            ) /
+            2
+          )
+        );
+
+      Object.assign(
+        content,
+        {
+          width,
+          height,
+          x,
+          y
+        }
+      );
+
+      context.clearRect(
+        0,
+        0,
+        layer.canvas.width,
+        layer.canvas.height
+      );
+
+      context.save();
+
+      context.beginPath();
+
+      if (
+        content.type ===
+        "circle"
+      ) {
+
+        context.ellipse(
+          x +
+          width /
+          2,
+          y +
+          height /
+          2,
+          width /
+          2,
+          height /
+          2,
+          0,
+          0,
+          Math.PI *
+          2
+        );
+
+      } else if (
+        content.type ===
+        "triangle"
+      ) {
+
+        context.moveTo(
+          x +
+          width /
+          2,
+          y
+        );
+
+        context.lineTo(
+          x +
+          width,
+          y +
+          height
+        );
+
+        context.lineTo(
+          x,
+          y +
+          height
+        );
+
+        context.closePath();
+
+      } else if (
+        content.type ===
+        "line"
+      ) {
+
+        context.moveTo(
+          x,
+          y +
+          height /
+          2
+        );
+
+        context.lineTo(
+          x +
+          width,
+          y +
+          height /
+          2
+        );
+
+      } else if (
+        content.type ===
+        "rounded"
+      ) {
+
+        const radius =
+          Math.min(
+            28,
+            width /
+            4,
+            height /
+            4
+          );
+
+        context.moveTo(
+          x +
+          radius,
+          y
+        );
+        context.arcTo(x + width, y, x + width, y + height, radius);
+        context.arcTo(x + width, y + height, x, y + height, radius);
+        context.arcTo(x, y + height, x, y, radius);
+        context.arcTo(x, y, x + width, y, radius);
+        context.closePath();
+
+      } else {
+
+        context.rect(
+          x,
+          y,
+          width,
+          height
+        );
+      }
+
+      context.fillStyle =
+        content.fill;
+
+      context.strokeStyle =
+        content.stroke;
+
+      context.lineWidth =
+        Math.max(
+          0,
+          content.strokeWidth
+        );
+
+      context.lineCap =
+        "round";
+
+      if (
+        content.type !==
+        "line"
+      ) {
+
+        context.fill();
+      }
+
+      if (
+        content.strokeWidth >
+        0 ||
+        content.type ===
+        "line"
+      ) {
+
+        context.stroke();
+      }
+
+      context.restore();
+    }
+
+    function shapeSettings() {
+
+      return {
+
+        type:
+          shapeType.value,
+
+        width:
+          Math.max(
+            10,
+            Number(
+              shapeWidth.value
+            ) ||
+            240
+          ),
+
+        height:
+          Math.max(
+            10,
+            Number(
+              shapeHeight.value
+            ) ||
+            160
+          ),
+
+        fill:
+          shapeFill.value,
+
+        stroke:
+          shapeStroke.value,
+
+        strokeWidth:
+          Math.max(
+            0,
+            Math.min(
+              100,
+              Number(
+                shapeStrokeWidth.value
+              ) ||
+              0
+            )
+          )
+      };
+    }
+
+    function createShapeLayer() {
+
+      if (
+        !currentFile
+      ) {
+
+        notify(
+          "Import an image first."
+        );
+
+        return false;
+      }
+
+      pushUndo(
+        "Before Add Shape"
+      );
+
+      const layerCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      layerCanvas.width =
+        work.width;
+
+      layerCanvas.height =
+        work.height;
+
+      const number =
+        layers.filter(
+          layer =>
+            layer.kind ===
+            "shape"
+        ).length +
+        1;
+
+      const shapeLayer = {
+
+        id:
+          `layer-${Date.now()}-${layerCounter++}`,
+
+        name:
+          `Shape Layer ${number}`,
+
+        kind:
+          "shape",
+
+        contentData:
+          shapeSettings(),
+
+        canvas:
+          layerCanvas,
+
+        visible:
+          true,
+
+        locked:
+          false
+      };
+
+      renderShapeLayer(
+        shapeLayer
+      );
+
+      layers.push(
+        shapeLayer
+      );
+
+      selectLayer(
+        shapeLayer.id,
+        false
+      );
+
+      renderAll();
+
+      addHistoryMessage(
+        `${shapeLayer.name} created`
+      );
+
+      notify(
+        "Editable shape layer added.",
+        "success"
+      );
+
+      return true;
+    }
+
+    function updateShapeLayer() {
+
+      const layer =
+        activeLayer();
+
+      if (
+        layer?.kind !==
+        "shape"
+      ) {
+
+        notify(
+          "Select a shape layer first."
+        );
+
+        return;
+      }
+
+      if (
+        layer.locked
+      ) {
+
+        notify(
+          "Unlock the shape layer before editing."
+        );
+
+        return;
+      }
+
+      pushUndo(
+        "Before Edit Shape"
+      );
+
+      layer.contentData = {
+
+        ...layer.contentData,
+        ...shapeSettings()
+      };
+
+      renderShapeLayer(
+        layer
+      );
+
+      renderAll();
+
+      renderLayerList();
+
+      addHistoryMessage(
+        "Shape updated"
+      );
+
+      notify(
+        "Shape layer updated.",
+        "success"
+      );
+    }
+
+    applyShapeButton.disabled =
+      true;
+
+    applyShapeButton.addEventListener(
+      "click",
+      updateShapeLayer
+    );
+
+
     function ensurePaintLayer() {
 
       if (
@@ -5381,6 +6127,59 @@ document.addEventListener(
                 return;
               }
 
+              if (
+                operation ===
+                "shape"
+              ) {
+
+                setOperation(
+                  operation
+                );
+
+                createShapeLayer();
+
+                return;
+              }
+
+              if (
+                operation ===
+                "add-image"
+              ) {
+
+                setOperation(
+                  operation
+                );
+
+                overlayFileInput.value =
+                  "";
+
+                try {
+
+                  if (
+                    typeof
+                    overlayFileInput.showPicker ===
+                    "function"
+                  ) {
+
+                    overlayFileInput.showPicker();
+
+                    return;
+                  }
+
+                } catch (
+                  error
+                ) {
+
+                  console.warn(
+                    error
+                  );
+                }
+
+                overlayFileInput.click();
+
+                return;
+              }
+
               const frontEndHooks =
                 [
                   "lasso",
@@ -5400,8 +6199,6 @@ document.addEventListener(
                   "burn",
                   "red-eye",
                   "skin-smooth",
-                  "add-image",
-                  "shape",
                   "sticker",
                   "frame",
                   "collage",
@@ -7929,6 +8726,84 @@ document.addEventListener(
     );
 
     checkRecovery();
+
+    if (
+      new URLSearchParams(
+        location.search
+      ).get(
+        "qa"
+      ) ===
+      "content"
+    ) {
+
+      const fixture =
+        document.createElement(
+          "canvas"
+        );
+
+      fixture.width =
+        320;
+
+      fixture.height =
+        240;
+
+      const fixtureContext =
+        fixture.getContext(
+          "2d"
+        );
+
+      const gradient =
+        fixtureContext.createLinearGradient(
+          0,
+          0,
+          320,
+          240
+        );
+
+      gradient.addColorStop(
+        0,
+        "#ff6b35"
+      );
+
+      gradient.addColorStop(
+        1,
+        "#2457ff"
+      );
+
+      fixtureContext.fillStyle =
+        gradient;
+
+      fixtureContext.fillRect(
+        0,
+        0,
+        320,
+        240
+      );
+
+      fixture.toBlob(
+        blob => {
+
+          if (
+            blob
+          ) {
+
+            loadImage(
+              new File(
+                [
+                  blob
+                ],
+                "content-qa.png",
+                {
+                  type:
+                    "image/png"
+                }
+              )
+            );
+          }
+        },
+        "image/png"
+      );
+    }
 
   }
 );
