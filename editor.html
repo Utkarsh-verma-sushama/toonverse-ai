@@ -2043,6 +2043,26 @@ button{
 
     <section class="property-group">
 
+      <h3 class="property-title">Retouch</h3>
+
+      <div class="property-row">
+        <span class="property-label">Strength</span>
+        <input id="retouch-strength" type="range" min="1" max="100" value="35">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Brush Size</span>
+        <input id="retouch-size" type="range" min="3" max="200" value="32">
+      </div>
+
+      <button class="top-button" id="reset-clone-source" type="button">
+        Reset Clone Source
+      </button>
+
+    </section>
+
+    <section class="property-group">
+
       <h3 class="property-title">Selection</h3>
 
       <div class="property-row">
@@ -2637,6 +2657,12 @@ document.addEventListener(
     const brushSize =
       $("brush-size");
 
+    const retouchStrength =
+      $("retouch-strength");
+
+    const retouchSize =
+      $("retouch-size");
+
     const brushHardness =
       $("brush-hardness");
 
@@ -2802,6 +2828,21 @@ document.addEventListener(
       null;
 
     let contentResize =
+      null;
+
+    let cloneSource =
+      null;
+
+    let cloneOffset =
+      null;
+
+    let retouchSnapshot =
+      null;
+
+    let retouchSourceData =
+      null;
+
+    let retouchBlurData =
       null;
 
     let multiSelectMode =
@@ -3418,6 +3459,15 @@ document.addEventListener(
             color:
               brushColor.value
 
+          },
+
+          retouch: {
+
+            strength:
+              retouchStrength.value,
+
+            size:
+              retouchSize.value
           }
 
         }
@@ -3712,6 +3762,19 @@ document.addEventListener(
             120;
 
           rebuildSelectionMask();
+        }
+
+        if (
+          saved.retouch
+        ) {
+
+          retouchStrength.value =
+            saved.retouch.strength ||
+            35;
+
+          retouchSize.value =
+            saved.retouch.size ||
+            32;
         }
 
         documentName.textContent =
@@ -5460,6 +5523,18 @@ document.addEventListener(
       activeOperation =
         operation;
 
+      if (
+        operation !==
+        "clone"
+      ) {
+
+        cloneSource =
+          null;
+
+        cloneOffset =
+          null;
+      }
+
       document
         .querySelectorAll(
           "[data-editor-operation]"
@@ -5516,6 +5591,17 @@ document.addEventListener(
           operation ===
           "lasso"
         ? "crosshair"
+        : [
+            "heal",
+            "clone",
+            "dodge",
+            "burn",
+            "red-eye",
+            "skin-smooth"
+          ].includes(
+            operation
+          )
+        ? "crosshair"
         : operation ===
           "select" &&
           isTransformableLayer(
@@ -5532,6 +5618,22 @@ document.addEventListener(
         updateContentOverlay();
       }
     }
+
+    $("reset-clone-source").addEventListener(
+      "click",
+      () => {
+
+        cloneSource =
+          null;
+
+        cloneOffset =
+          null;
+
+        notify(
+          "Clone source reset. Tap the image to choose a new source."
+        );
+      }
+    );
 
     function syncTextControls(
       layer =
@@ -7441,7 +7543,13 @@ document.addEventListener(
                   "color-picker",
                   "select",
                   "rectangle-select",
-                  "lasso"
+                  "lasso",
+                  "heal",
+                  "clone",
+                  "dodge",
+                  "burn",
+                  "red-eye",
+                  "skin-smooth"
                 ].includes(
                   operation
                 )
@@ -7467,7 +7575,7 @@ document.addEventListener(
 
                 if (
                   [
-                    "rectangle-select",
+                  "rectangle-select",
                     "lasso"
                   ].includes(
                     operation
@@ -7672,12 +7780,6 @@ document.addEventListener(
                   "clarity",
                   "noise-reduction",
                   "vignette",
-                  "heal",
-                  "clone",
-                  "dodge",
-                  "burn",
-                  "red-eye",
-                  "skin-smooth",
                   "sticker",
                   "frame",
                   "collage",
@@ -8932,7 +9034,13 @@ document.addEventListener(
             "brush",
             "pencil",
             "eraser",
-            "fill"
+            "fill",
+            "heal",
+            "clone",
+            "dodge",
+            "burn",
+            "red-eye",
+            "skin-smooth"
           ].includes(
             activeOperation
           )
@@ -9126,10 +9234,35 @@ document.addEventListener(
         }
 
         if (
+          activeOperation ===
+          "clone" &&
+          !cloneSource
+        ) {
+
+          cloneSource =
+            renderedToWorkPoint(
+              point
+            );
+
+          notify(
+            "Clone source set. Now paint over the destination area.",
+            "success"
+          );
+
+          return;
+        }
+
+        if (
           [
             "brush",
             "pencil",
-            "eraser"
+            "eraser",
+            "heal",
+            "clone",
+            "dodge",
+            "burn",
+            "red-eye",
+            "skin-smooth"
           ].includes(
             activeOperation
           )
@@ -9148,6 +9281,119 @@ document.addEventListener(
             renderedToWorkPoint(
               point
             );
+
+          if (
+            [
+              "heal",
+              "clone",
+              "dodge",
+              "burn",
+              "red-eye",
+              "skin-smooth"
+            ].includes(
+              activeOperation
+            )
+          ) {
+
+            const layer =
+              activeLayer();
+
+            retouchSnapshot =
+              document.createElement(
+                "canvas"
+              );
+
+            retouchSnapshot.width =
+              work.width;
+
+            retouchSnapshot.height =
+              work.height;
+
+            retouchSnapshot
+              .getContext(
+                "2d"
+              )
+              .drawImage(
+                work,
+                0,
+                0
+              );
+
+            retouchSourceData =
+              retouchSnapshot
+                .getContext(
+                  "2d"
+                )
+                .getImageData(
+                  0,
+                  0,
+                  work.width,
+                  work.height
+                );
+
+            const blurCanvas =
+              document.createElement(
+                "canvas"
+              );
+
+            blurCanvas.width =
+              work.width;
+
+            blurCanvas.height =
+              work.height;
+
+            const blurContext =
+              blurCanvas.getContext(
+                "2d"
+              );
+
+            blurContext.filter =
+              "blur(4px)";
+
+            blurContext.drawImage(
+              retouchSnapshot,
+              0,
+              0
+            );
+
+            retouchBlurData =
+              blurContext.getImageData(
+                0,
+                0,
+                work.width,
+                work.height
+              );
+
+            if (
+              activeOperation ===
+              "clone"
+            ) {
+
+              cloneOffset = {
+                x:
+                  cloneSource.x -
+                  lastPoint.x,
+                y:
+                  cloneSource.y -
+                  lastPoint.y
+              };
+            }
+
+            if (
+              layer &&
+              layer.kind !==
+              "raster"
+            ) {
+
+              layer.kind =
+                "raster";
+
+              layer.contentData =
+                null;
+
+              renderLayerList();
+            }
+          }
 
           drawStroke(
             lastPoint,
@@ -9614,6 +9860,15 @@ document.addEventListener(
           lastPoint =
             null;
 
+          retouchSnapshot =
+            null;
+
+          retouchSourceData =
+            null;
+
+          retouchBlurData =
+            null;
+
           addHistoryMessage(
             `${formatOperation(
               activeOperation
@@ -9641,8 +9896,477 @@ document.addEventListener(
 
         lastPoint =
           null;
+
+        retouchSnapshot =
+          null;
+
+        retouchSourceData =
+          null;
+
+        retouchBlurData =
+          null;
       }
     );
+
+    function applyRetouchDab(
+      point
+    ) {
+
+      if (
+        !retouchSourceData
+      ) {
+
+        return;
+      }
+
+      const radius =
+        Math.max(
+          2,
+          Number(
+            retouchSize.value
+          ) /
+          2
+        );
+
+      const left =
+        Math.max(
+          0,
+          Math.floor(
+            point.x -
+            radius
+          )
+        );
+
+      const top =
+        Math.max(
+          0,
+          Math.floor(
+            point.y -
+            radius
+          )
+        );
+
+      const right =
+        Math.min(
+          work.width,
+          Math.ceil(
+            point.x +
+            radius
+          )
+        );
+
+      const bottom =
+        Math.min(
+          work.height,
+          Math.ceil(
+            point.y +
+            radius
+          )
+        );
+
+      const width =
+        right -
+        left;
+
+      const height =
+        bottom -
+        top;
+
+      if (
+        width <
+        1 ||
+        height <
+        1
+      ) {
+
+        return;
+      }
+
+      const imageData =
+        wctx.getImageData(
+          left,
+          top,
+          width,
+          height
+        );
+
+      const pixels =
+        imageData.data;
+
+      const source =
+        retouchSourceData.data;
+
+      const blurred =
+        retouchBlurData?.data ||
+        source;
+
+      const mask =
+        hasPixelSelection()
+        ? selectionMaskContext.getImageData(
+            left,
+            top,
+            width,
+            height
+          ).data
+        : null;
+
+      const strength =
+        Number(
+          retouchStrength.value
+        ) /
+        100;
+
+      for (
+        let y =
+          0;
+        y <
+          height;
+        y++
+      ) {
+
+        for (
+          let x =
+            0;
+          x <
+            width;
+          x++
+        ) {
+
+          const globalX =
+            left +
+            x;
+
+          const globalY =
+            top +
+            y;
+
+          const distance =
+            Math.hypot(
+              globalX -
+              point.x,
+              globalY -
+              point.y
+            );
+
+          if (
+            distance >
+            radius
+          ) {
+
+            continue;
+          }
+
+          const localIndex =
+            (
+              y *
+              width +
+              x
+            ) *
+            4;
+
+          const maskStrength =
+            mask
+            ? mask[
+                localIndex +
+                3
+              ] /
+              255
+            : 1;
+
+          if (
+            maskStrength <=
+            0
+          ) {
+
+            continue;
+          }
+
+          const mix =
+            Math.pow(
+              1 -
+              distance /
+              radius,
+              .7
+            ) *
+            strength *
+            maskStrength;
+
+          const sourceIndex =
+            (
+              globalY *
+              work.width +
+              globalX
+            ) *
+            4;
+
+          if (
+            activeOperation ===
+            "clone"
+          ) {
+
+            const sampleX =
+              Math.round(
+                globalX +
+                cloneOffset.x
+              );
+
+            const sampleY =
+              Math.round(
+                globalY +
+                cloneOffset.y
+              );
+
+            if (
+              sampleX <
+              0 ||
+              sampleY <
+              0 ||
+              sampleX >=
+              work.width ||
+              sampleY >=
+              work.height
+            ) {
+
+              continue;
+            }
+
+            const sampleIndex =
+              (
+                sampleY *
+                work.width +
+                sampleX
+              ) *
+              4;
+
+            for (
+              let channel =
+                0;
+              channel <
+                4;
+              channel++
+            ) {
+
+              pixels[
+                localIndex +
+                channel
+              ] =
+                pixels[
+                  localIndex +
+                  channel
+                ] *
+                (
+                  1 -
+                  mix
+                ) +
+                source[
+                  sampleIndex +
+                  channel
+                ] *
+                mix;
+            }
+
+            continue;
+          }
+
+          for (
+            let channel =
+              0;
+            channel <
+              3;
+            channel++
+          ) {
+
+            const value =
+              pixels[
+                localIndex +
+                channel
+              ];
+
+            if (
+              activeOperation ===
+              "dodge"
+            ) {
+
+              pixels[
+                localIndex +
+                channel
+              ] =
+                value +
+                (
+                  255 -
+                  value
+                ) *
+                mix;
+
+            } else if (
+              activeOperation ===
+              "burn"
+            ) {
+
+              pixels[
+                localIndex +
+                channel
+              ] =
+                value *
+                (
+                  1 -
+                  mix *
+                  .8
+                );
+
+            } else if (
+              activeOperation ===
+              "heal" ||
+              activeOperation ===
+              "skin-smooth"
+            ) {
+
+              const smoothing =
+                activeOperation ===
+                "heal"
+                ? mix *
+                  .65
+                : mix;
+
+              pixels[
+                localIndex +
+                channel
+              ] =
+                value *
+                (
+                  1 -
+                  smoothing
+                ) +
+                blurred[
+                  sourceIndex +
+                  channel
+                ] *
+                smoothing;
+            }
+          }
+
+          if (
+            activeOperation ===
+            "red-eye"
+          ) {
+
+            const red =
+              pixels[
+                localIndex
+              ];
+
+            const green =
+              pixels[
+                localIndex +
+                1
+              ];
+
+            const blue =
+              pixels[
+                localIndex +
+                2
+              ];
+
+            if (
+              red >
+              Math.max(
+                green,
+                blue
+              ) *
+              1.15
+            ) {
+
+              const neutral =
+                (
+                  green +
+                  blue
+                ) /
+                2;
+
+              pixels[
+                localIndex
+              ] =
+                red *
+                (
+                  1 -
+                  mix
+                ) +
+                neutral *
+                mix;
+            }
+          }
+        }
+      }
+
+      wctx.putImageData(
+        imageData,
+        left,
+        top
+      );
+    }
+
+    function drawRetouchSegment(
+      from,
+      to
+    ) {
+
+      const distance =
+        Math.hypot(
+          to.x -
+          from.x,
+          to.y -
+          from.y
+        );
+
+      const spacing =
+        Math.max(
+          1,
+          Number(
+            retouchSize.value
+          ) /
+          5
+        );
+
+      const steps =
+        Math.max(
+          1,
+          Math.ceil(
+            distance /
+            spacing
+          )
+        );
+
+      for (
+        let step =
+          0;
+        step <=
+          steps;
+        step++
+      ) {
+
+        const ratio =
+          step /
+          steps;
+
+        applyRetouchDab({
+          x:
+            from.x +
+            (
+              to.x -
+              from.x
+            ) *
+            ratio,
+          y:
+            from.y +
+            (
+              to.y -
+              from.y
+            ) *
+            ratio
+        });
+      }
+    }
+
 
     function drawStroke(
       from,
@@ -9650,6 +10374,34 @@ document.addEventListener(
       renderNow =
         true
     ) {
+
+      if (
+        [
+          "heal",
+          "clone",
+          "dodge",
+          "burn",
+          "red-eye",
+          "skin-smooth"
+        ].includes(
+          activeOperation
+        )
+      ) {
+
+        drawRetouchSegment(
+          from,
+          to
+        );
+
+        if (
+          renderNow
+        ) {
+
+          renderAll();
+        }
+
+        return;
+      }
 
       wctx.save();
 
