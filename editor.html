@@ -2424,6 +2424,36 @@ button{
 
     <section class="property-group">
 
+      <h3 class="property-title">Collage</h3>
+
+      <div class="property-row">
+        <span class="property-label">Layout</span>
+        <select id="collage-layout" class="editor-select">
+          <option value="grid">Smart Grid</option>
+          <option value="vertical">Vertical Split</option>
+          <option value="horizontal">Horizontal Split</option>
+          <option value="masonry">Masonry</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Gap</span>
+        <input id="collage-gap" type="range" min="0" max="80" value="12">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Background</span>
+        <input id="collage-background" class="editor-input" type="color" value="#101426">
+      </div>
+
+      <button class="top-button primary-button" id="choose-collage-images" type="button">
+        Choose 2–12 Images
+      </button>
+
+    </section>
+
+    <section class="property-group">
+
       <h3 class="property-title">Layer Position</h3>
 
       <div class="property-row">
@@ -2605,6 +2635,14 @@ button{
 </div>
 
 <input
+  id="collage-file-input"
+  type="file"
+  accept="image/jpeg,image/png,image/webp"
+  multiple
+  hidden
+>
+
+<input
   id="editor-file-input"
   type="file"
   accept="image/jpeg,image/png,image/webp"
@@ -2771,6 +2809,9 @@ document.addEventListener(
     const overlayFileInput =
       $("overlay-file-input");
 
+    const collageFileInput =
+      $("collage-file-input");
+
     const canvasDocument =
       $("canvas-document");
 
@@ -2923,6 +2964,15 @@ document.addEventListener(
 
     const frameWidth =
       $("frame-width");
+
+    const collageLayout =
+      $("collage-layout");
+
+    const collageGap =
+      $("collage-gap");
+
+    const collageBackground =
+      $("collage-background");
 
     const contentX =
       $("content-x");
@@ -8033,6 +8083,560 @@ document.addEventListener(
       createFrameLayer
     );
 
+    function drawImageCover(
+      context,
+      image,
+      x,
+      y,
+      width,
+      height
+    ) {
+
+      const sourceWidth =
+        image.naturalWidth ||
+        image.width;
+
+      const sourceHeight =
+        image.naturalHeight ||
+        image.height;
+
+      const scale =
+        Math.max(
+          width /
+          sourceWidth,
+          height /
+          sourceHeight
+        );
+
+      const drawWidth =
+        sourceWidth *
+        scale;
+
+      const drawHeight =
+        sourceHeight *
+        scale;
+
+      context.save();
+
+      context.beginPath();
+      context.rect(
+        x,
+        y,
+        width,
+        height
+      );
+      context.clip();
+
+      context.drawImage(
+        image,
+        x +
+        (
+          width -
+          drawWidth
+        ) /
+        2,
+        y +
+        (
+          height -
+          drawHeight
+        ) /
+        2,
+        drawWidth,
+        drawHeight
+      );
+
+      context.restore();
+    }
+
+    function collageCells(
+      count,
+      width,
+      height,
+      gap,
+      layout
+    ) {
+
+      const cells =
+        [];
+
+      if (
+        layout ===
+        "vertical"
+      ) {
+
+        const cellWidth =
+          (
+            width -
+            gap *
+            (
+              count -
+              1
+            )
+          ) /
+          count;
+
+        for (
+          let index =
+            0;
+          index <
+            count;
+          index++
+        ) {
+
+          cells.push({
+            x:
+              index *
+              (
+                cellWidth +
+                gap
+              ),
+            y:
+              0,
+            width:
+              cellWidth,
+            height
+          });
+        }
+
+        return cells;
+      }
+
+      if (
+        layout ===
+        "horizontal"
+      ) {
+
+        const cellHeight =
+          (
+            height -
+            gap *
+            (
+              count -
+              1
+            )
+          ) /
+          count;
+
+        for (
+          let index =
+            0;
+          index <
+            count;
+          index++
+        ) {
+
+          cells.push({
+            x:
+              0,
+            y:
+              index *
+              (
+                cellHeight +
+                gap
+              ),
+            width,
+            height:
+              cellHeight
+          });
+        }
+
+        return cells;
+      }
+
+      if (
+        layout ===
+        "masonry" &&
+        count >
+        2
+      ) {
+
+        const leftCount =
+          Math.ceil(
+            count /
+            2
+          );
+
+        const rightCount =
+          count -
+          leftCount;
+
+        const columnWidth =
+          (
+            width -
+            gap
+          ) /
+          2;
+
+        for (
+          let index =
+            0;
+          index <
+            count;
+          index++
+        ) {
+
+          const left =
+            index <
+            leftCount;
+
+          const itemIndex =
+            left
+            ? index
+            : index -
+              leftCount;
+
+          const items =
+            left
+            ? leftCount
+            : rightCount;
+
+          const cellHeight =
+            (
+              height -
+              gap *
+              (
+                items -
+                1
+              )
+            ) /
+            items;
+
+          cells.push({
+            x:
+              left
+              ? 0
+              : columnWidth +
+                gap,
+            y:
+              itemIndex *
+              (
+                cellHeight +
+                gap
+              ),
+            width:
+              columnWidth,
+            height:
+              cellHeight
+          });
+        }
+
+        return cells;
+      }
+
+      const columns =
+        Math.ceil(
+          Math.sqrt(
+            count
+          )
+        );
+
+      const rows =
+        Math.ceil(
+          count /
+          columns
+        );
+
+      const cellWidth =
+        (
+          width -
+          gap *
+          (
+            columns -
+            1
+          )
+        ) /
+        columns;
+
+      const cellHeight =
+        (
+          height -
+          gap *
+          (
+            rows -
+            1
+          )
+        ) /
+        rows;
+
+      for (
+        let index =
+          0;
+        index <
+          count;
+        index++
+      ) {
+
+        const row =
+          Math.floor(
+            index /
+            columns
+          );
+
+        const column =
+          index %
+          columns;
+
+        cells.push({
+          x:
+            column *
+            (
+              cellWidth +
+              gap
+            ),
+          y:
+            row *
+            (
+              cellHeight +
+              gap
+            ),
+          width:
+            cellWidth,
+          height:
+            cellHeight
+        });
+      }
+
+      return cells;
+    }
+
+    async function createCollageLayer(
+      fileList
+    ) {
+
+      if (
+        !currentFile
+      ) {
+
+        notify(
+          "Import a base image before creating a collage.",
+          "warning"
+        );
+
+        return false;
+      }
+
+      const files =
+        Array.from(
+          fileList
+        )
+        .filter(
+          file =>
+            file.type.startsWith(
+              "image/"
+            )
+        )
+        .slice(
+          0,
+          12
+        );
+
+      if (
+        files.length <
+        2
+      ) {
+
+        notify(
+          "Choose at least two images for the collage.",
+          "warning"
+        );
+
+        return false;
+      }
+
+      notify(
+        "Building collage…"
+      );
+
+      try {
+
+        pushUndo(
+          "Before Add Collage"
+        );
+
+        const layerCanvas =
+          document.createElement(
+            "canvas"
+          );
+
+        layerCanvas.width =
+          work.width;
+
+        layerCanvas.height =
+          work.height;
+
+        const context =
+          layerCanvas.getContext(
+            "2d"
+          );
+
+        context.fillStyle =
+          collageBackground.value;
+
+        context.fillRect(
+          0,
+          0,
+          layerCanvas.width,
+          layerCanvas.height
+        );
+
+        const gap =
+          Math.max(
+            0,
+            Math.min(
+              80,
+              Number(
+                collageGap.value
+              ) ||
+              0
+            )
+          );
+
+        const cells =
+          collageCells(
+            files.length,
+            layerCanvas.width,
+            layerCanvas.height,
+            gap,
+            collageLayout.value
+          );
+
+        for (
+          let index =
+            0;
+          index <
+            files.length;
+          index++
+        ) {
+
+          const image =
+            await decodeImageFile(
+              files[index]
+            );
+
+          drawImageCover(
+            context,
+            image,
+            cells[index].x,
+            cells[index].y,
+            cells[index].width,
+            cells[index].height
+          );
+
+          image.close?.();
+        }
+
+        const number =
+          layers.filter(
+            layer =>
+              layer.kind ===
+              "collage"
+          ).length +
+          1;
+
+        const layer = {
+
+          id:
+            `layer-${Date.now()}-${layerCounter++}`,
+
+          name:
+            `Collage ${number}`,
+
+          kind:
+            "collage",
+
+          contentData: {
+            layout:
+              collageLayout.value,
+            gap,
+            background:
+              collageBackground.value,
+            imageCount:
+              files.length
+          },
+
+          canvas:
+            layerCanvas,
+
+          visible:
+            true,
+
+          locked:
+            false,
+
+          opacity:
+            1,
+
+          blendMode:
+            "source-over",
+
+          groupId:
+            null
+        };
+
+        layers.push(
+          layer
+        );
+
+        selectLayer(
+          layer.id,
+          false
+        );
+
+        renderAll();
+        renderLayerList();
+
+        addHistoryMessage(
+          `${layer.name} created`
+        );
+
+        notify(
+          `Collage created from ${files.length} images.`,
+          "success"
+        );
+
+        return true;
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          error
+        );
+
+        notify(
+          "Collage could not be created from the selected images.",
+          "error"
+        );
+
+        return false;
+      }
+    }
+
+    $("choose-collage-images").addEventListener(
+      "click",
+      () => {
+
+        collageFileInput.value =
+          "";
+
+        collageFileInput.click();
+      }
+    );
+
+    collageFileInput.addEventListener(
+      "change",
+      async event => {
+
+        await createCollageLayer(
+          event.target.files
+        );
+
+        collageFileInput.value =
+          "";
+      }
+    );
+
     function isTransformableLayer(
       layer
     ) {
@@ -9273,6 +9877,23 @@ document.addEventListener(
 
               if (
                 operation ===
+                "collage"
+              ) {
+
+                setOperation(
+                  operation
+                );
+
+                collageFileInput.value =
+                  "";
+
+                collageFileInput.click();
+
+                return;
+              }
+
+              if (
+                operation ===
                 "add-image"
               ) {
 
@@ -9314,7 +9935,6 @@ document.addEventListener(
                 [
                   "magic-select",
                   "perspective",
-                  "collage",
                   "blend-mode"
                 ];
 
