@@ -2044,6 +2044,53 @@ button{
     <section class="property-group">
 
       <h3 class="property-title">
+        Text
+      </h3>
+
+      <div class="property-row">
+        <span class="property-label">Content</span>
+        <input id="text-content" class="editor-input" type="text" value="ToonVerse AI" maxlength="120">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Font</span>
+        <select id="text-font" class="editor-select">
+          <option value="Arial">Arial</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Trebuchet MS">Trebuchet</option>
+          <option value="Courier New">Courier</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Size</span>
+        <input id="text-size" class="editor-input" type="number" min="8" max="500" value="64">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Color</span>
+        <input id="text-color" class="editor-input" type="color" value="#ffffff">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Align</span>
+        <select id="text-align" class="editor-select">
+          <option value="left">Left</option>
+          <option value="center" selected>Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <button class="top-button primary-button" id="apply-text" type="button">
+        Apply Text
+      </button>
+
+    </section>
+
+    <section class="property-group">
+
+      <h3 class="property-title">
         Layers
       </h3>
 
@@ -2396,6 +2443,24 @@ document.addEventListener(
 
     const brushColor =
       $("brush-color");
+
+    const textContent =
+      $("text-content");
+
+    const textFont =
+      $("text-font");
+
+    const textSize =
+      $("text-size");
+
+    const textColor =
+      $("text-color");
+
+    const textAlign =
+      $("text-align");
+
+    const applyTextButton =
+      $("apply-text");
 
     const opacityInput =
       $("opacity-input");
@@ -2951,6 +3016,17 @@ document.addEventListener(
               locked:
                 layer.locked,
 
+              kind:
+                layer.kind ||
+                "raster",
+
+              contentData:
+                layer.contentData
+                ? {
+                    ...layer.contentData
+                  }
+                : null,
+
               blob:
                 await canvasToBlob(
                   layer.canvas
@@ -3134,6 +3210,15 @@ document.addEventListener(
                     Boolean(
                       savedLayer.locked
                     ),
+                  kind:
+                    savedLayer.kind ||
+                    "raster",
+                  contentData:
+                    savedLayer.contentData
+                    ? {
+                        ...savedLayer.contentData
+                      }
+                    : null,
                   canvas:
                     layerCanvas
                 };
@@ -3374,6 +3459,17 @@ document.addEventListener(
 
               locked:
                 layer.locked,
+
+              kind:
+                layer.kind ||
+                "raster",
+
+              contentData:
+                layer.contentData
+                ? {
+                    ...layer.contentData
+                  }
+                : null,
 
               bitmap:
                 canvasToDataURL(
@@ -4024,6 +4120,10 @@ document.addEventListener(
 
       updateDocumentMeta();
 
+      syncTextControls(
+        layer
+      );
+
       if (
         announce
       ) {
@@ -4078,7 +4178,7 @@ document.addEventListener(
             item.innerHTML =
               `
           <div class="layer-thumb">
-            🖼️
+            ${layer.kind === "text" ? "T" : "🖼️"}
           </div>
 
           <div class="layer-info">
@@ -4106,7 +4206,9 @@ document.addEventListener(
                 ".layer-meta"
               )
               .textContent =
-                `${layer.canvas.width}×${layer.canvas.height} Raster`;
+                layer.kind === "text"
+                ? `${layer.contentData?.size || 64}px Text`
+                : `${layer.canvas.width}×${layer.canvas.height} Raster`;
 
             item.addEventListener(
               "click",
@@ -4522,6 +4624,355 @@ document.addEventListener(
         : "default";
     }
 
++    function syncTextControls(
+      layer =
+        activeLayer()
+    ) {
+
+      const editable =
+        layer?.kind ===
+        "text";
+
+      applyTextButton.disabled =
+        !editable ||
+        layer.locked;
+
+      if (
+        !editable
+      ) {
+
+        return;
+      }
+
+      const content =
+        layer.contentData;
+
+      textContent.value =
+        content.text;
+
+      textFont.value =
+        content.font;
+
+      textSize.value =
+        content.size;
+
+      textColor.value =
+        content.color;
+
+      textAlign.value =
+        content.align;
+    }
+
+    function renderTextLayer(
+      layer
+    ) {
+
+      const context =
+        layer.canvas.getContext(
+          "2d"
+        );
+
+      const content =
+        layer.contentData;
+
+      context.clearRect(
+        0,
+        0,
+        layer.canvas.width,
+        layer.canvas.height
+      );
+
+      context.save();
+
+      context.fillStyle =
+        content.color;
+
+      context.font =
+        `700 ${content.size}px "${content.font}", sans-serif`;
+
+      context.textAlign =
+        content.align;
+
+      context.textBaseline =
+        "middle";
+
+      const x =
+        content.align ===
+        "left"
+        ? Math.max(
+            16,
+            content.size * .3
+          )
+        : content.align ===
+          "right"
+        ? layer.canvas.width -
+          Math.max(
+            16,
+            content.size * .3
+          )
+        : layer.canvas.width /
+          2;
+
+      const lines =
+        content.text
+          .split(
+            /\\r?\\n/
+          )
+          .slice(
+            0,
+            8
+          );
+
+      const lineHeight =
+        content.size *
+        1.2;
+
+      const startY =
+        layer.canvas.height /
+        2 -
+        (
+          lines.length -
+          1
+        ) *
+        lineHeight /
+        2;
+
+      lines.forEach(
+        (
+          line,
+          index
+        ) =>
+          context.fillText(
+            line,
+            x,
+            startY +
+            index *
+            lineHeight,
+            Math.max(
+              1,
+              layer.canvas.width -
+              32
+            )
+          )
+      );
+
+      context.restore();
+    }
+
+    function createTextLayer() {
+
+      if (
+        !currentFile
+      ) {
+
+        notify(
+          "Import an image first."
+        );
+
+        return false;
+      }
+
+      pushUndo(
+        "Before Add Text"
+      );
+
+      const layerCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      layerCanvas.width =
+        work.width;
+
+      layerCanvas.height =
+        work.height;
+
+      const textNumber =
+        layers.filter(
+          layer =>
+            layer.kind ===
+            "text"
+        ).length +
+        1;
+
+      const textLayer = {
+
+        id:
+          `layer-${Date.now()}-${layerCounter++}`,
+
+        name:
+          `Text Layer ${textNumber}`,
+
+        kind:
+          "text",
+
+        contentData: {
+
+          text:
+            textContent.value.trim() ||
+            "ToonVerse AI",
+
+          font:
+            textFont.value,
+
+          size:
+            Math.max(
+              8,
+              Math.min(
+                500,
+                Number(
+                  textSize.value
+                ) ||
+                64
+              )
+            ),
+
+          color:
+            textColor.value,
+
+          align:
+            textAlign.value
+        },
+
+        canvas:
+          layerCanvas,
+
+        visible:
+          true,
+
+        locked:
+          false
+      };
+
+      renderTextLayer(
+        textLayer
+      );
+
+      layers.push(
+        textLayer
+      );
+
+      selectLayer(
+        textLayer.id,
+        false
+      );
+
+      renderAll();
+
+      addHistoryMessage(
+        `${textLayer.name} created`
+      );
+
+      notify(
+        "Editable text layer added.",
+        "success"
+      );
+
+      return true;
+    }
+
+    function updateTextLayer() {
+
+      const layer =
+        activeLayer();
+
+      if (
+        layer?.kind !==
+        "text"
+      ) {
+
+        notify(
+          "Select a text layer first."
+        );
+
+        return;
+      }
+
+      if (
+        layer.locked
+      ) {
+
+        notify(
+          "Unlock the text layer before editing."
+        );
+
+        return;
+      }
+
+      const nextText =
+        textContent.value.trim();
+
+      if (
+        !nextText
+      ) {
+
+        notify(
+          "Text cannot be empty."
+        );
+
+        textContent.focus();
+
+        return;
+      }
+
+      pushUndo(
+        "Before Edit Text"
+      );
+
+      layer.contentData = {
+
+        text:
+          nextText,
+
+        font:
+          textFont.value,
+
+        size:
+          Math.max(
+            8,
+            Math.min(
+              500,
+              Number(
+                textSize.value
+              ) ||
+              64
+            )
+          ),
+
+        color:
+          textColor.value,
+
+        align:
+          textAlign.value
+      };
+
+      renderTextLayer(
+        layer
+      );
+
+      renderAll();
+
+      renderLayerList();
+
+      addHistoryMessage(
+        "Text updated"
+      );
+
+      notify(
+        "Text layer updated.",
+        "success"
+      );
+    }
+
+    applyTextButton.disabled =
+      true;
+
+    applyTextButton.addEventListener(
+      "click",
+      updateTextLayer
+    );
+
+
     function ensurePaintLayer() {
 
       if (
@@ -4916,6 +5367,20 @@ document.addEventListener(
                 return;
               }
 
+              if (
+                operation ===
+                "add-text"
+              ) {
+
+                setOperation(
+                  operation
+                );
+
+                createTextLayer();
+
+                return;
+              }
+
               const frontEndHooks =
                 [
                   "lasso",
@@ -4935,7 +5400,6 @@ document.addEventListener(
                   "burn",
                   "red-eye",
                   "skin-smooth",
-                  "add-text",
                   "add-image",
                   "shape",
                   "sticker",
@@ -7112,6 +7576,17 @@ document.addEventListener(
 
                   name:
                     `${active.name} Copy`,
+
+                  kind:
+                    active.kind ||
+                    "raster",
+
+                  contentData:
+                    active.contentData
+                    ? {
+                        ...active.contentData
+                      }
+                    : null,
 
                   canvas:
                     copyCanvas,
