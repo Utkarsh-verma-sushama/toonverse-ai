@@ -1978,6 +1978,9 @@ button{
         <input id="straighten-input" type="range" min="-45" max="45" step="0.1" value="0">
       </div>
       <button class="top-button" id="reset-straighten" type="button">Reset Straighten</button>
+      <div class="property-row"><span class="property-label">Perspective X</span><input id="perspective-x" type="range" min="-80" max="80" value="0"></div>
+      <div class="property-row"><span class="property-label">Perspective Y</span><input id="perspective-y" type="range" min="-80" max="80" value="0"></div>
+      <div class="modal-actions"><button class="top-button" id="reset-perspective" type="button">Reset</button><button class="top-button primary-button" id="apply-perspective" type="button">Apply Perspective</button></div>
 
       <div class="property-row">
         <span class="property-label">Flip X</span>
@@ -2864,6 +2867,9 @@ document.addEventListener(
     const straightenInput =
       $("straighten-input");
 
+    const perspectiveX = $("perspective-x");
+    const perspectiveY = $("perspective-y");
+
     const flipXInput =
       $("flip-x-input");
 
@@ -3172,6 +3178,12 @@ document.addEventListener(
         0,
 
       straighten:
+        0,
+
+      perspectiveX:
+        0,
+
+      perspectiveY:
         0,
 
       flipX:
@@ -4546,6 +4558,51 @@ document.addEventListener(
       `;
     }
 
+    function applyPerspectiveWarp(targetCanvas, horizontal, vertical) {
+      const amountX = Math.max(-0.8, Math.min(0.8, Number(horizontal) / 100));
+      const amountY = Math.max(-0.8, Math.min(0.8, Number(vertical) / 100));
+      if (!amountX && !amountY) return;
+
+      const width = targetCanvas.width;
+      const height = targetCanvas.height;
+      let source = document.createElement("canvas");
+      source.width = width;
+      source.height = height;
+      source.getContext("2d").drawImage(targetCanvas, 0, 0);
+
+      if (amountX) {
+        const output = document.createElement("canvas");
+        output.width = width;
+        output.height = height;
+        const context = output.getContext("2d");
+        for (let y = 0; y < height; y++) {
+          const normalized = height > 1 ? y / (height - 1) - 0.5 : 0;
+          const scale = Math.max(0.15, 1 + normalized * amountX);
+          const rowWidth = width * scale;
+          context.drawImage(source, 0, y, width, 1, (width - rowWidth) / 2, y, rowWidth, 1);
+        }
+        source = output;
+      }
+
+      if (amountY) {
+        const output = document.createElement("canvas");
+        output.width = width;
+        output.height = height;
+        const context = output.getContext("2d");
+        for (let x = 0; x < width; x++) {
+          const normalized = width > 1 ? x / (width - 1) - 0.5 : 0;
+          const scale = Math.max(0.15, 1 + normalized * amountY);
+          const columnHeight = height * scale;
+          context.drawImage(source, x, 0, 1, height, x, (height - columnHeight) / 2, 1, columnHeight);
+        }
+        source = output;
+      }
+
+      const context = targetCanvas.getContext("2d");
+      context.clearRect(0, 0, width, height);
+      context.drawImage(source, 0, 0);
+    }
+
     function applyAdvancedPixelAdjustments(
       targetContext,
       width,
@@ -5393,6 +5450,8 @@ document.addEventListener(
 
       rctx.restore();
 
+      applyPerspectiveWarp(render, state.perspectiveX, state.perspectiveY);
+
       applyAdvancedPixelAdjustments(
         rctx,
         render.width,
@@ -5473,6 +5532,9 @@ document.addEventListener(
 
       straightenInput.value =
         state.straighten || 0;
+
+      perspectiveX.value = state.perspectiveX || 0;
+      perspectiveY.value = state.perspectiveY || 0;
 
       flipXInput.value =
         state.flipX
@@ -5573,6 +5635,12 @@ document.addEventListener(
         0;
 
       state.straighten =
+        0;
+
+      state.perspectiveX =
+        0;
+
+      state.perspectiveY =
         0;
 
       state.flipX =
@@ -9633,6 +9701,12 @@ document.addEventListener(
                 state.straighten =
                   0;
 
+                state.perspectiveX =
+                  0;
+
+                state.perspectiveY =
+                  0;
+
                 state.flipX =
                   false;
 
@@ -9834,6 +9908,13 @@ document.addEventListener(
                 return;
               }
 
+              if (operation === "perspective") {
+                setOperation(operation);
+                perspectiveX.focus();
+                notify("Adjust Perspective X/Y, then apply it to continue pixel editing.");
+                return;
+              }
+
               if (
                 operation ===
                 "add-text"
@@ -9948,7 +10029,6 @@ document.addEventListener(
 
               const frontEndHooks =
                 [
-                  "perspective",
                   "blend-mode"
                 ];
 
@@ -10072,6 +10152,56 @@ document.addEventListener(
       renderAll();
       addHistoryMessage("Straighten reset");
       notify("Straighten reset.", "success");
+    });
+
+    let perspectiveStarted = false;
+
+    [perspectiveX, perspectiveY].forEach(input => {
+      input.addEventListener("pointerdown", () => {
+        if (currentFile && !perspectiveStarted) {
+          pushUndo("Before Perspective");
+          perspectiveStarted = true;
+        }
+      });
+      input.addEventListener("input", () => {
+        if (!currentFile) return;
+        state.perspectiveX = Number(perspectiveX.value);
+        state.perspectiveY = Number(perspectiveY.value);
+        renderAll();
+      });
+      input.addEventListener("change", () => {
+        perspectiveStarted = false;
+      });
+    });
+
+    $("reset-perspective").addEventListener("click", () => {
+      if (!currentFile) return;
+      if (state.perspectiveX || state.perspectiveY) pushUndo("Before Perspective Reset");
+      state.perspectiveX = 0;
+      state.perspectiveY = 0;
+      syncControls();
+      renderAll();
+      addHistoryMessage("Perspective reset");
+    });
+
+    $("apply-perspective").addEventListener("click", () => {
+      if (!currentFile) {
+        notify("Import an image first.", "warning");
+        return;
+      }
+      if (!state.perspectiveX && !state.perspectiveY) {
+        notify("Adjust Perspective X or Y first.", "warning");
+        return;
+      }
+      pushUndo("Before Apply Perspective");
+      layers.forEach(layer => applyPerspectiveWarp(layer.canvas, state.perspectiveX, state.perspectiveY));
+      state.perspectiveX = 0;
+      state.perspectiveY = 0;
+      syncControls();
+      renderAll();
+      renderLayerList();
+      addHistoryMessage("Perspective applied");
+      notify("Perspective baked into all layers. Pixel tools are ready.", "success");
     });
 
     function applyEffectPreset(
@@ -11486,6 +11616,14 @@ document.addEventListener(
 
 
     function startCropMode() {
+
+      if (
+        state.perspectiveX ||
+        state.perspectiveY
+      ) {
+        notify("Apply or reset Perspective before cropping.", "warning");
+        return;
+      }
 
       setOperation(
         "crop"
@@ -13619,6 +13757,12 @@ document.addEventListener(
         0;
 
       state.straighten =
+        0;
+
+      state.perspectiveX =
+        0;
+
+      state.perspectiveY =
         0;
 
       state.flipX =
