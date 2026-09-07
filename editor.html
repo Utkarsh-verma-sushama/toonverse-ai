@@ -3337,27 +3337,102 @@ document.addEventListener(
       }
     );
 
+    async function decodeImageFile(
+      file
+    ) {
+
+      if (
+        typeof createImageBitmap ===
+        "function"
+      ) {
+
+        try {
+
+          return await createImageBitmap(
+            file
+          );
+
+        } catch (
+          error
+        ) {
+
+          console.warn(
+            "createImageBitmap failed; using image fallback.",
+            error
+          );
+        }
+      }
+
+      const url =
+        URL.createObjectURL(
+          file
+        );
+
+      try {
+
+        return await new Promise(
+          (
+            resolve,
+            reject
+          ) => {
+
+            const image =
+              new Image();
+
+            image.onload =
+              () =>
+                resolve(
+                  image
+                );
+
+            image.onerror =
+              () =>
+                reject(
+                  new Error(
+                    "The selected image could not be decoded."
+                  )
+                );
+
+            image.src =
+              url;
+          }
+        );
+
+      } finally {
+
+        URL.revokeObjectURL(
+          url
+        );
+      }
+    }
+
     async function loadImage(
       file
     ) {
 
       try {
 
-        currentFile =
-          file;
-
         const bitmap =
-          await createImageBitmap(
+          await decodeImageFile(
             file
           );
+
+        originalBitmap
+          ?.close
+          ?.();
 
         originalBitmap =
           bitmap;
 
+        currentFile =
+          file;
+
         work.width =
+          bitmap.naturalWidth ||
           bitmap.width;
 
         work.height =
+          bitmap.naturalHeight ||
           bitmap.height;
 
         wctx.clearRect(
@@ -3407,12 +3482,18 @@ document.addEventListener(
         error
       ) {
 
+        currentFile =
+          null;
+
+        originalBitmap =
+          null;
+
         console.error(
           error
         );
 
         notify(
-          "Image could not be loaded.",
+          "Image could not be loaded. Try another JPG, PNG or WebP file.",
           "error"
         );
       }
