@@ -406,6 +406,32 @@ button{
 
 .canvas-selection.visible{display:block}
 
+.canvas-selection.content-transform{
+  border-style:solid;
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px rgba(124,92,255,.3);
+  pointer-events:none
+}
+
+.resize-handle{
+  position:absolute;
+  display:none;
+  width:14px;
+  height:14px;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:var(--accent);
+  pointer-events:auto;
+  touch-action:none
+}
+
+.canvas-selection.content-transform .resize-handle{display:block}
+
+.resize-handle[data-handle="nw"]{left:-8px;top:-8px;cursor:nwse-resize}
+.resize-handle[data-handle="ne"]{right:-8px;top:-8px;cursor:nesw-resize}
+.resize-handle[data-handle="sw"]{left:-8px;bottom:-8px;cursor:nesw-resize}
+.resize-handle[data-handle="se"]{right:-8px;bottom:-8px;cursor:nwse-resize}
+
 .selection-label{
   position:absolute;
   left:0;
@@ -1758,6 +1784,11 @@ button{
         >
           Crop
         </span>
+
+        <span class="resize-handle" data-handle="nw" aria-label="Resize top left"></span>
+        <span class="resize-handle" data-handle="ne" aria-label="Resize top right"></span>
+        <span class="resize-handle" data-handle="sw" aria-label="Resize bottom left"></span>
+        <span class="resize-handle" data-handle="se" aria-label="Resize bottom right"></span>
       </div>
 
     </div>
@@ -2130,6 +2161,36 @@ button{
 
       <button class="top-button primary-button" id="apply-shape" type="button">
         Apply Shape
+      </button>
+
+    </section>
+
+    <section class="property-group">
+
+      <h3 class="property-title">Layer Position</h3>
+
+      <div class="property-row">
+        <span class="property-label">X</span>
+        <input id="content-x" class="editor-input" type="number" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Y</span>
+        <input id="content-y" class="editor-input" type="number" value="0">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Width</span>
+        <input id="content-width" class="editor-input" type="number" min="1" value="100">
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Height</span>
+        <input id="content-height" class="editor-input" type="number" min="1" value="100">
+      </div>
+
+      <button class="top-button primary-button" id="apply-content-transform" type="button">
+        Apply Position & Size
       </button>
 
     </section>
@@ -2539,6 +2600,21 @@ document.addEventListener(
     const applyShapeButton =
       $("apply-shape");
 
+    const contentX =
+      $("content-x");
+
+    const contentY =
+      $("content-y");
+
+    const contentWidth =
+      $("content-width");
+
+    const contentHeight =
+      $("content-height");
+
+    const applyContentTransform =
+      $("apply-content-transform");
+
     const opacityInput =
       $("opacity-input");
 
@@ -2595,6 +2671,12 @@ document.addEventListener(
       null;
 
     let cropRect =
+      null;
+
+    let contentDrag =
+      null;
+
+    let contentResize =
       null;
 
     let layerCounter =
@@ -4205,6 +4287,10 @@ document.addEventListener(
         layer
       );
 
+      syncContentControls(
+        layer
+      );
+
       if (
         announce
       ) {
@@ -4878,10 +4964,19 @@ document.addEventListener(
 
       selection.classList.toggle(
         "visible",
-        operation ===
-        "crop" &&
-        Boolean(
-          cropRect
+        (
+          operation ===
+          "crop" &&
+          Boolean(
+            cropRect
+          )
+        ) ||
+        (
+          operation ===
+          "select" &&
+          isTransformableLayer(
+            activeLayer()
+          )
         )
       );
 
@@ -4903,7 +4998,21 @@ document.addEventListener(
         : operation ===
           "crop"
         ? "crosshair"
+        : operation ===
+          "select" &&
+          isTransformableLayer(
+            activeLayer()
+          )
+        ? "move"
         : "default";
+
+      if (
+        operation ===
+        "select"
+      ) {
+
+        updateContentOverlay();
+      }
     }
 
     function syncTextControls(
@@ -4978,21 +5087,69 @@ document.addEventListener(
       context.textBaseline =
         "middle";
 
+      content.width =
+        Math.min(
+          layer.canvas.width,
+          Math.max(
+            20,
+            content.width ||
+            layer.canvas.width -
+            32
+          )
+        );
+
+      content.height =
+        Math.min(
+          layer.canvas.height,
+          Math.max(
+            content.size *
+            1.2,
+            content.height ||
+            content.size *
+            1.2
+          )
+        );
+
+      content.x =
+        Math.max(
+          0,
+          Math.min(
+            layer.canvas.width -
+            content.width,
+            content.x ??
+            (
+              layer.canvas.width -
+              content.width
+            ) /
+            2
+          )
+        );
+
+      content.y =
+        Math.max(
+          0,
+          Math.min(
+            layer.canvas.height -
+            content.height,
+            content.y ??
+            (
+              layer.canvas.height -
+              content.height
+            ) /
+            2
+          )
+        );
+
       const x =
         content.align ===
         "left"
-        ? Math.max(
-            16,
-            content.size * .3
-          )
+        ? content.x
         : content.align ===
           "right"
-        ? layer.canvas.width -
-          Math.max(
-            16,
-            content.size * .3
-          )
-        : layer.canvas.width /
+        ? content.x +
+          content.width
+        : content.x +
+          content.width /
           2;
 
       const lines =
@@ -5010,7 +5167,8 @@ document.addEventListener(
         1.2;
 
       const startY =
-        layer.canvas.height /
+        content.y +
+        content.height /
         2 -
         (
           lines.length -
@@ -5032,8 +5190,7 @@ document.addEventListener(
             lineHeight,
             Math.max(
               1,
-              layer.canvas.width -
-              32
+              content.width
             )
           )
       );
@@ -5113,7 +5270,28 @@ document.addEventListener(
             textColor.value,
 
           align:
-            textAlign.value
+            textAlign.value,
+
+          x:
+            16,
+
+          y:
+            Math.max(
+              0,
+              work.height /
+              2 -
+              40
+            ),
+
+          width:
+            Math.max(
+              20,
+              work.width -
+              32
+            ),
+
+          height:
+            80
         },
 
         canvas:
@@ -5202,6 +5380,8 @@ document.addEventListener(
       );
 
       layer.contentData = {
+
+        ...layer.contentData,
 
         text:
           nextText,
@@ -5716,6 +5896,771 @@ document.addEventListener(
     applyShapeButton.addEventListener(
       "click",
       updateShapeLayer
+    );
+
+
+    function isTransformableLayer(
+      layer
+    ) {
+
+      return [
+        "text",
+        "shape",
+        "image"
+      ].includes(
+        layer?.kind
+      );
+    }
+
+    function ensureContentBounds(
+      layer
+    ) {
+
+      if (
+        !isTransformableLayer(
+          layer
+        )
+      ) {
+
+        return null;
+      }
+
+      const content =
+        layer.contentData ||
+        {};
+
+      content.width =
+        Math.max(
+          1,
+          Number(
+            content.width
+          ) ||
+          Math.round(
+            layer.canvas.width *
+            .6
+          )
+        );
+
+      content.height =
+        Math.max(
+          1,
+          Number(
+            content.height
+          ) ||
+          Math.round(
+            layer.canvas.height *
+            .3
+          )
+        );
+
+      content.x =
+        Number.isFinite(
+          Number(
+            content.x
+          )
+        )
+        ? Number(
+            content.x
+          )
+        : (
+            layer.canvas.width -
+            content.width
+          ) /
+          2;
+
+      content.y =
+        Number.isFinite(
+          Number(
+            content.y
+          )
+        )
+        ? Number(
+            content.y
+          )
+        : (
+            layer.canvas.height -
+            content.height
+          ) /
+          2;
+
+      layer.contentData =
+        content;
+
+      return content;
+    }
+
+    function syncContentControls(
+      layer =
+        activeLayer()
+    ) {
+
+      const editable =
+        isTransformableLayer(
+          layer
+        );
+
+      applyContentTransform.disabled =
+        !editable ||
+        layer.locked;
+
+      [
+        contentX,
+        contentY,
+        contentWidth,
+        contentHeight
+      ].forEach(
+        input =>
+          input.disabled =
+            !editable
+      );
+
+      if (
+        !editable
+      ) {
+
+        selection.classList.remove(
+          "visible"
+        );
+
+        return;
+      }
+
+      const content =
+        ensureContentBounds(
+          layer
+        );
+
+      contentX.value =
+        Math.round(
+          content.x
+        );
+
+      contentY.value =
+        Math.round(
+          content.y
+        );
+
+      contentWidth.value =
+        Math.round(
+          content.width
+        );
+
+      contentHeight.value =
+        Math.round(
+          content.height
+        );
+
+      updateContentOverlay();
+    }
+
+    function updateContentOverlay() {
+
+      const layer =
+        activeLayer();
+
+      if (
+        activeOperation !==
+        "select" ||
+        !isTransformableLayer(
+          layer
+        ) ||
+        state.rotation !==
+        0 ||
+        state.flipX ||
+        state.flipY
+      ) {
+
+        if (
+          activeOperation !==
+          "crop"
+        ) {
+
+          selection.classList.remove(
+            "visible"
+          );
+        }
+
+        return;
+      }
+
+      const content =
+        ensureContentBounds(
+          layer
+        );
+
+      const canvasRect =
+        canvas.getBoundingClientRect();
+
+      const documentRect =
+        canvasDocument.getBoundingClientRect();
+
+      const scaleX =
+        canvasRect.width /
+        work.width;
+
+      const scaleY =
+        canvasRect.height /
+        work.height;
+
+      selection.style.left =
+        `${canvasRect.left - documentRect.left + content.x * scaleX}px`;
+
+      selection.style.top =
+        `${canvasRect.top - documentRect.top + content.y * scaleY}px`;
+
+      selection.style.width =
+        `${content.width * scaleX}px`;
+
+      selection.style.height =
+        `${content.height * scaleY}px`;
+
+      selectionLabel.textContent =
+        `${Math.round(content.width)} × ${Math.round(content.height)}`;
+
+      selection.classList.add(
+        "content-transform"
+      );
+
+      selection.classList.add(
+        "visible"
+      );
+    }
+
+    function redrawImageLayer(
+      layer,
+      next
+    ) {
+
+      const previous =
+        ensureContentBounds(
+          layer
+        );
+
+      const source =
+        document.createElement(
+          "canvas"
+        );
+
+      source.width =
+        Math.max(
+          1,
+          Math.round(
+            previous.width
+          )
+        );
+
+      source.height =
+        Math.max(
+          1,
+          Math.round(
+            previous.height
+          )
+        );
+
+      source
+        .getContext(
+          "2d"
+        )
+        .drawImage(
+          layer.canvas,
+          previous.x,
+          previous.y,
+          previous.width,
+          previous.height,
+          0,
+          0,
+          source.width,
+          source.height
+        );
+
+      const context =
+        layer.canvas.getContext(
+          "2d"
+        );
+
+      context.clearRect(
+        0,
+        0,
+        layer.canvas.width,
+        layer.canvas.height
+      );
+
+      context.drawImage(
+        source,
+        next.x,
+        next.y,
+        next.width,
+        next.height
+      );
+
+      Object.assign(
+        layer.contentData,
+        next
+      );
+    }
+
+    function applyLayerTransform() {
+
+      const layer =
+        activeLayer();
+
+      if (
+        !isTransformableLayer(
+          layer
+        )
+      ) {
+
+        notify(
+          "Select a text, shape or image layer first."
+        );
+
+        return;
+      }
+
+      if (
+        layer.locked
+      ) {
+
+        notify(
+          "Unlock this layer before transforming it."
+        );
+
+        return;
+      }
+
+      const next = {
+
+        x:
+          Number(
+            contentX.value
+          ) ||
+          0,
+
+        y:
+          Number(
+            contentY.value
+          ) ||
+          0,
+
+        width:
+          Math.max(
+            1,
+            Number(
+              contentWidth.value
+            ) ||
+            1
+          ),
+
+        height:
+          Math.max(
+            1,
+            Number(
+              contentHeight.value
+            ) ||
+            1
+          )
+      };
+
+      pushUndo(
+        "Before Layer Transform"
+      );
+
+      if (
+        layer.kind ===
+        "image"
+      ) {
+
+        redrawImageLayer(
+          layer,
+          next
+        );
+
+      } else {
+
+        Object.assign(
+          layer.contentData,
+          next
+        );
+
+        if (
+          layer.kind ===
+          "text"
+        ) {
+
+          const lines =
+            Math.max(
+              1,
+              layer.contentData.text
+                .split(
+                  /\\r?\\n/
+                ).length
+            );
+
+          layer.contentData.size =
+            Math.max(
+              8,
+              Math.min(
+                500,
+                next.height /
+                lines /
+                1.2
+              )
+            );
+
+          renderTextLayer(
+            layer
+          );
+
+          syncTextControls(
+            layer
+          );
+
+        } else {
+
+          renderShapeLayer(
+            layer
+          );
+
+          syncShapeControls(
+            layer
+          );
+        }
+      }
+
+      renderAll();
+
+      syncContentControls(
+        layer
+      );
+
+      addHistoryMessage(
+        "Layer transformed"
+      );
+
+      notify(
+        "Layer position and size updated.",
+        "success"
+      );
+    }
+
+    applyContentTransform.disabled =
+      true;
+
+    applyContentTransform.addEventListener(
+      "click",
+      applyLayerTransform
+    );
+
+
+    document
+      .querySelectorAll(
+        ".resize-handle"
+      )
+      .forEach(
+        handle => {
+
+          handle.addEventListener(
+            "pointerdown",
+            event => {
+
+              const layer =
+                activeLayer();
+
+              if (
+                !isTransformableLayer(
+                  layer
+                ) ||
+                layer.locked
+              ) {
+
+                return;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+
+              pushUndo(
+                "Before Resize Layer"
+              );
+
+              const content =
+                ensureContentBounds(
+                  layer
+                );
+
+              const sourceCanvas =
+                document.createElement(
+                  "canvas"
+                );
+
+              sourceCanvas.width =
+                layer.canvas.width;
+
+              sourceCanvas.height =
+                layer.canvas.height;
+
+              sourceCanvas
+                .getContext(
+                  "2d"
+                )
+                .drawImage(
+                  layer.canvas,
+                  0,
+                  0
+                );
+
+              contentResize = {
+                layer,
+                handle:
+                  handle.dataset.handle,
+                clientX:
+                  event.clientX,
+                clientY:
+                  event.clientY,
+                origin: {
+                  ...content
+                },
+                sourceCanvas
+              };
+
+              handle.setPointerCapture?.(
+                event.pointerId
+              );
+            }
+          );
+        }
+      );
+
+    window.addEventListener(
+      "pointermove",
+      event => {
+
+        if (
+          !contentResize
+        ) {
+
+          return;
+        }
+
+        const rect =
+          canvas.getBoundingClientRect();
+
+        const dx =
+          (
+            event.clientX -
+            contentResize.clientX
+          ) *
+          work.width /
+          rect.width;
+
+        const dy =
+          (
+            event.clientY -
+            contentResize.clientY
+          ) *
+          work.height /
+          rect.height;
+
+        const origin =
+          contentResize.origin;
+
+        const handle =
+          contentResize.handle;
+
+        let x =
+          origin.x;
+
+        let y =
+          origin.y;
+
+        let width =
+          origin.width +
+          (
+            handle.includes(
+              "e"
+            )
+            ? dx
+            : -dx
+          );
+
+        let height =
+          origin.height +
+          (
+            handle.includes(
+              "s"
+            )
+            ? dy
+            : -dy
+          );
+
+        if (
+          handle.includes(
+            "w"
+          )
+        ) {
+
+          x =
+            origin.x +
+            dx;
+        }
+
+        if (
+          handle.includes(
+            "n"
+          )
+        ) {
+
+          y =
+            origin.y +
+            dy;
+        }
+
+        if (
+          width <
+          10
+        ) {
+
+          if (
+            handle.includes(
+              "w"
+            )
+          ) {
+
+            x -=
+              10 -
+              width;
+          }
+
+          width =
+            10;
+        }
+
+        if (
+          height <
+          10
+        ) {
+
+          if (
+            handle.includes(
+              "n"
+            )
+          ) {
+
+            y -=
+              10 -
+              height;
+          }
+
+          height =
+            10;
+        }
+
+        const layer =
+          contentResize.layer;
+
+        const next = {
+          x,
+          y,
+          width,
+          height
+        };
+
+        if (
+          layer.kind ===
+          "image"
+        ) {
+
+          const context =
+            layer.canvas.getContext(
+              "2d"
+            );
+
+          context.clearRect(
+            0,
+            0,
+            layer.canvas.width,
+            layer.canvas.height
+          );
+
+          context.drawImage(
+            contentResize.sourceCanvas,
+            origin.x,
+            origin.y,
+            origin.width,
+            origin.height,
+            x,
+            y,
+            width,
+            height
+          );
+
+          Object.assign(
+            layer.contentData,
+            next
+          );
+
+        } else {
+
+          Object.assign(
+            layer.contentData,
+            next
+          );
+
+          if (
+            layer.kind ===
+            "text"
+          ) {
+
+            layer.contentData.size =
+              Math.max(
+                8,
+                Math.min(
+                  500,
+                  origin.size *
+                  height /
+                  origin.height
+                )
+              );
+
+            renderTextLayer(
+              layer
+            );
+
+          } else {
+
+            renderShapeLayer(
+              layer
+            );
+          }
+        }
+
+        renderAll();
+        updateContentOverlay();
+      }
+    );
+
+    window.addEventListener(
+      "pointerup",
+      () => {
+
+        if (
+          !contentResize
+        ) {
+
+          return;
+        }
+
+        contentResize =
+          null;
+
+        syncTextControls();
+        syncShapeControls();
+        syncContentControls();
+
+        addHistoryMessage(
+          "Layer resized"
+        );
+      }
     );
 
 
@@ -6502,6 +7447,12 @@ document.addEventListener(
           "Before Resize"
         );
 
+        const oldWidth =
+          work.width;
+
+        const oldHeight =
+          work.height;
+
         layers.forEach(
           layer => {
 
@@ -6530,6 +7481,40 @@ document.addEventListener(
 
             layer.canvas =
               resized;
+
+            if (
+              isTransformableLayer(
+                layer
+              ) &&
+              layer.contentData
+            ) {
+
+              layer.contentData.x *=
+                newWidth /
+                oldWidth;
+
+              layer.contentData.y *=
+                newHeight /
+                oldHeight;
+
+              layer.contentData.width *=
+                newWidth /
+                oldWidth;
+
+              layer.contentData.height *=
+                newHeight /
+                oldHeight;
+
+              if (
+                layer.kind ===
+                "text"
+              ) {
+
+                layer.contentData.size *=
+                  newHeight /
+                  oldHeight;
+              }
+            }
           }
         );
 
@@ -6624,6 +7609,10 @@ document.addEventListener(
     }
 
     function updateCropOverlay() {
+
+      selection.classList.remove(
+        "content-transform"
+      );
 
       if (
         !cropRect
@@ -6879,6 +7868,93 @@ document.addEventListener(
         }
 
         if (
+          activeOperation ===
+          "select"
+        ) {
+
+          const layer =
+            activeLayer();
+
+          const content =
+            ensureContentBounds(
+              layer
+            );
+
+          const workPoint =
+            renderedToWorkPoint(
+              point
+            );
+
+          if (
+            content &&
+            workPoint.x >=
+              content.x &&
+            workPoint.x <=
+              content.x +
+              content.width &&
+            workPoint.y >=
+              content.y &&
+            workPoint.y <=
+              content.y +
+              content.height
+          ) {
+
+            if (
+              layer.locked
+            ) {
+
+              notify(
+                "Unlock this layer before moving it.",
+                "warning"
+              );
+
+              return;
+            }
+
+            pushUndo(
+              "Before Move Layer"
+            );
+
+            const sourceCanvas =
+              document.createElement(
+                "canvas"
+              );
+
+            sourceCanvas.width =
+              layer.canvas.width;
+
+            sourceCanvas.height =
+              layer.canvas.height;
+
+            sourceCanvas
+              .getContext(
+                "2d"
+              )
+              .drawImage(
+                layer.canvas,
+                0,
+                0
+              );
+
+            contentDrag = {
+              layer,
+              start:
+                workPoint,
+              x:
+                content.x,
+              y:
+                content.y,
+              sourceCanvas
+            };
+
+            canvas.style.cursor =
+              "grabbing";
+
+            return;
+          }
+        }
+
+        if (
           [
             "brush",
             "pencil",
@@ -7089,6 +8165,82 @@ document.addEventListener(
         }
 
         if (
+          contentDrag
+        ) {
+
+          const workPoint =
+            renderedToWorkPoint(
+              point
+            );
+
+          const nextX =
+            contentDrag.x +
+            workPoint.x -
+            contentDrag.start.x;
+
+          const nextY =
+            contentDrag.y +
+            workPoint.y -
+            contentDrag.start.y;
+
+          const layer =
+            contentDrag.layer;
+
+          layer.contentData.x =
+            nextX;
+
+          layer.contentData.y =
+            nextY;
+
+          if (
+            layer.kind ===
+            "image"
+          ) {
+
+            const context =
+              layer.canvas.getContext(
+                "2d"
+              );
+
+            context.clearRect(
+              0,
+              0,
+              layer.canvas.width,
+              layer.canvas.height
+            );
+
+            context.drawImage(
+              contentDrag.sourceCanvas,
+              nextX -
+              contentDrag.x,
+              nextY -
+              contentDrag.y
+            );
+
+          } else if (
+            layer.kind ===
+            "text"
+          ) {
+
+            renderTextLayer(
+              layer
+            );
+
+          } else {
+
+            renderShapeLayer(
+              layer
+            );
+          }
+
+          renderAll();
+
+          updateContentOverlay();
+
+          return;
+        }
+
+        if (
           isDrawing
         ) {
 
@@ -7134,6 +8286,25 @@ document.addEventListener(
           null;
 
         if (
+          contentDrag
+        ) {
+
+          contentDrag =
+            null;
+
+          canvas.style.cursor =
+            "move";
+
+          syncContentControls();
+
+          addHistoryMessage(
+            "Layer moved"
+          );
+
+          return;
+        }
+
+        if (
           isDrawing
         ) {
 
@@ -7157,6 +8328,9 @@ document.addEventListener(
       () => {
 
         cropStart =
+          null;
+
+        contentDrag =
           null;
 
         isDrawing =
@@ -8507,6 +9681,10 @@ document.addEventListener(
                 );
 
                 syncShapeControls(
+                  active
+                );
+
+                syncContentControls(
                   active
                 );
 
