@@ -6751,6 +6751,58 @@ document.addEventListener(
 
     checkRecovery();
 
+    if (
+      new URLSearchParams(
+        window.location.search
+      ).get(
+        "qa"
+      ) ===
+      "1"
+    ) {
+
+      const qaCanvas =
+        document.createElement(
+          "canvas"
+        );
+
+      qaCanvas.width =
+        400;
+
+      qaCanvas.height =
+        300;
+
+      const qaContext =
+        qaCanvas.getContext(
+          "2d"
+        );
+
+      qaContext.fillStyle =
+        "#765cff";
+
+      qaContext.fillRect(
+        0,
+        0,
+        400,
+        300
+      );
+
+      qaCanvas.toBlob(
+        blob =>
+          blob &&
+          loadImage(
+            new File(
+              [blob],
+              "recovery-qa.png",
+              {
+                type:
+                  "image/png"
+              }
+            )
+          ),
+        "image/png"
+      );
+    }
+
   }
 );
 
