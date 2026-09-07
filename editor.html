@@ -8502,6 +8502,14 @@ document.addEventListener(
 
                 renderLayerList();
 
+                syncTextControls(
+                  active
+                );
+
+                syncShapeControls(
+                  active
+                );
+
                 notify(
                   active.locked
                   ? "Layer locked."
@@ -8726,84 +8734,6 @@ document.addEventListener(
     );
 
     checkRecovery();
-
-    if (
-      new URLSearchParams(
-        location.search
-      ).get(
-        "qa"
-      ) ===
-      "content"
-    ) {
-
-      const fixture =
-        document.createElement(
-          "canvas"
-        );
-
-      fixture.width =
-        320;
-
-      fixture.height =
-        240;
-
-      const fixtureContext =
-        fixture.getContext(
-          "2d"
-        );
-
-      const gradient =
-        fixtureContext.createLinearGradient(
-          0,
-          0,
-          320,
-          240
-        );
-
-      gradient.addColorStop(
-        0,
-        "#ff6b35"
-      );
-
-      gradient.addColorStop(
-        1,
-        "#2457ff"
-      );
-
-      fixtureContext.fillStyle =
-        gradient;
-
-      fixtureContext.fillRect(
-        0,
-        0,
-        320,
-        240
-      );
-
-      fixture.toBlob(
-        blob => {
-
-          if (
-            blob
-          ) {
-
-            loadImage(
-              new File(
-                [
-                  blob
-                ],
-                "content-qa.png",
-                {
-                  type:
-                    "image/png"
-                }
-              )
-            );
-          }
-        },
-        "image/png"
-      );
-    }
 
   }
 );
