@@ -1491,6 +1491,63 @@ button{
     <section class="tool-section">
 
       <h3 class="tool-section-title">
+        Effects
+      </h3>
+
+      <div class="tool-grid">
+
+        <button class="tool-button active" data-effect-preset="none">
+          <span class="tool-icon">◯</span>
+          <span class="tool-name">Original</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="cinematic">
+          <span class="tool-icon">🎬</span>
+          <span class="tool-name">Cinematic</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="vivid">
+          <span class="tool-icon">🌈</span>
+          <span class="tool-name">Vivid</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="vintage">
+          <span class="tool-icon">📷</span>
+          <span class="tool-name">Vintage</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="mono">
+          <span class="tool-icon">◐</span>
+          <span class="tool-name">Mono</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="warm">
+          <span class="tool-icon">☀️</span>
+          <span class="tool-name">Warm</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="cool">
+          <span class="tool-icon">❄️</span>
+          <span class="tool-name">Cool</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="fade">
+          <span class="tool-icon">🌫️</span>
+          <span class="tool-name">Fade</span>
+        </button>
+
+        <button class="tool-button" data-effect-preset="dramatic">
+          <span class="tool-icon">⚡</span>
+          <span class="tool-name">Dramatic</span>
+        </button>
+
+      </div>
+
+    </section>
+
+    <section class="tool-section">
+
+      <h3 class="tool-section-title">
         Layers
       </h3>
 
@@ -2078,6 +2135,36 @@ button{
         <span class="property-label">Vignette</span>
         <input id="vignette-input" type="range" min="0" max="100" value="0">
       </div>
+
+    </section>
+
+    <section class="property-group">
+
+      <h3 class="property-title">Effects</h3>
+
+      <div class="property-row">
+        <span class="property-label">Preset</span>
+        <select id="effect-preset" class="editor-select">
+          <option value="none">Original</option>
+          <option value="cinematic">Cinematic</option>
+          <option value="vivid">Vivid</option>
+          <option value="vintage">Vintage</option>
+          <option value="mono">Mono</option>
+          <option value="warm">Warm</option>
+          <option value="cool">Cool</option>
+          <option value="fade">Fade</option>
+          <option value="dramatic">Dramatic</option>
+        </select>
+      </div>
+
+      <div class="property-row">
+        <span class="property-label">Intensity</span>
+        <input id="effect-intensity" type="range" min="0" max="100" value="70">
+      </div>
+
+      <button class="top-button" id="reset-effect" type="button">
+        Reset Effect
+      </button>
 
     </section>
 
@@ -2697,6 +2784,12 @@ document.addEventListener(
     const brushSize =
       $("brush-size");
 
+    const effectPreset =
+      $("effect-preset");
+
+    const effectIntensity =
+      $("effect-intensity");
+
     const retouchStrength =
       $("retouch-strength");
 
@@ -2998,7 +3091,13 @@ document.addEventListener(
           0,
 
         vignette:
-          0
+          0,
+
+        effectPreset:
+          "none",
+
+        effectIntensity:
+          70
       }
 
     };
@@ -4319,6 +4418,22 @@ document.addEventListener(
       const adjust =
         state.adjust;
 
+      const preset =
+        adjust.effectPreset ||
+        "none";
+
+      const presetMix =
+        Math.max(
+          0,
+          Math.min(
+            1,
+            Number(
+              adjust.effectIntensity
+            ) /
+            100
+          )
+        );
+
       const active =
         adjust.highlights ||
         adjust.shadows ||
@@ -4327,7 +4442,13 @@ document.addEventListener(
         adjust.sharpness ||
         adjust.clarity ||
         adjust.noiseReduction ||
-        adjust.vignette;
+        adjust.vignette ||
+        (
+          preset !==
+          "none" &&
+          presetMix >
+          0
+        );
 
       if (
         !active ||
@@ -4539,6 +4660,242 @@ document.addEventListener(
               average
             ) *
             factor;
+        }
+
+        if (
+          preset !==
+          "none" &&
+          presetMix >
+          0
+        ) {
+
+          const originalRed =
+            red;
+
+          const originalGreen =
+            green;
+
+          const originalBlue =
+            blue;
+
+          const average =
+            (
+              red +
+              green +
+              blue
+            ) /
+            3;
+
+          if (
+            preset ===
+            "cinematic"
+          ) {
+
+            red =
+              red *
+              1.06 +
+              (
+                1 -
+                luminance
+              ) *
+              8;
+
+            green =
+              green *
+              1.01 +
+              (
+                1 -
+                luminance
+              ) *
+              10;
+
+            blue =
+              blue *
+              1.08 +
+              luminance *
+              5;
+
+          } else if (
+            preset ===
+            "vivid"
+          ) {
+
+            red =
+              average +
+              (
+                red -
+                average
+              ) *
+              1.42;
+
+            green =
+              average +
+              (
+                green -
+                average
+              ) *
+              1.42;
+
+            blue =
+              average +
+              (
+                blue -
+                average
+              ) *
+              1.42;
+
+          } else if (
+            preset ===
+            "vintage"
+          ) {
+
+            red =
+              red *
+              .78 +
+              green *
+              .38 +
+              blue *
+              .12;
+
+            green =
+              red *
+              .16 +
+              green *
+              .72 +
+              blue *
+              .08;
+
+            blue =
+              red *
+              .08 +
+              green *
+              .22 +
+              blue *
+              .55;
+
+          } else if (
+            preset ===
+            "mono"
+          ) {
+
+            const mono =
+              red *
+              .2126 +
+              green *
+              .7152 +
+              blue *
+              .0722;
+
+            red =
+              mono;
+
+            green =
+              mono;
+
+            blue =
+              mono;
+
+          } else if (
+            preset ===
+            "warm"
+          ) {
+
+            red +=
+              24;
+
+            green +=
+              7;
+
+            blue -=
+              20;
+
+          } else if (
+            preset ===
+            "cool"
+          ) {
+
+            red -=
+              18;
+
+            green +=
+              5;
+
+            blue +=
+              25;
+
+          } else if (
+            preset ===
+            "fade"
+          ) {
+
+            red =
+              red *
+              .82 +
+              34;
+
+            green =
+              green *
+              .82 +
+              34;
+
+            blue =
+              blue *
+              .82 +
+              38;
+
+          } else if (
+            preset ===
+            "dramatic"
+          ) {
+
+            red =
+              (
+                red -
+                128
+              ) *
+              1.38 +
+              128;
+
+            green =
+              (
+                green -
+                128
+              ) *
+              1.38 +
+              128;
+
+            blue =
+              (
+                blue -
+                128
+              ) *
+              1.38 +
+              128;
+          }
+
+          red =
+            originalRed +
+            (
+              red -
+              originalRed
+            ) *
+            presetMix;
+
+          green =
+            originalGreen +
+            (
+              green -
+              originalGreen
+            ) *
+            presetMix;
+
+          blue =
+            originalBlue +
+            (
+              blue -
+              originalBlue
+            ) *
+            presetMix;
         }
 
         pixels[index] =
@@ -5007,6 +5364,30 @@ document.addEventListener(
           100
         );
 
+      effectPreset.value =
+        state.adjust.effectPreset ||
+        "none";
+
+      effectIntensity.value =
+        Number.isFinite(
+          state.adjust.effectIntensity
+        )
+        ? state.adjust.effectIntensity
+        : 70;
+
+      document
+        .querySelectorAll(
+          "[data-effect-preset]"
+        )
+        .forEach(
+          button =>
+            button.classList.toggle(
+              "active",
+              button.dataset.effectPreset ===
+              effectPreset.value
+            )
+        );
+
       for (
         const [
           key,
@@ -5116,7 +5497,13 @@ document.addEventListener(
             0,
 
           vignette:
-            0
+            0,
+
+          effectPreset:
+            "none",
+
+          effectIntensity:
+            70
 
         }
       );
@@ -8448,6 +8835,163 @@ document.addEventListener(
           );
         }
       );
+
+    function applyEffectPreset(
+      preset,
+      recordHistory =
+        true
+    ) {
+
+      if (
+        !currentFile
+      ) {
+
+        notify(
+          "Import an image before applying an effect.",
+          "warning"
+        );
+
+        return;
+      }
+
+      if (
+        recordHistory
+      ) {
+
+        pushUndo(
+          "Before Effect"
+        );
+      }
+
+      state.adjust.effectPreset =
+        preset;
+
+      effectPreset.value =
+        preset;
+
+      document
+        .querySelectorAll(
+          "[data-effect-preset]"
+        )
+        .forEach(
+          button =>
+            button.classList.toggle(
+              "active",
+              button.dataset.effectPreset ===
+              preset
+            )
+        );
+
+      renderAll();
+
+      addHistoryMessage(
+        preset ===
+        "none"
+        ? "Effect reset"
+        : `${formatOperation(
+            preset
+          )} effect`
+      );
+
+      notify(
+        preset ===
+        "none"
+        ? "Effect reset."
+        : `${formatOperation(
+            preset
+          )} effect applied.`,
+        "success"
+      );
+    }
+
+    document
+      .querySelectorAll(
+        "[data-effect-preset]"
+      )
+      .forEach(
+        button =>
+          button.addEventListener(
+            "click",
+            () =>
+              applyEffectPreset(
+                button.dataset.effectPreset
+              )
+          )
+      );
+
+    effectPreset.addEventListener(
+      "change",
+      () =>
+        applyEffectPreset(
+          effectPreset.value
+        )
+    );
+
+    let effectIntensityStarted =
+      false;
+
+    effectIntensity.addEventListener(
+      "pointerdown",
+      () => {
+
+        if (
+          currentFile &&
+          !effectIntensityStarted
+        ) {
+
+          pushUndo(
+            "Before Effect Intensity"
+          );
+
+          effectIntensityStarted =
+            true;
+        }
+      }
+    );
+
+    effectIntensity.addEventListener(
+      "input",
+      () => {
+
+        state.adjust.effectIntensity =
+          Number(
+            effectIntensity.value
+          );
+
+        if (
+          currentFile
+        ) {
+
+          renderAll();
+        }
+      }
+    );
+
+    effectIntensity.addEventListener(
+      "change",
+      () => {
+
+        if (
+          currentFile
+        ) {
+
+          addHistoryMessage(
+            "Effect intensity updated"
+          );
+        }
+
+        effectIntensityStarted =
+          false;
+      }
+    );
+
+    $("reset-effect").addEventListener(
+      "click",
+      () =>
+        applyEffectPreset(
+          "none"
+        )
+    );
 
     Object.entries(
       adjustmentInputs
