@@ -2499,18 +2499,34 @@ document.addEventListener(
 
     };
 
-    const work =
+    let work =
       document.createElement(
         "canvas"
       );
 
-    const wctx =
+    let wctx =
       work.getContext(
         "2d",
         {
           willReadFrequently:
             true
         }
+      );
+
+    let layers =
+      [];
+
+    let activeLayerId =
+      null;
+
+    const composite =
+      document.createElement(
+        "canvas"
+      );
+
+    const compositeContext =
+      composite.getContext(
+        "2d"
       );
 
     const render =
@@ -2901,9 +2917,30 @@ document.addEventListener(
         return false;
       }
 
-      const workingBlob =
-        await canvasToBlob(
-          work
+      const recoveryLayers =
+        await Promise.all(
+          layers.map(
+            async layer => ({
+
+              id:
+                layer.id,
+
+              name:
+                layer.name,
+
+              visible:
+                layer.visible,
+
+              locked:
+                layer.locked,
+
+              blob:
+                await canvasToBlob(
+                  layer.canvas
+                )
+
+            })
+          )
         );
 
       await recoveryRequest(
@@ -2911,7 +2948,7 @@ document.addEventListener(
         {
 
           version:
-            1,
+            2,
 
           name:
             documentName.textContent,
@@ -2920,7 +2957,13 @@ document.addEventListener(
             new Date()
               .toISOString(),
 
-          workingBlob,
+          workingBlob:
+            recoveryLayers[0]?.blob,
+
+          layers:
+            recoveryLayers,
+
+          activeLayerId,
 
           originalBlob:
             currentFile,
@@ -2994,9 +3037,75 @@ document.addEventListener(
 
       try {
 
-        const workingBitmap =
-          await decodeImageFile(
-            saved.workingBlob
+        const savedLayers =
+          saved.layers?.length
+          ? saved.layers
+          : [
+              {
+                id:
+                  `layer-${Date.now()}`,
+                name:
+                  saved.name ||
+                  "Recovered Layer",
+                visible:
+                  true,
+                locked:
+                  false,
+                blob:
+                  saved.workingBlob
+              }
+            ];
+
+        const restoredLayers =
+          await Promise.all(
+            savedLayers.map(
+              async savedLayer => {
+
+                const bitmap =
+                  await decodeImageFile(
+                    savedLayer.blob
+                  );
+
+                const layerCanvas =
+                  document.createElement(
+                    "canvas"
+                  );
+
+                layerCanvas.width =
+                  bitmap.naturalWidth ||
+                  bitmap.width;
+
+                layerCanvas.height =
+                  bitmap.naturalHeight ||
+                  bitmap.height;
+
+                layerCanvas
+                  .getContext(
+                    "2d"
+                  )
+                  .drawImage(
+                    bitmap,
+                    0,
+                    0
+                  );
+
+                return {
+                  id:
+                    savedLayer.id,
+                  name:
+                    savedLayer.name,
+                  visible:
+                    savedLayer.visible !==
+                    false,
+                  locked:
+                    Boolean(
+                      savedLayer.locked
+                    ),
+                  canvas:
+                    layerCanvas
+                };
+              }
+            )
           );
 
         const recoveredOriginal =
@@ -3027,25 +3136,16 @@ document.addEventListener(
               }
             );
 
-        work.width =
-          workingBitmap.naturalWidth ||
-          workingBitmap.width;
+        layers =
+          restoredLayers;
 
-        work.height =
-          workingBitmap.naturalHeight ||
-          workingBitmap.height;
+        activeLayerId =
+          saved.activeLayerId ||
+          layers[0].id;
 
-        wctx.clearRect(
-          0,
-          0,
-          work.width,
-          work.height
-        );
-
-        wctx.drawImage(
-          workingBitmap,
-          0,
-          0
+        selectLayer(
+          activeLayerId,
+          false
         );
 
         Object.assign(
@@ -3085,10 +3185,6 @@ document.addEventListener(
         historyList.innerHTML =
           "";
 
-        setMainLayer(
-          documentName.textContent
-        );
-
         addHistoryMessage(
           "Project recovered"
         );
@@ -3123,7 +3219,10 @@ document.addEventListener(
           );
 
         if (
-          !saved?.workingBlob ||
+          !(
+            saved?.workingBlob ||
+            saved?.layers?.length
+          ) ||
           !saved?.originalBlob
         ) {
 
@@ -3206,8 +3305,31 @@ document.addEventListener(
 
       return {
 
-        bitmap:
-          canvasToDataURL(),
+        layers:
+          layers.map(
+            layer => ({
+
+              id:
+                layer.id,
+
+              name:
+                layer.name,
+
+              visible:
+                layer.visible,
+
+              locked:
+                layer.locked,
+
+              bitmap:
+                canvasToDataURL(
+                  layer.canvas
+                )
+
+            })
+          ),
+
+        activeLayerId,
 
         state:
           cloneState(),
@@ -3221,29 +3343,88 @@ document.addEventListener(
       saved
     ) {
 
-      const image =
-        new Image();
+      const savedLayers =
+        saved.layers ||
+        [
+          {
+            id:
+              `layer-${Date.now()}`,
+            name:
+              saved.name ||
+              "Image",
+            visible:
+              true,
+            locked:
+              false,
+            bitmap:
+              saved.bitmap
+          }
+        ];
 
-      image.onload =
-        () => {
+      Promise.all(
+        savedLayers.map(
+          savedLayer =>
+            new Promise(
+              (
+                resolve,
+                reject
+              ) => {
 
-          work.width =
-            image.width;
+                const image =
+                  new Image();
 
-          work.height =
-            image.height;
+                image.onload =
+                  () => {
 
-          wctx.clearRect(
-            0,
-            0,
-            work.width,
-            work.height
-          );
+                    const layerCanvas =
+                      document.createElement(
+                        "canvas"
+                      );
 
-          wctx.drawImage(
-            image,
-            0,
-            0
+                    layerCanvas.width =
+                      image.width;
+
+                    layerCanvas.height =
+                      image.height;
+
+                    layerCanvas
+                      .getContext(
+                        "2d"
+                      )
+                      .drawImage(
+                        image,
+                        0,
+                        0
+                      );
+
+                    resolve({
+                      ...savedLayer,
+                      canvas:
+                        layerCanvas
+                    });
+                  };
+
+                image.onerror =
+                  reject;
+
+                image.src =
+                  savedLayer.bitmap;
+              }
+            )
+        )
+      ).then(
+        restoredLayers => {
+
+          layers =
+            restoredLayers;
+
+          activeLayerId =
+            saved.activeLayerId ||
+            layers[0]?.id;
+
+          selectLayer(
+            activeLayerId,
+            false
           );
 
           Object.assign(
@@ -3263,10 +3444,21 @@ document.addEventListener(
           renderAll();
 
           updateDocumentMeta();
-        };
+        }
+      ).catch(
+        error => {
 
-      image.src =
-        saved.bitmap;
+          console.error(
+            "History restore failed.",
+            error
+          );
+
+          notify(
+            "Undo/Redo could not restore this layer state.",
+            "error"
+          );
+        }
+      );
     }
 
     function pushUndo(
@@ -3429,6 +3621,35 @@ document.addEventListener(
         return;
       }
 
+      composite.width =
+        work.width;
+
+      composite.height =
+        work.height;
+
+      compositeContext.clearRect(
+        0,
+        0,
+        composite.width,
+        composite.height
+      );
+
+      layers.forEach(
+        layer => {
+
+          if (
+            layer.visible
+          ) {
+
+            compositeContext.drawImage(
+              layer.canvas,
+              0,
+              0
+            );
+          }
+        }
+      );
+
       const size =
         transformedSize();
 
@@ -3480,7 +3701,7 @@ document.addEventListener(
         cssFilter();
 
       rctx.drawImage(
-        work,
+        composite,
         -work.width / 2,
         -work.height / 2
       );
@@ -3677,42 +3898,131 @@ document.addEventListener(
       name
     ) {
 
+      const id =
+        `layer-${Date.now()}-${layerCounter++}`;
+
+      layers =
+        [
+          {
+            id,
+            name,
+            canvas:
+              work,
+            visible:
+              true,
+            locked:
+              false
+          }
+        ];
+
+      activeLayerId =
+        id;
+
+      renderLayerList();
+    }
+
+    function activeLayer() {
+
+      return layers.find(
+        layer =>
+          layer.id ===
+          activeLayerId
+      ) ||
+      null;
+    }
+
+    function selectLayer(
+      id,
+      announce =
+        true
+    ) {
+
+      const layer =
+        layers.find(
+          candidate =>
+            candidate.id ===
+            id
+        );
+
+      if (
+        !layer
+      ) {
+
+        return false;
+      }
+
+      activeLayerId =
+        layer.id;
+
+      work =
+        layer.canvas;
+
+      wctx =
+        work.getContext(
+          "2d",
+          {
+            willReadFrequently:
+              true
+          }
+        );
+
+      renderLayerList();
+
+      updateDocumentMeta();
+
+      if (
+        announce
+      ) {
+
+        notify(
+          `${layer.name} selected.`
+        );
+      }
+
+      return true;
+    }
+
+    function renderLayerList() {
+
       layerList.innerHTML =
         "";
 
-      const item =
-        createLayerElement(
-          name,
-          "Raster Image Layer"
-        );
+      [
+        ...layers
+      ]
+        .reverse()
+        .forEach(
+          layer => {
 
-      item.classList.add(
-        "active"
-      );
+            const item =
+              document.createElement(
+                "div"
+              );
 
-      layerList.appendChild(
-        item
-      );
-    }
+            item.className =
+              "layer-item";
 
-    function createLayerElement(
-      name,
-      meta = "Layer"
-    ) {
+            item.dataset.layerId =
+              layer.id;
 
-      const item =
-        document.createElement(
-          "div"
-        );
+            item.dataset.hidden =
+              String(
+                !layer.visible
+              );
 
-      item.className =
-        "layer-item";
+            item.dataset.locked =
+              String(
+                layer.locked
+              );
 
-      item.dataset.layerId =
-        `layer-${Date.now()}-${layerCounter++}`;
+            item.classList.toggle(
+              "active",
+              layer.id ===
+              activeLayerId
+            );
 
-      item.innerHTML =
-        `
+            item.innerHTML =
+              `
           <div class="layer-thumb">
             🖼️
           </div>
@@ -3725,49 +4035,38 @@ document.addEventListener(
 
           </div>
 
-          <span>
-            👁
+          <span title="${layer.locked ? "Locked" : "Visible"}">
+            ${layer.locked ? "🔒" : layer.visible ? "👁" : "🚫"}
           </span>
         `;
 
-      item
-        .querySelector(
-          ".layer-name"
-        )
-        .textContent =
-          name;
+            item
+              .querySelector(
+                ".layer-name"
+              )
+              .textContent =
+                layer.name;
 
-      item
-        .querySelector(
-          ".layer-meta"
-        )
-        .textContent =
-          meta;
+            item
+              .querySelector(
+                ".layer-meta"
+              )
+              .textContent =
+                `${layer.canvas.width}×${layer.canvas.height} Raster`;
 
-      item.addEventListener(
-        "click",
-        () => {
-
-          layerList
-            .querySelectorAll(
-              ".layer-item"
-            )
-            .forEach(
-              layer => {
-
-                layer.classList.remove(
-                  "active"
-                );
-              }
+            item.addEventListener(
+              "click",
+              () =>
+                selectLayer(
+                  layer.id
+                )
             );
 
-          item.classList.add(
-            "active"
-          );
-        }
-      );
-
-      return item;
+            layerList.appendChild(
+              item
+            );
+          }
+        );
     }
 
     document
@@ -4788,39 +5087,40 @@ document.addEventListener(
           "Before Resize"
         );
 
-        const temp =
-          document.createElement(
-            "canvas"
-          );
+        layers.forEach(
+          layer => {
 
-        temp.width =
-          newWidth;
+            const resized =
+              document.createElement(
+                "canvas"
+              );
 
-        temp.height =
-          newHeight;
+            resized.width =
+              newWidth;
 
-        temp
-          .getContext(
-            "2d"
-          )
-          .drawImage(
-            work,
-            0,
-            0,
-            newWidth,
-            newHeight
-          );
+            resized.height =
+              newHeight;
 
-        work.width =
-          newWidth;
+            resized
+              .getContext(
+                "2d"
+              )
+              .drawImage(
+                layer.canvas,
+                0,
+                0,
+                newWidth,
+                newHeight
+              );
 
-        work.height =
-          newHeight;
+            layer.canvas =
+              resized;
+          }
+        );
 
-        wctx.drawImage(
-          temp,
-          0,
-          0
+        selectLayer(
+          activeLayerId,
+          false
         );
 
         $("resize-modal")
@@ -5099,6 +5399,26 @@ document.addEventListener(
         if (
           !currentFile
         ) {
+
+          return;
+        }
+
+        if (
+          activeLayer()?.locked &&
+          [
+            "brush",
+            "pencil",
+            "eraser",
+            "fill"
+          ].includes(
+            activeOperation
+          )
+        ) {
+
+          notify(
+            "Unlock this layer before editing it.",
+            "warning"
+          );
 
           return;
         }
@@ -5788,43 +6108,89 @@ document.addEventListener(
           )
         );
 
-      const temp =
-        document.createElement(
-          "canvas"
-        );
+      const transformed =
+        transformedSize();
 
-      temp.width =
-        width;
+      layers.forEach(
+        layer => {
 
-      temp.height =
-        height;
+          const layerRender =
+            document.createElement(
+              "canvas"
+            );
 
-      temp
-        .getContext(
-          "2d"
-        )
-        .drawImage(
-          render,
-          x,
-          y,
-          width,
-          height,
-          0,
-          0,
-          width,
-          height
-        );
+          layerRender.width =
+            transformed.w;
 
-      work.width =
-        width;
+          layerRender.height =
+            transformed.h;
 
-      work.height =
-        height;
+          const layerContext =
+            layerRender.getContext(
+              "2d"
+            );
 
-      wctx.drawImage(
-        temp,
-        0,
-        0
+          layerContext.translate(
+            transformed.w / 2,
+            transformed.h / 2
+          );
+
+          layerContext.rotate(
+            state.rotation *
+            Math.PI /
+            180
+          );
+
+          layerContext.scale(
+            state.flipX
+            ? -1
+            : 1,
+            state.flipY
+            ? -1
+            : 1
+          );
+
+          layerContext.drawImage(
+            layer.canvas,
+            -layer.canvas.width / 2,
+            -layer.canvas.height / 2
+          );
+
+          const cropped =
+            document.createElement(
+              "canvas"
+            );
+
+          cropped.width =
+            width;
+
+          cropped.height =
+            height;
+
+          cropped
+            .getContext(
+              "2d"
+            )
+            .drawImage(
+              layerRender,
+              x,
+              y,
+              width,
+              height,
+              0,
+              0,
+              width,
+              height
+            );
+
+          layer.canvas =
+            cropped;
+        }
+      );
+
+      selectLayer(
+        activeLayerId,
+        false
       );
 
       state.rotation =
@@ -6419,26 +6785,68 @@ document.addEventListener(
                 button.dataset.layerAction;
 
               const active =
-                layerList.querySelector(
-                  ".layer-item.active"
-                );
+                activeLayer();
 
               if (
                 action ===
                 "add"
               ) {
 
-                const layer =
-                  createLayerElement(
-                    `Layer ${layerCounter}`,
-                    "Placeholder Layer"
+                if (
+                  !currentFile
+                ) {
+
+                  notify(
+                    "Import an image first."
                   );
 
-                layerList.prepend(
-                  layer
+                  return;
+                }
+
+                pushUndo(
+                  "Before Add Layer"
                 );
 
-                layer.click();
+                const layerCanvas =
+                  document.createElement(
+                    "canvas"
+                  );
+
+                layerCanvas.width =
+                  work.width;
+
+                layerCanvas.height =
+                  work.height;
+
+                const newLayer = {
+
+                  id:
+                    `layer-${Date.now()}-${layerCounter++}`,
+
+                  name:
+                    `Layer ${layerCounter - 1}`,
+
+                  canvas:
+                    layerCanvas,
+
+                  visible:
+                    true,
+
+                  locked:
+                    false
+
+                };
+
+                layers.push(
+                  newLayer
+                );
+
+                selectLayer(
+                  newLayer.id,
+                  false
+                );
+
+                renderAll();
 
                 addHistoryMessage(
                   "Layer added"
@@ -6463,25 +6871,64 @@ document.addEventListener(
                 "duplicate"
               ) {
 
-                const name =
-                  active
-                    .querySelector(
-                      ".layer-name"
-                    )
-                    ?.textContent ||
-                  "Layer";
+                pushUndo(
+                  "Before Duplicate Layer"
+                );
 
-                const copy =
-                  createLayerElement(
-                    `${name} Copy`,
-                    "Duplicate Layer"
+                const copyCanvas =
+                  document.createElement(
+                    "canvas"
                   );
 
-                active.after(
+                copyCanvas.width =
+                  active.canvas.width;
+
+                copyCanvas.height =
+                  active.canvas.height;
+
+                copyCanvas
+                  .getContext(
+                    "2d"
+                  )
+                  .drawImage(
+                    active.canvas,
+                    0,
+                    0
+                  );
+
+                const copy = {
+
+                  id:
+                    `layer-${Date.now()}-${layerCounter++}`,
+
+                  name:
+                    `${active.name} Copy`,
+
+                  canvas:
+                    copyCanvas,
+
+                  visible:
+                    active.visible,
+
+                  locked:
+                    false
+
+                };
+
+                layers.splice(
+                  layers.indexOf(
+                    active
+                  ) + 1,
+                  0,
                   copy
                 );
 
-                copy.click();
+                selectLayer(
+                  copy.id,
+                  false
+                );
+
+                renderAll();
 
                 addHistoryMessage(
                   "Layer duplicated"
@@ -6496,7 +6943,7 @@ document.addEventListener(
               ) {
 
                 if (
-                  layerList.children.length <=
+                  layers.length <=
                   1
                 ) {
 
@@ -6508,14 +6955,31 @@ document.addEventListener(
                   return;
                 }
 
-                active.remove();
+                pushUndo(
+                  "Before Delete Layer"
+                );
 
-                layerList
-                  .firstElementChild
-                  ?.classList
-                  .add(
-                    "active"
+                const activeIndex =
+                  layers.indexOf(
+                    active
                   );
+
+                layers.splice(
+                  activeIndex,
+                  1
+                );
+
+                selectLayer(
+                  layers[
+                    Math.max(
+                      0,
+                      activeIndex - 1
+                    )
+                  ].id,
+                  false
+                );
+
+                renderAll();
 
                 addHistoryMessage(
                   "Layer deleted"
@@ -6529,19 +6993,16 @@ document.addEventListener(
                 "toggle"
               ) {
 
-                const hidden =
-                  active.dataset.hidden ===
-                  "true";
+                pushUndo(
+                  "Before Layer Visibility"
+                );
 
-                active.dataset.hidden =
-                  String(
-                    !hidden
-                  );
+                active.visible =
+                  !active.visible;
 
-                active.lastElementChild.textContent =
-                  hidden
-                  ? "👁"
-                  : "🚫";
+                renderLayerList();
+
+                renderAll();
 
                 return;
               }
@@ -6551,19 +7012,15 @@ document.addEventListener(
                 "lock"
               ) {
 
-                const locked =
-                  active.dataset.locked ===
-                  "true";
+                active.locked =
+                  !active.locked;
 
-                active.dataset.locked =
-                  String(
-                    !locked
-                  );
+                renderLayerList();
 
                 notify(
-                  locked
-                  ? "Layer unlocked."
-                  : "Layer locked."
+                  active.locked
+                  ? "Layer locked."
+                  : "Layer unlocked."
                 );
 
                 return;
@@ -6574,17 +7031,34 @@ document.addEventListener(
                 "up"
               ) {
 
-                const previous =
-                  active.previousElementSibling;
+                const index =
+                  layers.indexOf(
+                    active
+                  );
 
                 if (
-                  previous
+                  index <
+                  layers.length - 1
                 ) {
 
-                  layerList.insertBefore(
-                    active,
-                    previous
+                  pushUndo(
+                    "Before Layer Reorder"
                   );
+
+                  layers.splice(
+                    index,
+                    1
+                  );
+
+                  layers.splice(
+                    index + 1,
+                    0,
+                    active
+                  );
+
+                  renderLayerList();
+
+                  renderAll();
                 }
 
                 return;
@@ -6595,17 +7069,34 @@ document.addEventListener(
                 "down"
               ) {
 
-                const next =
-                  active.nextElementSibling;
-
-                if (
-                  next
-                ) {
-
-                  layerList.insertBefore(
-                    next,
+                const index =
+                  layers.indexOf(
                     active
                   );
+
+                if (
+                  index >
+                  0
+                ) {
+
+                  pushUndo(
+                    "Before Layer Reorder"
+                  );
+
+                  layers.splice(
+                    index,
+                    1
+                  );
+
+                  layers.splice(
+                    index - 1,
+                    0,
+                    active
+                  );
+
+                  renderLayerList();
+
+                  renderAll();
                 }
               }
             }
@@ -6750,6 +7241,39 @@ document.addEventListener(
     );
 
     checkRecovery();
+
+    if (
+      new URLSearchParams(
+        location.search
+      ).get("qa") ===
+      "layers"
+    ) {
+
+      const qaCanvas =
+        document.createElement("canvas");
+
+      qaCanvas.width = 320;
+      qaCanvas.height = 240;
+
+      const qaContext =
+        qaCanvas.getContext("2d");
+
+      qaContext.fillStyle = "#765cff";
+      qaContext.fillRect(0, 0, 320, 240);
+
+      qaCanvas.toBlob(
+        blob =>
+          blob &&
+          loadImage(
+            new File(
+              [blob],
+              "layers-qa.png",
+              {type:"image/png"}
+            )
+          ),
+        "image/png"
+      );
+    }
 
   }
 );
