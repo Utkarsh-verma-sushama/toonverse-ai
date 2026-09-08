@@ -17,10 +17,12 @@
       : null;
   let syncAdapter = null;
 
-  const makeId = prefix =>
-    `${prefix}-${typeof crypto?.randomUUID === "function"
-      ? crypto.randomUUID()
+  const makeId = prefix => {
+    const secureCrypto = globalThis.crypto;
+    return `${prefix}-${typeof secureCrypto?.randomUUID === "function"
+      ? secureCrypto.randomUUID()
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`;
+  };
 
   function stableId(key, prefix) {
     try {
@@ -149,41 +151,66 @@
       deviceId
     } : null;
 
-    await withStore(
-      version ? [PROJECTS, QUEUE, VERSIONS] : [PROJECTS, QUEUE],
-      "readwrite",
-      stores => {
-        stores[PROJECTS].put(record);
-        stores[QUEUE].put(queueRecord);
-        if (version) stores[VERSIONS].put(version);
+    try {
+      await withStore(
+        version ? [PROJECTS, QUEUE, VERSIONS] : [PROJECTS, QUEUE],
+        "readwrite",
+        stores => {
+          stores[PROJECTS].put(record);
+          stores[QUEUE].put(queueRecord);
+          if (version) stores[VERSIONS].put(version);
+        }
+      );
+      if (version) await trimVersions(id);
+    } catch (error) {
+      // Older/private TV and mobile WebViews can disable IndexedDB.
+      try {
+        localStorage.setItem(LEGACY_KEY, JSON.stringify(record));
+      } catch {
+        throw error;
       }
-    );
-    if (version) await trimVersions(id);
+      record.syncState = "local-only";
+    }
     channel?.postMessage({ type: "project-saved", projectId: id, at: now });
     globalThis.dispatchEvent?.(new CustomEvent("toonverse:project-saved", { detail: { projectId: id } }));
     return record;
   }
 
   async function getProject(id = activeProjectId()) {
-    const db = await openDatabase();
     try {
-      const tx = db.transaction(PROJECTS, "readonly");
-      return await requestResult(tx.objectStore(PROJECTS).get(id));
-    } finally { db.close(); }
+      const db = await openDatabase();
+      try {
+        const tx = db.transaction(PROJECTS, "readonly");
+        return await requestResult(tx.objectStore(PROJECTS).get(id));
+      } finally { db.close(); }
+    } catch {
+      try {
+        const legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || "null");
+        return legacy ? { ...legacy, id, syncState: "local-only" } : null;
+      } catch {
+        return null;
+      }
+    }
   }
 
   async function listProjects() {
-    const db = await openDatabase();
     try {
-      const tx = db.transaction(PROJECTS, "readonly");
-      const records = await requestResult(tx.objectStore(PROJECTS).getAll());
-      return records
-        .filter(record => !record.deleted)
-        .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    } finally { db.close(); }
+      const db = await openDatabase();
+      try {
+        const tx = db.transaction(PROJECTS, "readonly");
+        const records = await requestResult(tx.objectStore(PROJECTS).getAll());
+        return records
+          .filter(record => !record.deleted)
+          .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      } finally { db.close(); }
+    } catch {
+      const fallback = await getProject();
+      return fallback ? [fallback] : [];
+    }
   }
 
   async function listVersions(projectId = activeProjectId()) {
+    if (!("indexedDB" in globalThis)) return [];
     const db = await openDatabase();
     try {
       const tx = db.transaction(VERSIONS, "readonly");
@@ -196,6 +223,10 @@
 
   async function removeProject(projectId) {
     const now = new Date().toISOString();
+    if (!("indexedDB" in globalThis)) {
+      try { localStorage.removeItem(LEGACY_KEY); } catch {}
+      return;
+    }
     await withStore([PROJECTS, QUEUE, VERSIONS], "readwrite", stores => {
       stores[PROJECTS].delete(projectId);
       stores[QUEUE].put({
@@ -218,6 +249,9 @@
   }
 
   async function syncStatus() {
+    if (!("indexedDB" in globalThis)) {
+      return { online: typeof navigator?.onLine === "boolean" ? navigator.onLine : true, backendConnected: false, pending: 0, usage: 0, quota: 0, deviceId, localOnly: true };
+    }
     const db = await openDatabase();
     try {
       const tx = db.transaction(QUEUE, "readonly");
