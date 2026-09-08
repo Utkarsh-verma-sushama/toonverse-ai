@@ -10573,27 +10573,26 @@ document.addEventListener(
                 )
               ) {
 
+                const detail = {
+                  operation,
+                  editor: window.ToonVerseEditor,
+                  handled: false
+                };
                 window.dispatchEvent(
                   new CustomEvent(
                     "toonverse:ai-operation",
                     {
-
-                      detail: {
-
-                        operation,
-
-                        editor:
-                          window.ToonVerseEditor
-                      }
-
+                      detail,
+                      cancelable: true
                     }
                   )
                 );
 
                 notify(
-                  `${formatOperation(
-                    operation
-                  )} AI connector hook is ready.`
+                  detail.handled
+                  ? `${formatOperation(operation)} started.`
+                  : `${formatOperation(operation)} requires the secure ToonVerse AI processing service, which is not connected in this browser build.`,
+                  detail.handled ? "success" : "warning"
                 );
 
                 return;
