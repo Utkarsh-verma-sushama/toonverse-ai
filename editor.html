@@ -15071,7 +15071,7 @@ document.addEventListener(
       }
 
       renderAll();
-      const printWindow = window.open("", "_blank", "noopener");
+      const printWindow = window.open("", "_blank");
       if (!printWindow) {
         notify("Pop-up blocked. Allow pop-ups for printing.", "warning");
         return;
@@ -15088,27 +15088,29 @@ document.addEventListener(
         pdfOrientation.value === "auto"
         ? (render.width >= render.height ? "landscape" : "portrait")
         : pdfOrientation.value;
+      printWindow.opener = null;
       const marginPoints = Math.max(0, Number(pdfMargin.value) || 0);
       const marginMillimetres = (marginPoints * 25.4 / 72).toFixed(2);
+      const pageRule = page === "auto" ? desiredOrientation : `${page} ${desiredOrientation}`;
       const placement = pdfPlacement.value === "fill" ? "cover" : "contain";
       const filter = printColorMode.value === "grayscale" ? "grayscale(100%)" : "none";
       const safeTitle = safeExportName(documentName.textContent);
 
-      printWindow.document.open();
-      printWindow.document.write(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>${safeTitle} - Print</title>
-<style>
-@page{size:${page} ${desiredOrientation};margin:${marginMillimetres}mm}
-*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
-body{display:grid;place-items:center;min-height:100vh}
-img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filter};image-rendering:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-@media print{body{min-height:auto}img{height:calc(100vh - ${marginMillimetres}mm)}}
-</style></head><body><img src="${url}" alt=""></body></html>`);
-      printWindow.document.close();
       printWindow.addEventListener("load", () => {
         printWindow.focus();
         printWindow.print();
       }, { once: true });
+      printWindow.document.open();
+      printWindow.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${safeTitle} - Print</title>
+<style>
+@page{size:${pageRule};margin:${marginMillimetres}mm}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
+body{display:grid;place-items:center;min-height:100vh}
+img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filter};image-rendering:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media print{html,body{width:100%;height:100%}body{min-height:auto}img{height:100%;max-width:100%;max-height:100%}}
+</style></head><body><img src="${url}" alt=""></body></html>`);
+      printWindow.document.close();
       addHistoryMessage(`Print ${page} ${desiredOrientation}`);
       notify("Print layout prepared.", "success");
     }
