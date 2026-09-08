@@ -77,6 +77,12 @@
       label: "Smart Auto Layout"
     }),
 
+    wallpaper: Object.freeze({
+      path: "./wallpaper.html",
+      enabled: true,
+      label: "Wallpaper Studio"
+    }),
+
     library: Object.freeze({
       path: "./library.html",
       enabled: true,
