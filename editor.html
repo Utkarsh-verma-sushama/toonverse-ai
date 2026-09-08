@@ -3886,6 +3886,8 @@ document.addEventListener(
       });
     }
 
+    let lastRecoveryRecord = null;
+
     async function writeRecovery() {
 
       if (
@@ -3916,9 +3918,7 @@ document.addEventListener(
         });
       }
 
-      await recoveryRequest(
-        "write",
-        {
+      const recoveryRecord = {
 
           version:
             2,
@@ -4022,8 +4022,13 @@ document.addEventListener(
             printColorMode: printColorMode.value
           }
 
-        }
+        };
+
+      await recoveryRequest(
+        "write",
+        recoveryRecord
       );
+      lastRecoveryRecord = recoveryRecord;;
 
       return true;
     }
@@ -14839,7 +14844,10 @@ document.addEventListener(
         if (globalThis.ToonVerseProjectStore) {
           await globalThis.ToonVerseProjectStore.saveProject(
             project,
-            { createVersion: true }
+            {
+              createVersion: true,
+              snapshot: lastRecoveryRecord
+            }
           );
         }
       } catch (error) {
