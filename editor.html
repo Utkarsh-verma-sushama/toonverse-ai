@@ -6953,12 +6953,10 @@ document.addEventListener(
       const context = layer.maskCanvas.getContext("2d", { willReadFrequently: true });
       const pixels = context.getImageData(0, 0, layer.maskCanvas.width, layer.maskCanvas.height);
       for (let i = 0; i < pixels.data.length; i += 4) {
-        const alpha = pixels.data[i + 3];
-        const value = 255 - (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
-        pixels.data[i] = value;
-        pixels.data[i + 1] = value;
-        pixels.data[i + 2] = value;
-        pixels.data[i + 3] = alpha;
+        pixels.data[i] = 255;
+        pixels.data[i + 1] = 255;
+        pixels.data[i + 2] = 255;
+        pixels.data[i + 3] = 255 - pixels.data[i + 3];
       }
       context.putImageData(pixels, 0, 0);
       renderAll();
