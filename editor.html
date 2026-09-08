@@ -2587,6 +2587,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           <option value="fill">Fill Page</option>
         </select>
       </div>
+      <div class="property-row">
+        <span class="property-label">Print Color</span>
+        <select id="print-color-mode" class="editor-select">
+          <option value="color">Full Color</option>
+          <option value="grayscale">Black & White</option>
+        </select>
+      </div>
     </section>
 
     <section class="property-group">
@@ -3016,6 +3023,7 @@ document.addEventListener(
     const pdfOrientation = $("pdf-orientation");
     const pdfMargin = $("pdf-margin");
     const pdfPlacement = $("pdf-placement");
+    const printColorMode = $("print-color-mode");
 
     const flipXInput =
       $("flip-x-input");
@@ -4000,7 +4008,8 @@ document.addEventListener(
             pdfPageSize: pdfPageSize.value,
             pdfOrientation: pdfOrientation.value,
             pdfMargin: pdfMargin.value,
-            pdfPlacement: pdfPlacement.value
+            pdfPlacement: pdfPlacement.value,
+            printColorMode: printColorMode.value
           }
 
         }
@@ -4348,6 +4357,7 @@ document.addEventListener(
           pdfOrientation.value = saved.exportSettings.pdfOrientation || "auto";
           pdfMargin.value = saved.exportSettings.pdfMargin ?? 36;
           pdfPlacement.value = saved.exportSettings.pdfPlacement || "fit";
+          printColorMode.value = saved.exportSettings.printColorMode || "color";
         }
 
         documentName.textContent =
@@ -7224,7 +7234,7 @@ document.addEventListener(
 
     [maskBrushMode, maskBrushSize, maskBrushSoftness, maskBrushOpacity,
       exportFormat, exportQuality, exportScale, exportTransparency, exportBackground,
-      pdfPageSize, pdfOrientation, pdfMargin, pdfPlacement]
+      pdfPageSize, pdfOrientation, pdfMargin, pdfPlacement, printColorMode]
       .forEach(control => control.addEventListener("change", () => {
         syncExportControls();
         scheduleAutoSave();
@@ -15055,54 +15065,52 @@ document.addEventListener(
     }
 
     function printRendered() {
-
-      if (
-        !currentFile
-      ) {
-
-        notify(
-          "Import an image first."
-        );
-
+      if (!currentFile) {
+        notify("Import an image first.", "warning");
         return;
       }
 
-      const url =
-        render.toDataURL(
-          "image/png"
-        );
-
-      const printWindow =
-        window.open(
-          "",
-          "_blank"
-        );
-
-      if (
-        !printWindow
-      ) {
-
-        notify(
-          "Pop-up blocked. Allow pop-ups for printing.",
-          "warning"
-        );
-
+      renderAll();
+      const printWindow = window.open("", "_blank", "noopener");
+      if (!printWindow) {
+        notify("Pop-up blocked. Allow pop-ups for printing.", "warning");
         return;
       }
 
-      printWindow.document.write(
-        `
-          <img
-            src="${url}"
-            style="max-width:100%"
-          >
-          <script>
-            onload=()=>print()
-          <\/script>
-        `
-      );
+      const url = render.toDataURL("image/png");
+      const page =
+        pdfPageSize.value === "letter"
+        ? "Letter"
+        : pdfPageSize.value === "image"
+        ? "auto"
+        : "A4";
+      const desiredOrientation =
+        pdfOrientation.value === "auto"
+        ? (render.width >= render.height ? "landscape" : "portrait")
+        : pdfOrientation.value;
+      const marginPoints = Math.max(0, Number(pdfMargin.value) || 0);
+      const marginMillimetres = (marginPoints * 25.4 / 72).toFixed(2);
+      const placement = pdfPlacement.value === "fill" ? "cover" : "contain";
+      const filter = printColorMode.value === "grayscale" ? "grayscale(100%)" : "none";
+      const safeTitle = safeExportName(documentName.textContent);
 
+      printWindow.document.open();
+      printWindow.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${safeTitle} - Print</title>
+<style>
+@page{size:${page} ${desiredOrientation};margin:${marginMillimetres}mm}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
+body{display:grid;place-items:center;min-height:100vh}
+img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filter};image-rendering:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media print{body{min-height:auto}img{height:calc(100vh - ${marginMillimetres}mm)}}
+</style></head><body><img src="${url}" alt=""></body></html>`);
       printWindow.document.close();
+      printWindow.addEventListener("load", () => {
+        printWindow.focus();
+        printWindow.print();
+      }, { once: true });
+      addHistoryMessage(`Print ${page} ${desiredOrientation}`);
+      notify("Print layout prepared.", "success");
     }
 
     function resetProject() {
