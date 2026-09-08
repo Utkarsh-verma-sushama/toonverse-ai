@@ -1,9 +1,9 @@
 # ToonVerse AI — Checkpoint Resume Record
 
 Last updated: 2026-09-08  
-Current locked checkpoint: 42  
-Exact next checkpoint: 43  
-Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 43. Do not repeat or reopen completed work unless a verified defect requires it.
+Current locked checkpoint: 43  
+Exact next checkpoint: 44  
+Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
 
 ## Permanent execution rule
 
@@ -56,6 +56,9 @@ Locked with Free/Premium entitlement architecture, truthful server-verified pric
 ### Checkpoint 42 — Testing & Quality Assurance
 Locked with a deterministic browser regression suite across all registered public routes and core assets; functional reachability, document structure, viewport, CSP/referrer/mixed-content security checks, accessible-form heuristics, size budgets, PWA manifest/cache validation, timestamped recoverable/exportable reports, consent-based bounded beta feedback, explicit real-device beta release gates, home/PWA discovery, offline shell and responsive phone/tablet/desktop/TV UX.
 
+### Checkpoint 43 — Launch Preparation
+Locked with final QA/polish gates, active Privacy Policy and Terms pages, versioned store listing metadata and asset requirements, current Apple/Google disclosure and review checkpoints, legal-operator/counsel gates, consent-based campaign planning, limited soft-launch controls, honest native-build/store-approval states, home/PWA discovery, offline shell and responsive phone/tablet/desktop/TV UX.
+
 ## Resume point
 
-Checkpoint 42 is complete and locked. No part of Checkpoint 42 remains. The next work item is Checkpoint 43, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
+Checkpoint 43 is complete and locked. No part of Checkpoint 43 remains. The next work item is Checkpoint 44, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
