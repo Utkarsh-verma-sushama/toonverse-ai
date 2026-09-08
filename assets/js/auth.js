@@ -156,7 +156,7 @@
   }
 
   async function beginProvider(provider, returnTo = location.href) {
-    const allowed = new Set(["google", "apple", "facebook", "linkedin"]);
+    const allowed = new Set(["google", "apple", "microsoft", "facebook", "linkedin", "x", "github"]);
     if (!allowed.has(provider)) throw new Error("Unsupported sign-in provider.");
     const payload = await request(`/v1/auth/oauth/${provider}/start`, {
       method: "POST",
