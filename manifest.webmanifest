@@ -143,6 +143,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Utility & Productivity Hub",
+      "short_name": "Utilities",
+      "url": "./utilities.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
