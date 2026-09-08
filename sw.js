@@ -1,9 +1,9 @@
 "use strict";
-const CACHE_NAME = "toonverse-shell-v16";
+const CACHE_NAME = "toonverse-shell-v17";
 const CORE = [
-  "./","./index.html","./support.html","./utilities.html","./camera.html","./coloring.html","./multimodal.html","./memory.html","./create.html","./editor.html","./layout.html","./wallpaper.html","./library.html","./account.html","./404.html",
+  "./","./index.html","./plans.html","./support.html","./utilities.html","./camera.html","./coloring.html","./multimodal.html","./memory.html","./create.html","./editor.html","./layout.html","./wallpaper.html","./library.html","./account.html","./404.html",
   "./assets/css/main.css","./assets/css/components.css","./assets/js/config.js","./assets/js/main.js",
-  "./assets/js/support-community.js","./assets/js/utility-hub.js","./assets/js/camera-intelligence.js","./assets/js/coloring-studio.js","./assets/js/multimodal.js","./assets/js/memory-studio.js","./assets/js/project-store.js","./assets/js/cloud-sync.js","./assets/js/auth.js","./assets/js/ai-runtime.js","./assets/js/ai-capabilities.js",
+  "./assets/js/monetization-growth.js","./assets/js/support-community.js","./assets/js/utility-hub.js","./assets/js/camera-intelligence.js","./assets/js/coloring-studio.js","./assets/js/multimodal.js","./assets/js/memory-studio.js","./assets/js/project-store.js","./assets/js/cloud-sync.js","./assets/js/auth.js","./assets/js/ai-runtime.js","./assets/js/ai-capabilities.js",
   "./manifest.webmanifest","./assets/toonverse-icon.svg"
 ];
 self.addEventListener("install", event => {
