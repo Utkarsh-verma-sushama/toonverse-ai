@@ -4679,13 +4679,13 @@ document.addEventListener(
 
           Object.assign(
             state,
-            saved.state
+            saved.state || {}
           );
 
           state.adjust = {
 
             ...state.adjust,
-            ...saved.state.adjust
+            ...saved.state?.adjust
 
           };
 
@@ -15932,6 +15932,104 @@ document.addEventListener(
         renderAll
 
     };
+
+    function isEditableControl(target) {
+      return Boolean(
+        target?.closest?.("input, textarea, select, [contenteditable='true']")
+      );
+    }
+
+    document.addEventListener("keydown", event => {
+      const modifier = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+
+      if (modifier && key === "z") {
+        event.preventDefault();
+        event.shiftKey ? redo() : undo();
+        return;
+      }
+      if (modifier && (key === "y")) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+      if (modifier && key === "s") {
+        event.preventDefault();
+        saveProject();
+        return;
+      }
+      if (isEditableControl(event.target)) return;
+
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        zoom = Math.min(4, +(zoom + .1).toFixed(2));
+        updateZoom();
+        return;
+      }
+      if (event.key === "-") {
+        event.preventDefault();
+        zoom = Math.max(.2, +(zoom - .1).toFixed(2));
+        updateZoom();
+        return;
+      }
+      if (event.key === "0") {
+        event.preventDefault();
+        zoom = 1;
+        updateZoom();
+        return;
+      }
+      if (event.key === "Escape") {
+        if (cropRect) cancelCrop();
+        else if (hasPixelSelection()) clearPixelSelection();
+        else setOperation("select");
+        return;
+      }
+
+      if (
+        ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
+        event.target?.matches?.("button")
+      ) {
+        const container = event.target.closest(".tool-rail, .tool-grid, .command-group, .modal-actions");
+        if (!container) return;
+        const buttons = [...container.querySelectorAll("button:not([disabled])")]
+          .filter(button => button.offsetParent !== null);
+        const index = buttons.indexOf(event.target);
+        if (index < 0 || buttons.length < 2) return;
+        event.preventDefault();
+        const backwards = event.key === "ArrowLeft" || event.key === "ArrowUp";
+        buttons[(index + (backwards ? -1 : 1) + buttons.length) % buttons.length].focus();
+      }
+    });
+
+    const refreshViewportOverlays = () => {
+      if (cropRect) updateCropOverlay();
+      else if (hasPixelSelection()) updatePixelSelectionOverlay();
+      updateContentOverlay();
+    };
+
+    window.visualViewport?.addEventListener("resize", refreshViewportOverlays);
+    window.visualViewport?.addEventListener("scroll", refreshViewportOverlays);
+    window.addEventListener("orientationchange", () => {
+      setTimeout(refreshViewportOverlays, 120);
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden" && currentFile) {
+        writeRecovery().catch(error => console.warn("Background save failed.", error));
+      }
+    });
+    window.addEventListener("pagehide", () => {
+      if (currentFile) {
+        writeRecovery().catch(error => console.warn("Page-exit save failed.", error));
+      }
+    });
+
+    document.querySelectorAll("button").forEach(button => {
+      if (!button.getAttribute("aria-label") && !button.textContent.trim()) {
+        const action = button.dataset.editorAction || button.dataset.editorOperation;
+        if (action) button.setAttribute("aria-label", formatOperation(action));
+      }
+    });
 
     resetVisualState();
 
