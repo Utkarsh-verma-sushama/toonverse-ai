@@ -2538,6 +2538,15 @@ button{
         Apply Layer Properties
       </button>
 
+      <div class="modal-actions">
+        <button class="top-button" id="add-layer-mask" type="button">Add Mask</button>
+        <button class="top-button" id="invert-layer-mask" type="button">Invert</button>
+      </div>
+      <div class="modal-actions">
+        <button class="top-button" id="toggle-layer-mask" type="button">Disable Mask</button>
+        <button class="top-button" id="delete-layer-mask" type="button">Delete Mask</button>
+      </div>
+
       <div
         class="layer-list"
         id="layer-list"
@@ -5360,6 +5369,19 @@ document.addEventListener(
       };
     }
 
+    function renderedLayerSource(layer) {
+      if (!layer.maskCanvas || layer.maskEnabled === false) return layer.canvas;
+      const masked = document.createElement("canvas");
+      masked.width = layer.canvas.width;
+      masked.height = layer.canvas.height;
+      const context = masked.getContext("2d");
+      context.drawImage(layer.canvas, 0, 0);
+      context.globalCompositeOperation = "destination-in";
+      context.drawImage(layer.maskCanvas, 0, 0, masked.width, masked.height);
+      context.globalCompositeOperation = "source-over";
+      return masked;
+    }
+
     function renderAll() {
 
       if (
@@ -5403,7 +5425,7 @@ document.addEventListener(
               "source-over";
 
             compositeContext.drawImage(
-              layer.canvas,
+              renderedLayerSource(layer),
               0,
               0
             );
@@ -6089,6 +6111,11 @@ document.addEventListener(
                 )
                 .textContent +=
                   ` • ${formatOperation(layer.blendMode)}`;
+            }
+
+            if (layer.maskCanvas) {
+              item.querySelector(".layer-meta").textContent +=
+                layer.maskEnabled === false ? " • Mask Off" : " • Mask";
             }
 
             item.addEventListener(
@@ -6810,6 +6837,99 @@ document.addEventListener(
         updateContentOverlay();
       }
     }
+
+    function createLayerMask() {
+      const layer = activeLayer();
+      if (!currentFile || !layer) {
+        notify("Import an image and select a layer first.", "warning");
+        return;
+      }
+      if (layer.locked) {
+        notify("Unlock this layer before adding a mask.", "warning");
+        return;
+      }
+      pushUndo("Before Add Layer Mask");
+      const mask = document.createElement("canvas");
+      mask.width = layer.canvas.width;
+      mask.height = layer.canvas.height;
+      const context = mask.getContext("2d");
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, mask.width, mask.height);
+      const fromSelection = hasPixelSelection();
+      if (fromSelection) {
+        context.globalCompositeOperation = "destination-in";
+        context.drawImage(featheredSelectionMask(), 0, 0, mask.width, mask.height);
+        context.globalCompositeOperation = "source-over";
+      }
+      layer.maskCanvas = mask;
+      layer.maskEnabled = true;
+      renderAll();
+      renderLayerList();
+      addHistoryMessage(fromSelection ? "Layer mask from selection" : "Reveal-all layer mask");
+      scheduleAutoSave();
+      notify(fromSelection ? "Layer mask created from the active selection." : "Reveal-all layer mask created.", "success");
+    }
+
+    function invertLayerMask() {
+      const layer = activeLayer();
+      if (!layer?.maskCanvas || layer.locked) {
+        notify("Select an unlocked layer with a mask first.", "warning");
+        return;
+      }
+      pushUndo("Before Invert Layer Mask");
+      const context = layer.maskCanvas.getContext("2d", { willReadFrequently: true });
+      const pixels = context.getImageData(0, 0, layer.maskCanvas.width, layer.maskCanvas.height);
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const alpha = pixels.data[i + 3];
+        const value = 255 - (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
+        pixels.data[i] = value;
+        pixels.data[i + 1] = value;
+        pixels.data[i + 2] = value;
+        pixels.data[i + 3] = alpha;
+      }
+      context.putImageData(pixels, 0, 0);
+      renderAll();
+      renderLayerList();
+      addHistoryMessage("Layer mask inverted");
+      scheduleAutoSave();
+      notify("Layer mask inverted.", "success");
+    }
+
+    function toggleLayerMask() {
+      const layer = activeLayer();
+      if (!layer?.maskCanvas) {
+        notify("This layer has no mask.", "warning");
+        return;
+      }
+      pushUndo("Before Toggle Layer Mask");
+      layer.maskEnabled = layer.maskEnabled === false;
+      renderAll();
+      renderLayerList();
+      addHistoryMessage(layer.maskEnabled ? "Layer mask enabled" : "Layer mask disabled");
+      scheduleAutoSave();
+      notify(layer.maskEnabled ? "Layer mask enabled." : "Layer mask disabled.", "success");
+    }
+
+    function deleteLayerMask() {
+      const layer = activeLayer();
+      if (!layer?.maskCanvas || layer.locked) {
+        notify("Select an unlocked layer with a mask first.", "warning");
+        return;
+      }
+      pushUndo("Before Delete Layer Mask");
+      layer.maskCanvas = null;
+      layer.maskEnabled = true;
+      renderAll();
+      renderLayerList();
+      addHistoryMessage("Layer mask deleted");
+      scheduleAutoSave();
+      notify("Layer mask deleted; original pixels remain unchanged.", "success");
+    }
+
+    $("add-layer-mask").addEventListener("click", createLayerMask);
+    $("invert-layer-mask").addEventListener("click", invertLayerMask);
+    $("toggle-layer-mask").addEventListener("click", toggleLayerMask);
+    $("delete-layer-mask").addEventListener("click", deleteLayerMask);
 
     $("reset-clone-source").addEventListener(
       "click",
