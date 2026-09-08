@@ -17,6 +17,7 @@ button,input{font:inherit}button{cursor:pointer}.shell{width:min(1120px,100%);ma
 .hero{max-width:760px;margin-bottom:22px}.eyebrow{color:#b9aaff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}.hero h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:10px 0}.hero p{color:#b9c2dd;line-height:1.65}
 .grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:18px}.card{border:1px solid #ffffff18;border-radius:18px;padding:20px;background:#10182de8;box-shadow:0 20px 60px #0005}.card h2{font-size:18px;margin:0 0 6px}.muted{color:#aeb8d6;font-size:13px;line-height:1.5}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:18px 0}.tab{min-height:44px;border:0;border-radius:11px;color:#b8c1db;background:#ffffff08}.tab.active{color:#fff;background:#765cff}
 .form{display:grid;gap:12px}.field{display:grid;gap:6px}.field span{font-size:12px;color:#d8def2}.field input{width:100%;min-height:48px;border:1px solid #ffffff22;border-radius:12px;padding:10px 12px;color:#fff;background:#080e20;outline:0}.field input:focus{border-color:#9f8eff;box-shadow:0 0 0 3px #765cff33}.primary,.provider,.security-action{min-height:48px;border:1px solid #ffffff1f;border-radius:12px;padding:10px 14px;color:#fff;background:#ffffff08}.primary{border:0;font-weight:800;background:linear-gradient(135deg,#765cff,#ff3d9a)}.providers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:#8994b3;font-size:11px}.divider:before,.divider:after{content:"";height:1px;flex:1;background:#ffffff16}
+.dashboard{margin-top:22px}.dashboard[hidden]{display:none}.dashboard-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}.data-list{display:grid;gap:8px;margin-top:12px}.data-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #ffffff14;border-radius:12px;background:#ffffff05}.data-row-main{min-width:0}.data-row strong,.data-row span{overflow-wrap:anywhere}.data-meta{display:block;margin-top:4px;color:#98a4c2;font-size:11px}.empty{padding:14px;border:1px dashed #ffffff24;border-radius:12px;color:#98a4c2;font-size:12px}.danger{border-color:#ef444466;color:#fecaca;background:#ef444414}.profile-line{display:flex;align-items:center;gap:12px}.avatar{width:50px;height:50px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#765cff,#ff3d9a);font-weight:900}.skeleton{min-height:52px;border-radius:12px;background:linear-gradient(90deg,#ffffff06,#ffffff10,#ffffff06)}@media(max-width:760px){.dashboard-grid{grid-template-columns:1fr}}
 .dialog{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:16px;background:#000b}.dialog[hidden]{display:none}.dialog-card{width:min(460px,100%);padding:20px;border:1px solid #ffffff22;border-radius:18px;background:#10182d;box-shadow:0 24px 80px #0009}.dialog-card h2{margin:0 0 8px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
 .status{margin:0 0 16px;padding:12px;border:1px solid #ffffff18;border-radius:12px;color:#dbe2f8;background:#ffffff06}.status.warning{border-color:#f59e0b66;background:#f59e0b12}.status.success{border-color:#22c55e66;background:#22c55e12}.security-list{display:grid;gap:10px;margin-top:14px}.security-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.icon{font-size:21px}.security-item strong{display:block;font-size:13px}.security-item p{margin:4px 0 0;color:#9eabc9;font-size:11px;line-height:1.45}.notice{margin-top:18px;padding:14px;border-left:3px solid #765cff;color:#aeb8d6;background:#765cff10;font-size:12px;line-height:1.55}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1ff;outline-offset:3px}button:disabled{cursor:not-allowed;opacity:.5}@media(max-width:760px){.grid{grid-template-columns:1fr}.providers{grid-template-columns:1fr}.shell{padding-inline:12px}}@media(pointer:coarse){button,a,input{min-height:48px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
@@ -67,6 +68,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
 </aside>
 </div>
 </main>
+<section class="dashboard" id="account-dashboard" aria-labelledby="dashboard-title" hidden>
+<div class="card"><div class="dashboard-head"><div><div class="eyebrow">Protected account center</div><h2 id="dashboard-title">Profile, devices and security</h2></div><div><button class="security-action" id="refresh-dashboard" type="button">Refresh</button> <button class="security-action" id="sign-out" type="button">Sign out</button></div></div>
+<div class="profile-line" style="margin-top:14px"><div class="avatar" id="profile-avatar" aria-hidden="true">TV</div><div><strong id="profile-name">ToonVerse user</strong><span class="data-meta" id="profile-email"></span><span class="data-meta" id="profile-security"></span></div></div>
+<div class="dashboard-grid">
+<section class="card" aria-labelledby="devices-title"><h2 id="devices-title">Active devices</h2><p class="muted">Review and revoke sessions you do not recognize.</p><div class="data-list" id="session-list"></div></section>
+<section class="card" aria-labelledby="activity-title"><h2 id="activity-title">Security activity</h2><p class="muted">Recent protected account events.</p><div class="data-list" id="activity-list"></div></section>
+<section class="card" aria-labelledby="connections-title"><h2 id="connections-title">Connected accounts</h2><p class="muted">Sign-in providers and separately consented platform connections.</p><div class="data-list" id="connection-list"></div><div class="providers" id="link-providers"><button class="provider" data-link-provider="google">Link Google</button><button class="provider" data-link-provider="apple">Link Apple</button><button class="provider" data-link-provider="microsoft">Link Microsoft</button><button class="provider" data-link-provider="facebook">Link Facebook</button><button class="provider" data-link-provider="linkedin">Link LinkedIn</button><button class="provider" data-link-provider="x">Link X</button><button class="provider" data-link-provider="github">Link GitHub</button></div></section>
+<section class="card" aria-labelledby="privacy-title"><h2 id="privacy-title">Privacy and account data</h2><p class="muted">Export your data or begin a protected deletion request.</p><div class="security-list"><button class="security-action" id="dashboard-export" type="button">Request data export</button><button class="security-action danger" id="delete-account" type="button">Delete account…</button></div></section>
+</div></div></section>
+<div class="dialog" id="delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" hidden><div class="dialog-card"><h2 id="delete-dialog-title">Request account deletion</h2><p class="muted">Type <strong>DELETE</strong> to continue. Recent authentication and a cooling period are still required by the backend.</p><label class="field"><span>Confirmation</span><input id="delete-confirmation" autocomplete="off" spellcheck="false"></label><div class="dialog-actions"><button class="security-action" id="delete-cancel" type="button">Cancel</button><button class="security-action danger" id="delete-confirm" type="button" disabled>Request deletion</button></div></div></div>
 <div class="dialog" id="recovery-dialog" role="dialog" aria-modal="true" aria-labelledby="recovery-dialog-title" hidden>
 <div class="dialog-card">
 <h2 id="recovery-dialog-title">Secure account recovery</h2>
@@ -81,6 +92,12 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
 (() => {
   "use strict";
   const auth = window.ToonVerseAuth;
+  const dashboard = document.getElementById("account-dashboard");
+  const deleteDialog = document.getElementById("delete-dialog");
+  const formatTime = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Time unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date); };
+  const setList = (element, items, renderer, emptyMessage) => { element.replaceChildren(); if (!items.length) { const empty = document.createElement("div"); empty.className = "empty"; empty.textContent = emptyMessage; element.appendChild(empty); return; } items.forEach(item => element.appendChild(renderer(item))); };
+  const row = (title, meta, actionLabel, onAction) => { const item = document.createElement("div"); item.className = "data-row"; const main = document.createElement("div"); main.className = "data-row-main"; const strong = document.createElement("strong"); strong.textContent = String(title ?? ""); const detail = document.createElement("span"); detail.className = "data-meta"; detail.textContent = String(meta ?? ""); main.append(strong, detail); item.appendChild(main); if (actionLabel) { const button = document.createElement("button"); button.className = "security-action"; button.type = "button"; button.textContent = actionLabel; button.addEventListener("click", async () => { button.disabled = true; try { await onAction(); await loadDashboard(); } catch (error) { status.textContent = error.message || "The action could not finish."; status.className = "status warning"; } finally { button.disabled = false; } }); item.appendChild(button); } return item; };
+
   const connected = Boolean(window.ToonVerseConfig?.services?.apiBaseUrl && auth);
   const status = document.getElementById("service-status");
   const form = document.getElementById("account-form");
@@ -91,6 +108,28 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
   const password = document.getElementById("password");
   const announce = message => { document.getElementById("announce").textContent = message; };
   let mode = "sign-in";
+
+  async function loadDashboard() {
+    const session = auth.getState();
+    if (session.status !== "signed-in") { dashboard.hidden = true; return; }
+    dashboard.hidden = false;
+    const user = session.user || {};
+    document.getElementById("profile-name").textContent = user.name || "ToonVerse user";
+    document.getElementById("profile-email").textContent = user.email || "Verified account";
+    document.getElementById("profile-security").textContent = user.mfaEnabled ? "MFA enabled" : "MFA setup recommended";
+    document.getElementById("profile-avatar").textContent = (user.name || user.email || "TV").slice(0, 2).toUpperCase();
+    const sessionList = document.getElementById("session-list"), activityList = document.getElementById("activity-list"), connectionList = document.getElementById("connection-list");
+    [sessionList, activityList, connectionList].forEach(element => element.replaceChildren(Object.assign(document.createElement("div"), { className: "skeleton" })));
+    try {
+      const [sessions, events, connections] = await Promise.all([auth.listSessions(), auth.listSecurityEvents({ limit: 25 }), auth.listConnections()]);
+      setList(sessionList, sessions, item => row(item.current ? `${item.deviceName || "Current device"} (current)` : item.deviceName || item.platform || "Device", `${item.approximateRegion || "Region unavailable"} · Last active ${formatTime(item.lastActiveAt)}`, item.current ? "" : "Revoke", () => auth.revokeSession(item.id)), "No active sessions were returned.");
+      setList(activityList, events, item => row(item.label || item.type || "Security event", `${formatTime(item.createdAt)} · ${item.approximateRegion || "Region unavailable"}`), "No recent security activity.");
+      setList(connectionList, connections, item => row(item.label || item.provider || "Connected account", item.status || "Connected", item.requiredForSignIn ? "" : "Disconnect", () => auth.disconnectProvider(item.provider)), "No external accounts are connected.");
+    } catch (error) {
+      [sessionList, activityList, connectionList].forEach(element => setList(element, [], row, "Protected data could not be loaded."));
+      status.textContent = error.message || "Account dashboard could not be refreshed."; status.className = "status warning";
+    }
+  }
 
   function setMode(next) {
     mode = next;
@@ -146,9 +185,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
   });
 
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !recoveryDialog.hidden) {
-      document.getElementById("recovery-cancel").click();
-    }
+    if (event.key !== "Escape") return;
+    if (!deleteDialog.hidden) document.getElementById("delete-cancel").click();
+    else if (!recoveryDialog.hidden) document.getElementById("recovery-cancel").click();
   });
 
   document.querySelectorAll("[data-provider]").forEach(button => button.addEventListener("click", async () => {
@@ -205,8 +244,18 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
     });
   });
 
+  document.getElementById("refresh-dashboard").addEventListener("click", loadDashboard);
+  document.getElementById("sign-out").addEventListener("click", async () => { await auth.signOut(); dashboard.hidden = true; status.textContent = "Signed out securely."; status.className = "status success"; });
+  document.getElementById("dashboard-export").addEventListener("click", async () => { try { await auth.requestDataExport(); status.textContent = "Your protected data export has been requested."; status.className = "status success"; } catch (error) { status.textContent = error.message || "Data export could not be requested."; status.className = "status warning"; } });
+  document.querySelectorAll("[data-link-provider]").forEach(button => button.addEventListener("click", async () => { try { const result = await auth.beginAccountLink(button.dataset.linkProvider); if (result.authorizationUrl) location.assign(result.authorizationUrl); else throw new Error("Secure provider linking could not start."); } catch (error) { status.textContent = error.message; status.className = "status warning"; } }));
+  const deleteConfirmation = document.getElementById("delete-confirmation"), deleteConfirm = document.getElementById("delete-confirm");
+  document.getElementById("delete-account").addEventListener("click", () => { deleteConfirmation.value = ""; deleteConfirm.disabled = true; deleteDialog.hidden = false; deleteConfirmation.focus(); });
+  deleteConfirmation.addEventListener("input", () => { deleteConfirm.disabled = deleteConfirmation.value !== "DELETE"; });
+  document.getElementById("delete-cancel").addEventListener("click", () => { deleteDialog.hidden = true; document.getElementById("delete-account").focus(); });
+  deleteConfirm.addEventListener("click", async () => { deleteConfirm.disabled = true; try { await auth.requestAccountDeletion(deleteConfirmation.value); deleteDialog.hidden = true; status.textContent = "Protected account deletion request submitted."; status.className = "status success"; } catch (error) { status.textContent = error.message || "Account deletion could not be requested."; status.className = "status warning"; deleteConfirm.disabled = false; } });
+
   document.getElementById("passkey").addEventListener("click", async () => {
-    try { await auth.beginPasskey(); location.href = "./library.html"; }
+    try { await auth.beginPasskey(); await loadDashboard(); }
     catch (error) { status.textContent = error.message; status.className = "status warning"; announce(error.message); }
   });
   form.addEventListener("submit", async event => {
@@ -219,7 +268,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
       const pwd = password.value;
       if (mode === "register") await auth.createAccount({ name: document.getElementById("name").value, email, password: pwd });
       else await auth.signInWithEmail(email, pwd);
-      location.href = "./library.html";
+      await loadDashboard();
     } catch (error) {
       status.textContent = error.message || "Account access failed.";
       status.className = "status warning";
@@ -236,8 +285,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
     submit.disabled = false;
     document.getElementById("forgot-password").disabled = false;
     document.querySelectorAll("#providers button, #passkey, .account-protected").forEach(button => button.disabled = false);
-    auth.restore().then(session => {
-      if (session.status === "signed-in") location.href = "./library.html";
+    auth.restore().then(async session => {
+      if (session.status === "signed-in") await loadDashboard();
     });
   }
   if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn), { once: true });
