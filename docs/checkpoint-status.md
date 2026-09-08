@@ -59,6 +59,10 @@ Locked with a deterministic browser regression suite across all registered publi
 ### Checkpoint 43 — Launch Preparation
 Locked with final QA/polish gates, active Privacy Policy and Terms pages, versioned store listing metadata and asset requirements, current Apple/Google disclosure and review checkpoints, legal-operator/counsel gates, consent-based campaign planning, limited soft-launch controls, honest native-build/store-approval states, home/PWA discovery, offline shell and responsive phone/tablet/desktop/TV UX.
 
+## Checkpoint 44 — Official Launch (in progress, not locked)
+
+Android and iOS native foundations use the stable application identifier \`ai.toonverse.app\`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. Store signing, legal operator metadata, real-device release validation, store review/publication and independent public reachability remain mandatory before this checkpoint can be locked.
+
 ## Resume point
 
 Checkpoint 43 is complete and locked. No part of Checkpoint 43 remains. The next work item is Checkpoint 44, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
