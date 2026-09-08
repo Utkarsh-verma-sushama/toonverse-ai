@@ -3308,6 +3308,24 @@ document.addEventListener(
     const HISTORY_LIMIT =
       30;
 
+    let historyRestoreBusy =
+      false;
+
+    function activeHistoryLimit() {
+      const totalPixels = layers.reduce(
+        (sum, layer) => sum +
+          (layer.canvas?.width || 0) * (layer.canvas?.height || 0) +
+          (layer.maskCanvas ? layer.maskCanvas.width * layer.maskCanvas.height : 0),
+        0
+      );
+      const estimatedBytes = Math.max(1, totalPixels * 4);
+      const budget =
+        (navigator.deviceMemory && navigator.deviceMemory <= 4)
+        ? 96 * 1024 * 1024
+        : 256 * 1024 * 1024;
+      return Math.max(2, Math.min(HISTORY_LIMIT, Math.floor(budget / estimatedBytes)));
+    }
+
     const undoStack =
       [];
 
@@ -3644,9 +3662,11 @@ document.addEventListener(
     function updateHistoryButtons() {
 
       undoButton.disabled =
+        historyRestoreBusy ||
         !undoStack.length;
 
       redoButton.disabled =
+        historyRestoreBusy ||
         !redoStack.length;
     }
 
@@ -4579,7 +4599,7 @@ document.addEventListener(
           }
         ];
 
-      Promise.all(
+      return Promise.all(
         savedLayers.map(
           savedLayer =>
             new Promise(
@@ -4706,11 +4726,8 @@ document.addEventListener(
         snapshot()
       );
 
-      if (
-        undoStack.length >
-        HISTORY_LIMIT
-      ) {
-
+      const limit = activeHistoryLimit();
+      while (undoStack.length > limit) {
         undoStack.shift();
       }
 
@@ -4729,52 +4746,36 @@ document.addEventListener(
       }
     }
 
-    function undo() {
-
-      if (
-        !undoStack.length
-      ) {
-
-        return;
-      }
-
-      redoStack.push(
-        snapshot()
-      );
-
-      restoreSnapshot(
-        undoStack.pop()
-      );
-
+    async function undo() {
+      if (!undoStack.length || historyRestoreBusy) return;
+      historyRestoreBusy = true;
       updateHistoryButtons();
-
-      addHistoryMessage(
-        "Undo"
-      );
+      try {
+        redoStack.push(snapshot());
+        const saved = undoStack.pop();
+        await restoreSnapshot(saved);
+        addHistoryMessage("Undo");
+        scheduleAutoSave();
+      } finally {
+        historyRestoreBusy = false;
+        updateHistoryButtons();
+      }
     }
 
-    function redo() {
-
-      if (
-        !redoStack.length
-      ) {
-
-        return;
-      }
-
-      undoStack.push(
-        snapshot()
-      );
-
-      restoreSnapshot(
-        redoStack.pop()
-      );
-
+    async function redo() {
+      if (!redoStack.length || historyRestoreBusy) return;
+      historyRestoreBusy = true;
       updateHistoryButtons();
-
-      addHistoryMessage(
-        "Redo"
-      );
+      try {
+        undoStack.push(snapshot());
+        const saved = redoStack.pop();
+        await restoreSnapshot(saved);
+        addHistoryMessage("Redo");
+        scheduleAutoSave();
+      } finally {
+        historyRestoreBusy = false;
+        updateHistoryButtons();
+      }
     }
 
     function clearHistory() {
