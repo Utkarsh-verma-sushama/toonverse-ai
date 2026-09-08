@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#081225"><title>Multimodal Intelligence — ToonVerse AI</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{color-scheme:dark;--bg:#071020;--panel:#101b34;--line:#293858;--text:#f7f9ff;--muted:#aebbd5;--accent:#7c5cff;--ok:#4ade80;--danger:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#18264b,var(--bg) 46%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit}button,a,input,select,textarea{outline-offset:3px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #a99aff}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:#081225e8;position:sticky;top:0;z-index:5;backdrop-filter:blur(16px)}
+header a{color:var(--text);text-decoration:none}.brand{font-weight:800}.badge{font-size:12px;color:#d9d2ff;background:#392c70;padding:5px 9px;border-radius:999px}
+main{width:min(1180px,100%);margin:auto;padding:clamp(16px,3vw,34px)}h1{font-size:clamp(26px,5vw,48px);line-height:1.05;margin:10px 0}p{color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:18px}.card{background:#101b34e8;border:1px solid var(--line);border-radius:20px;padding:clamp(16px,2.5vw,24px);box-shadow:0 18px 50px #0004}
+label{display:grid;gap:7px;margin:13px 0;color:#dce4f8;font-weight:650}.help{font-size:12px;color:var(--muted);font-weight:400}
+input,select,textarea{width:100%;color:var(--text);background:#081225;border:1px solid #364766;border-radius:11px;padding:12px}textarea{min-height:92px;resize:vertical}
+.drop{border:2px dashed #52658c;border-radius:16px;padding:24px;text-align:center;cursor:pointer;background:#0a1630}.drop[data-over=true]{border-color:#a99aff;background:#181d43}.drop input{position:absolute;width:1px;height:1px;opacity:0}.files{display:grid;gap:8px;margin-top:12px}.file{display:flex;justify-content:space-between;gap:10px;padding:10px;border-radius:10px;background:#081225;color:var(--muted)}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.check{display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:500}.check input{width:auto}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.btn{min-height:46px;border:0;border-radius:12px;padding:10px 16px;color:white;background:#263554;cursor:pointer;font-weight:750}.primary{background:linear-gradient(135deg,var(--accent),#a855f7)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.status{min-height:52px;margin-top:14px;padding:12px;border-radius:12px;background:#081225;color:var(--muted);white-space:pre-wrap}.result{white-space:pre-wrap;overflow-wrap:anywhere;max-height:55vh;overflow:auto}.progress{height:8px;background:#081225;border-radius:99px;overflow:hidden;margin-top:10px}.bar{height:100%;width:0;background:linear-gradient(90deg,#7c5cff,#4ade80)}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.options{grid-template-columns:1fr}header .badge{display:none}}
+@media(min-width:1800px){body{font-size:20px}main{width:min(1600px,92vw)}.btn{min-height:58px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><a class="brand" href="index.html">✦ ToonVerse AI</a><span class="badge">Multimodal Intelligence</span><a href="editor.html">Editor</a></header>
+<main>
+<p>CHECKPOINT 35</p><h1>Understand images, video, audio and documents.</h1>
+<p>Extract text, transcripts, scenes, summaries and accessible descriptions while keeping originals unchanged.</p>
+<div class="grid">
+<form class="card" id="form">
+<label>Workflow<select id="mode"><option value="image-understanding">Image understanding</option><option value="video-understanding">Video understanding</option><option value="audio-understanding">Audio understanding</option><option value="ocr">OCR / document text</option><option value="transcribe">Transcription</option><option value="translate">Translation</option><option value="summarize">Summary</option><option value="scene-index">Scene & chapter index</option><option value="accessibility-description">Accessibility description</option></select></label>
+<label class="drop" id="drop" tabindex="0" role="button">Choose or drop media<span class="help">Images, video, audio or PDF · up to 100 items / 2 GB safe batch</span><input id="files" type="file" multiple accept="image/*,video/*,audio/*,application/pdf"></label>
+<div class="files" id="fileList" aria-live="polite"></div>
+<label>Purpose or instruction<textarea id="purpose" maxlength="1000" placeholder="Example: Extract Hindi and English text, then summarize key points."></textarea></label>
+<div class="options">
+<label class="check"><input type="checkbox" id="ocr" checked> OCR</label><label class="check"><input type="checkbox" id="transcript" checked> Transcript</label>
+<label class="check"><input type="checkbox" id="summary" checked> Summary</label><label class="check"><input type="checkbox" id="timestamps" checked> Timestamps</label>
+<label class="check"><input type="checkbox" id="objects"> Objects & context</label><label class="check"><input type="checkbox" id="accessibility"> Accessible description</label>
+</div>
+<label>Source language<select id="language"><option value="auto">Auto detect</option><option value="en">English</option><option value="hi">Hindi</option><option value="ur">Urdu</option></select></label>
+<label class="check"><input type="checkbox" id="consent"> I confirm that I have the rights and consent required to process this media.</label>
+<div class="actions"><button class="btn primary" id="start">Start securely</button><button class="btn" type="button" id="cancel" disabled>Cancel</button><button class="btn" type="reset">Clear</button></div>
+<div class="status" id="status" role="status" aria-live="polite">Ready. No file has been uploaded.</div><div class="progress"><div class="bar" id="bar"></div></div>
+</form>
+<section class="card"><h2>Structured result</h2><p>Text, timestamps, warnings and provenance appear here. Results remain separate from the original.</p><div class="result" id="result" tabindex="0">No result yet.</div></section>
+</div></main>
+<script src="assets/js/config.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/ai-runtime.js"></script><script src="assets/js/multimodal.js"></script>
+<script>
+(()=>{"use strict";let selected=[],active=null,timer=null;const $=id=>document.getElementById(id),status=$("status"),result=$("result"),drop=$("drop"),input=$("files");
+const showFiles=()=>{$("fileList").innerHTML=selected.map(f=>`<div class="file"><span>${f.name.replace(/[<>&"]/g,"")}</span><span>${(f.size/1048576).toFixed(1)} MB</span></div>`).join("")};
+const choose=files=>{selected=Array.from(files||[]);showFiles();status.textContent=selected.length?`${selected.length} item(s) ready. Nothing uploaded yet.`:"Ready. No file has been uploaded."};
+input.onchange=()=>choose(input.files);drop.onclick=()=>input.click();drop.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();input.click()}};
+["dragenter","dragover"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.dataset.over="true"}));["dragleave","drop"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.dataset.over="false"}));drop.addEventListener("drop",e=>choose(e.dataTransfer.files));
+async function poll(){if(!active)return;try{active=await ToonVerseAIJobs.status(active.id);$("bar").style.width=`${Math.max(0,Math.min(100,active.progress||0))}%`;status.textContent=`${active.status} · ${Math.round(active.progress||0)}%`;if(active.status==="completed"){result.textContent=JSON.stringify(ToonVerseMultimodal.normalizeResult(active),null,2);finish();return}if(["failed","cancelled","expired"].includes(active.status))throw new Error(active.errorMessage||`Job ${active.status}.`);timer=setTimeout(poll,2000)}catch(e){status.textContent=e.message;finish()}}
+function finish(){clearTimeout(timer);$("start").disabled=false;$("cancel").disabled=true}
+$("form").onsubmit=async e=>{e.preventDefault();$("start").disabled=true;$("cancel").disabled=false;result.textContent="Waiting for a verified result…";try{active=await ToonVerseMultimodal.submit({mode:$("mode").value,files:selected,purpose:$("purpose").value,language:$("language").value,consent:$("consent").checked,features:{ocr:$("ocr").checked,transcript:$("transcript").checked,summary:$("summary").checked,timestamps:$("timestamps").checked,objects:$("objects").checked,accessibility:$("accessibility").checked}});if(!ToonVerseAIJobs.connected()){status.textContent="The workspace is ready. A production AI backend must be connected before media leaves this device.";finish();return}poll()}catch(e){status.textContent=e.message;finish()}};
+$("cancel").onclick=async()=>{clearTimeout(timer);await ToonVerseAIJobs.cancel(active?.id);status.textContent="Cancelled safely.";finish()};
+$("form").onreset=()=>setTimeout(()=>{selected=[];active=null;showFiles();result.textContent="No result yet.";status.textContent="Ready. No file has been uploaded.";$("bar").style.width="0"},0);
+})();
+</script>
+</body></html>
