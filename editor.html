@@ -3749,8 +3749,12 @@ document.addEventListener(
     const RECOVERY_STORE =
       "projects";
 
-    const RECOVERY_KEY =
+    const LEGACY_RECOVERY_KEY =
       "last-project";
+
+    const recoveryKey = () =>
+      globalThis.ToonVerseProjectStore?.activeProjectId?.() ||
+      LEGACY_RECOVERY_KEY;
 
     function openRecoveryDatabase() {
 
@@ -3799,65 +3803,42 @@ document.addEventListener(
       );
     }
 
-    async function recoveryRequest(
-      mode,
-      value
-    ) {
-
-      const database =
-        await openRecoveryDatabase();
-
+    async function recoveryRequest(mode, value) {
+      const database = await openRecoveryDatabase();
       try {
+        return await new Promise((resolve, reject) => {
+          const transaction = database.transaction(
+            RECOVERY_STORE,
+            mode === "read" ? "readonly" : "readwrite"
+          );
+          const store = transaction.objectStore(RECOVERY_STORE);
+          const key = recoveryKey();
 
-        return await new Promise(
-          (
-            resolve,
-            reject
-          ) => {
-
-            const transaction =
-              database.transaction(
-                RECOVERY_STORE,
-                mode === "read"
-                ? "readonly"
-                : "readwrite"
-              );
-
-            const store =
-              transaction.objectStore(
-                RECOVERY_STORE
-              );
-
-            const request =
-              mode === "read"
-              ? store.get(
-                  RECOVERY_KEY
-                )
-              : mode === "delete"
-              ? store.delete(
-                  RECOVERY_KEY
-                )
-              : store.put(
-                  value,
-                  RECOVERY_KEY
-                );
-
-            request.onsuccess =
-              () =>
-                resolve(
-                  request.result
-                );
-
-            request.onerror =
-              () =>
-                reject(
-                  request.error
-                );
+          if (mode === "read") {
+            const request = store.get(key);
+            request.onsuccess = () => {
+              if (request.result !== undefined || key === LEGACY_RECOVERY_KEY) {
+                resolve(request.result);
+                return;
+              }
+              // One-time backward-compatible recovery for projects saved
+              // before multi-project identities were introduced.
+              const legacyRequest = store.get(LEGACY_RECOVERY_KEY);
+              legacyRequest.onsuccess = () => resolve(legacyRequest.result);
+              legacyRequest.onerror = () => reject(legacyRequest.error);
+            };
+            request.onerror = () => reject(request.error);
+            return;
           }
-        );
 
+          const request =
+            mode === "delete"
+            ? store.delete(key)
+            : store.put(value, key);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
       } finally {
-
         database.close();
       }
     }
@@ -15307,6 +15288,8 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
               error
             )
         );
+
+      globalThis.ToonVerseProjectStore?.createProjectId?.();
 
       currentFile =
         null;
