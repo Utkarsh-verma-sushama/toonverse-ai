@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const DB="toonverse-ai-jobs", VERSION=1, STORE="jobs";
-const supportedModes=new Set(["generate","cartoon","wallpaper","coloring","memory","camera","image-text","video-text","batch","ai-enhance","auto-fix","background-remove","background-change","object-remove","upscale","restore","colorize","portrait","lighting","prompt-edit"]);
+const supportedModes=new Set(["generate","cartoon","wallpaper","coloring","memory","camera","image-text","video-text","batch","ai-enhance","auto-fix","background-remove","background-change","object-remove","upscale","restore","colorize","portrait","lighting","prompt-edit","image-understanding","video-understanding","audio-understanding","ocr","transcribe","translate","summarize","scene-index","accessibility-description"]);
 const listeners=new Set();
 let activeController=null;
 const base=()=>String(window.ToonVerseConfig?.services?.apiBaseUrl||"").replace(/\/$/,"");
@@ -19,7 +19,12 @@ function validate(input){
  if(files.length>100)throw new Error("Choose no more than 100 files.");
  let total=0;for(const f of files){total+=Number(f.size)||0;if(f.size>500*1024*1024)throw new Error(`${f.name} is too large.`);if(!/^(image|video|audio)\//.test(f.type))throw new Error(`${f.name} is not supported.`)}
  if(total>2*1024*1024*1024)throw new Error("Selected media exceeds the safe batch limit.");
- return {mode,prompt,files,settings:{outputType:String(input.settings?.outputType||"image"),aspectRatio:String(input.settings?.aspectRatio||"1:1"),quality:String(input.settings?.quality||"standard"),variations:Math.max(1,Math.min(8,Number(input.settings?.variations)||1)),preserveOriginal:input.settings?.preserveOriginal!==false}};
+ return {mode,prompt,files,settings:{outputType:String(input.settings?.outputType||"image"),aspectRatio:String(input.settings?.aspectRatio||"1:1"),quality:String(input.settings?.quality||"standard"),variations:Math.max(1,Math.min(8,Number(input.settings?.variations)||1)),preserveOriginal:input.settings?.preserveOriginal!==false,
+language:String(input.settings?.language||"auto"),outputLanguage:String(input.settings?.outputLanguage||"auto"),
+features:input.settings?.features&&typeof input.settings.features==="object"?input.settings.features:{},
+consent:Boolean(input.settings?.consent),retention:String(input.settings?.retention||"ephemeral"),
+integrity:Array.isArray(input.settings?.integrity)?input.settings.integrity:[],
+contractVersion:String(input.settings?.contractVersion||"1.0")}};
 }
 async function token(){if(!window.ToonVerseAuth)return"";try{return await window.ToonVerseAuth.getAccessToken()}catch{return""}}
 async function request(path,options={}){
