@@ -191,6 +191,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Launch Preparation Center",
+      "short_name": "Launch",
+      "url": "./launch.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
