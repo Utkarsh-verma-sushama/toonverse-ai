@@ -3564,6 +3564,21 @@ document.addEventListener(
       toast.textContent =
         message;
 
+      toast.setAttribute(
+        "role",
+        type === "error" ? "alert" : "status"
+      );
+
+      toast.setAttribute(
+        "aria-live",
+        type === "error" ? "assertive" : "polite"
+      );
+
+      toast.setAttribute(
+        "aria-atomic",
+        "true"
+      );
+
       Object.assign(
         toast.style,
         {
@@ -16153,7 +16168,7 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
         ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
         event.target?.matches?.("button")
       ) {
-        const container = event.target.closest(".tool-rail, .tool-grid, .command-group, .modal-actions");
+        const container = event.target.closest(".tool-rail, .tool-grid, .command-group, .modal-actions, .editor-topbar, .canvas-toolbar-group, .right-tabs, .mobile-nav");
         if (!container) return;
         const buttons = [...container.querySelectorAll("button:not([disabled])")]
           .filter(button => button.offsetParent !== null);
@@ -16175,6 +16190,30 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
     window.visualViewport?.addEventListener("scroll", refreshViewportOverlays);
     window.addEventListener("orientationchange", () => {
       setTimeout(refreshViewportOverlays, 120);
+    });
+
+    window.addEventListener("online", () => {
+      notify("Connection restored. Local changes remain protected.", "success");
+    });
+
+    window.addEventListener("offline", () => {
+      notify("You are offline. Editing and local recovery remain available.", "warning");
+    });
+
+    window.addEventListener("error", event => {
+      console.error("Editor runtime error.", event.error || event.message);
+      notify("A recoverable editor issue occurred. Your latest work is being protected.", "error");
+      if (currentFile) {
+        writeRecovery().catch(error => console.warn("Emergency recovery save failed.", error));
+      }
+    });
+
+    window.addEventListener("unhandledrejection", event => {
+      console.error("Unhandled editor operation.", event.reason);
+      notify("An operation could not finish. Your project remains available.", "error");
+      if (currentFile) {
+        writeRecovery().catch(error => console.warn("Emergency recovery save failed.", error));
+      }
     });
 
     document.addEventListener("visibilitychange", () => {
