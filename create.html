@@ -9,6 +9,11 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <meta
     name="description"
@@ -2712,5 +2717,12 @@
     });
   </script>
 
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(error => console.warn("Offline support unavailable.", error));
+  }, { once: true });
+}
+</script>
 </body>
 </html>
