@@ -71,6 +71,12 @@
       label: "Unified AI Editor"
     }),
 
+    layout: Object.freeze({
+      path: "./layout.html",
+      enabled: true,
+      label: "Smart Auto Layout"
+    }),
+
     library: Object.freeze({
       path: "./library.html",
       enabled: true,
