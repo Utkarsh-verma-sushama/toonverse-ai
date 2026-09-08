@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id);
-const routes=["index.html","create.html","editor.html","library.html","account.html","layout.html","wallpaper.html","multimodal.html","memory.html","coloring.html","camera.html","utilities.html","support.html","plans.html","qa.html","404.html"];
+const routes=["index.html","create.html","editor.html","library.html","account.html","layout.html","wallpaper.html","multimodal.html","memory.html","coloring.html","camera.html","utilities.html","support.html","plans.html","privacy.html","terms.html","launch.html","qa.html","404.html"];
 const assets=["manifest.webmanifest","sw.js","assets/css/main.css","assets/css/components.css","assets/js/config.js","assets/js/main.js","assets/js/auth.js","assets/js/ai-runtime.js"];
 let report=null;
 function add(list,name,pass,detail,severity="error"){list.push({name,pass:Boolean(pass),detail:String(detail||""),severity})}
