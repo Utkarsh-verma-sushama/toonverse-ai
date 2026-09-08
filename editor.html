@@ -7236,10 +7236,28 @@ document.addEventListener(
       notify("Mask Brush ready. Drag on the image to hide or reveal areas.");
     }
 
+    function syncExportControls() {
+      const format = exportFormat.value;
+      const pdf = format === "pdf";
+      const transparencyAvailable = format === "png" || format === "webp";
+      exportQuality.disabled = format === "png";
+      exportTransparency.disabled = !transparencyAvailable;
+      exportBackground.disabled =
+        transparencyAvailable &&
+        exportTransparency.checked;
+      [pdfPageSize, pdfOrientation, pdfMargin, pdfPlacement]
+        .forEach(control => control.disabled = !pdf);
+    }
+
     [maskBrushMode, maskBrushSize, maskBrushSoftness, maskBrushOpacity,
       exportFormat, exportQuality, exportScale, exportTransparency, exportBackground,
       pdfPageSize, pdfOrientation, pdfMargin, pdfPlacement]
-      .forEach(control => control.addEventListener("change", scheduleAutoSave));
+      .forEach(control => control.addEventListener("change", () => {
+        syncExportControls();
+        scheduleAutoSave();
+      }));
+
+    syncExportControls();
 
     $("edit-layer-mask").addEventListener("click", startMaskBrush);
     $("add-layer-mask").addEventListener("click", createLayerMask);
@@ -15010,10 +15028,17 @@ document.addEventListener(
       }
 
       const quality = Math.max(.6, Math.min(1, Number(exportQuality.value) / 100));
-      let blob =
-        requestedFormat === "pdf"
-        ? await createImagePdfBlob(output, quality)
-        : await canvasToExportBlob(output, requestedMime, quality);
+      let blob;
+      try {
+        blob =
+          requestedFormat === "pdf"
+          ? await createImagePdfBlob(output, quality)
+          : await canvasToExportBlob(output, requestedMime, quality);
+      } catch (error) {
+        console.error("Export generation failed.", error);
+        notify("Export could not be generated on this device.", "error");
+        return;
+      }
       if (!blob) {
         notify("This browser could not create the selected format.", "error");
         return;
