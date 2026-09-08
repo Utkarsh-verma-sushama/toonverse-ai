@@ -102,7 +102,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
       : "Cloud connection ready for backend";
     const syncDetail = sync.backendConnected
       ? `${sync.online ? "Online" : "Offline"} · ${formatBytes(sync.usage)} used locally`
-      : `Projects are safe on this device · ${sync.pending} encrypted-ready change${sync.pending === 1 ? "" : "s"} queued`;
+      : `Projects are safe on this device · ${sync.pending} local change${sync.pending === 1 ? "" : "s"} queued for future cloud sync`;
     syncSummary.replaceChildren();
     const summaryText = document.createElement("div");
     const strong = document.createElement("strong");
@@ -112,7 +112,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
     summaryText.append(strong, small);
     const pill = document.createElement("span");
     pill.className = "pill";
-    pill.textContent = sync.backendConnected ? (sync.online ? "Cloud active" : "Offline") : "Offline-first";
+    pill.textContent = sync.localOnly ? "Compatibility mode" : sync.backendConnected ? (sync.online ? "Cloud active" : "Offline") : "Offline-first";
     syncSummary.append(summaryText, pill);
 
     if (!projects.length) {
