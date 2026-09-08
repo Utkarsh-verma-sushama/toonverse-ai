@@ -35,6 +35,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
 <label class="field"><span>Email address</span><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254"></label>
 <label class="field"><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" required minlength="10" maxlength="128"></label>
 <button class="primary" id="submit" type="submit" disabled>Sign in securely</button>
+<button class="security-action" id="forgot-password" type="button" disabled>Forgot password</button>
 </form>
 <div class="divider">or use a trusted provider</div>
 <div class="providers" id="providers">
@@ -96,6 +97,27 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
   }
   signInTab.addEventListener("click", () => setMode("sign-in"));
   registerTab.addEventListener("click", () => setMode("register"));
+
+  document.getElementById("forgot-password").addEventListener("click", async () => {
+    const email = document.getElementById("email");
+    if (!email.reportValidity()) return;
+    const button = document.getElementById("forgot-password");
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    try {
+      await auth.requestPasswordReset(email.value);
+      status.textContent = "If this email belongs to an account, secure recovery instructions will be sent.";
+      status.className = "status success";
+      announce(status.textContent);
+    } catch (error) {
+      status.textContent = error.message || "Account recovery could not start.";
+      status.className = "status warning";
+      announce(status.textContent);
+    } finally {
+      button.disabled = !connected;
+      button.removeAttribute("aria-busy");
+    }
+  });
 
   document.querySelectorAll("[data-provider]").forEach(button => button.addEventListener("click", async () => {
     try { await auth.beginProvider(button.dataset.provider); }
@@ -180,6 +202,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
     status.textContent = "Secure account service connected.";
     status.className = "status success";
     submit.disabled = false;
+    document.getElementById("forgot-password").disabled = false;
     document.querySelectorAll("#providers button, #passkey, .account-protected").forEach(button => button.disabled = false);
     auth.restore().then(session => {
       if (session.status === "signed-in") location.href = "./library.html";
