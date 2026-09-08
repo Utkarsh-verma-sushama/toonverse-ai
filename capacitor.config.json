@@ -1,0 +1,19 @@
+{
+  "appId": "ai.toonverse.app",
+  "appName": "ToonVerse AI",
+  "webDir": "dist",
+  "backgroundColor": "#0b1020",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "scrollEnabled": true,
+    "preferredContentMode": "mobile"
+  }
+}
