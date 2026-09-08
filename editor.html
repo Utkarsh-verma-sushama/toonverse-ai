@@ -3803,7 +3803,7 @@ document.addEventListener(
       );
     }
 
-    async function recoveryRequest(mode, value) {
+    async function recoveryRequest(mode, value, keyOverride) {
       const database = await openRecoveryDatabase();
       try {
         return await new Promise((resolve, reject) => {
@@ -3812,7 +3812,7 @@ document.addEventListener(
             mode === "read" ? "readonly" : "readwrite"
           );
           const store = transaction.objectStore(RECOVERY_STORE);
-          const key = recoveryKey();
+          const key = keyOverride || recoveryKey();
 
           if (mode === "read") {
             const request = store.get(key);
@@ -4068,8 +4068,11 @@ document.addEventListener(
       autoSaveTimer =
         null;
 
+      const keyToDelete = recoveryKey();
       await recoveryRequest(
-        "delete"
+        "delete",
+        undefined,
+        keyToDelete
       );
     }
 
