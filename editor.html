@@ -3689,6 +3689,22 @@ document.addEventListener(
       );
     }
 
+    function dataUrlToCanvas(source) {
+      if (!source) return Promise.resolve(null);
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          const result = document.createElement("canvas");
+          result.width = image.width;
+          result.height = image.height;
+          result.getContext("2d").drawImage(image, 0, 0);
+          resolve(result);
+        };
+        image.onerror = reject;
+        image.src = source;
+      });
+    }
+
     async function writeRecovery() {
 
       if (
@@ -3740,6 +3756,14 @@ document.addEventListener(
                 ? {
                     ...layer.contentData
                   }
+                : null,
+
+              maskEnabled:
+                layer.maskEnabled !== false,
+
+              maskBlob:
+                layer.maskCanvas
+                ? await canvasToBlob(layer.maskCanvas)
                 : null,
 
               blob:
@@ -3948,6 +3972,22 @@ document.addEventListener(
                     0
                   );
 
+                let maskCanvas = null;
+                if (savedLayer.maskBlob) {
+                  const maskBitmap = await decodeImageFile(savedLayer.maskBlob);
+                  maskCanvas = document.createElement("canvas");
+                  maskCanvas.width = layerCanvas.width;
+                  maskCanvas.height = layerCanvas.height;
+                  maskCanvas.getContext("2d").drawImage(
+                    maskBitmap,
+                    0,
+                    0,
+                    maskCanvas.width,
+                    maskCanvas.height
+                  );
+                  maskBitmap.close?.();
+                }
+
                 return {
                   id:
                     savedLayer.id,
@@ -3982,7 +4022,12 @@ document.addEventListener(
                       }
                     : null,
                   canvas:
-                    layerCanvas
+                    layerCanvas,
+
+                  maskCanvas,
+
+                  maskEnabled:
+                    savedLayer.maskEnabled !== false
                 };
               }
             )
@@ -4321,6 +4366,14 @@ document.addEventListener(
                   }
                 : null,
 
+              maskEnabled:
+                layer.maskEnabled !== false,
+
+              maskBitmap:
+                layer.maskCanvas
+                ? canvasToDataURL(layer.maskCanvas)
+                : null,
+
               bitmap:
                 canvasToDataURL(
                   layer.canvas
@@ -4413,7 +4466,19 @@ document.addEventListener(
             )
         )
       ).then(
-        restoredLayers => {
+        async restoredLayers => {
+
+          await Promise.all(
+            restoredLayers.map(async layer => {
+              if (layer.maskBitmap) {
+                layer.maskCanvas = await dataUrlToCanvas(layer.maskBitmap);
+              } else {
+                layer.maskCanvas = null;
+              }
+              layer.maskEnabled = layer.maskEnabled !== false;
+              delete layer.maskBitmap;
+            })
+          );
 
           layers =
             restoredLayers;
