@@ -2546,6 +2546,28 @@ button{
         <button class="top-button" id="toggle-layer-mask" type="button">Disable Mask</button>
         <button class="top-button" id="delete-layer-mask" type="button">Delete Mask</button>
       </div>
+      <div class="property-row">
+        <span class="property-label">Mask Brush</span>
+        <select id="mask-brush-mode" class="editor-select">
+          <option value="hide">Hide</option>
+          <option value="reveal">Reveal</option>
+        </select>
+      </div>
+      <div class="property-row">
+        <span class="property-label">Mask Size</span>
+        <input id="mask-brush-size" type="range" min="4" max="300" value="70">
+      </div>
+      <div class="property-row">
+        <span class="property-label">Mask Softness</span>
+        <input id="mask-brush-softness" type="range" min="0" max="100" value="35">
+      </div>
+      <div class="property-row">
+        <span class="property-label">Mask Opacity</span>
+        <input id="mask-brush-opacity" type="range" min="1" max="100" value="100">
+      </div>
+      <button class="top-button primary-button" id="edit-layer-mask" type="button">
+        Edit Mask
+      </button>
 
       <div
         class="layer-list"
@@ -2893,6 +2915,10 @@ document.addEventListener(
     const liquifyMode = $("liquify-mode");
     const liquifySize = $("liquify-size");
     const liquifyStrength = $("liquify-strength");
+    const maskBrushMode = $("mask-brush-mode");
+    const maskBrushSize = $("mask-brush-size");
+    const maskBrushSoftness = $("mask-brush-softness");
+    const maskBrushOpacity = $("mask-brush-opacity");
 
     const flipXInput =
       $("flip-x-input");
@@ -3170,6 +3196,12 @@ document.addEventListener(
       false;
 
     let liquifyLastPoint =
+      null;
+
+    let maskDrawing =
+      false;
+
+    let maskLastPoint =
       null;
 
     let multiSelectMode =
@@ -6189,6 +6221,7 @@ document.addEventListener(
               $("invert-layer-mask").disabled = !layer.maskCanvas || layer.locked;
               $("toggle-layer-mask").disabled = !layer.maskCanvas;
               $("delete-layer-mask").disabled = !layer.maskCanvas || layer.locked;
+              $("edit-layer-mask").disabled = !layer.maskCanvas || layer.locked;
             }
 
             item.addEventListener(
@@ -6889,7 +6922,8 @@ document.addEventListener(
             "burn",
             "red-eye",
             "skin-smooth",
-            "liquify"
+            "liquify",
+            "mask-brush"
           ].includes(
             operation
           )
@@ -6997,6 +7031,24 @@ document.addEventListener(
       notify("Layer mask deleted; original pixels remain unchanged.", "success");
     }
 
+    function startMaskBrush() {
+      const layer = activeLayer();
+      if (!layer?.maskCanvas) {
+        notify("Add a layer mask before editing it.", "warning");
+        return;
+      }
+      if (layer.locked) {
+        notify("Unlock this layer before editing its mask.", "warning");
+        return;
+      }
+      layer.maskEnabled = true;
+      setOperation("mask-brush");
+      renderAll();
+      renderLayerList();
+      notify("Mask Brush ready. Drag on the image to hide or reveal areas.");
+    }
+
+    $("edit-layer-mask").addEventListener("click", startMaskBrush);
     $("add-layer-mask").addEventListener("click", createLayerMask);
     $("invert-layer-mask").addEventListener("click", invertLayerMask);
     $("toggle-layer-mask").addEventListener("click", toggleLayerMask);
@@ -12129,7 +12181,8 @@ document.addEventListener(
             "burn",
             "red-eye",
             "skin-smooth",
-            "liquify"
+            "liquify",
+            "mask-brush"
           ].includes(
             activeOperation
           )
@@ -12340,6 +12393,23 @@ document.addEventListener(
 
             return;
           }
+        }
+
+        if (
+          activeOperation ===
+          "mask-brush"
+        ) {
+          const layer = activeLayer();
+          if (!layer?.maskCanvas || layer.locked) {
+            notify("Select an unlocked layer with a mask first.", "warning");
+            return;
+          }
+          pushUndo("Before Mask Brush");
+          maskDrawing = true;
+          maskLastPoint = renderedToWorkPoint(point);
+          drawMaskSegment(maskLastPoint, maskLastPoint);
+          renderAll();
+          return;
         }
 
         if (
@@ -12894,6 +12964,20 @@ document.addEventListener(
         }
 
         if (
+          maskDrawing &&
+          maskLastPoint
+        ) {
+          const samples = event.getCoalescedEvents ? event.getCoalescedEvents() : [event];
+          samples.forEach(sample => {
+            const nextPoint = renderedToWorkPoint(canvasPoint(sample));
+            drawMaskSegment(maskLastPoint, nextPoint);
+            maskLastPoint = nextPoint;
+          });
+          renderAll();
+          return;
+        }
+
+        if (
           liquifyActive &&
           liquifyLastPoint
         ) {
@@ -12998,6 +13082,17 @@ document.addEventListener(
         }
 
         if (
+          maskDrawing
+        ) {
+          maskDrawing = false;
+          maskLastPoint = null;
+          addHistoryMessage(`Mask Brush ${maskBrushMode.value}`);
+          renderLayerList();
+          scheduleAutoSave();
+          return;
+        }
+
+        if (
           liquifyActive
         ) {
           liquifyActive = false;
@@ -13069,8 +13164,59 @@ document.addEventListener(
 
         liquifyLastPoint =
           null;
+
+        maskDrawing =
+          false;
+
+        maskLastPoint =
+          null;
       }
     );
+
+    function drawMaskDab(point) {
+      const layer = activeLayer();
+      if (!layer?.maskCanvas || layer.locked) return;
+      const context = layer.maskCanvas.getContext("2d");
+      const radius = Math.max(2, Number(maskBrushSize.value) / 2);
+      const softness = Math.max(0, Math.min(1, Number(maskBrushSoftness.value) / 100));
+      const opacity = Math.max(.01, Number(maskBrushOpacity.value) / 100);
+      const inner = Math.max(0, radius * (1 - softness));
+      const gradient = context.createRadialGradient(
+        point.x, point.y, inner,
+        point.x, point.y, radius
+      );
+
+      if (maskBrushMode.value === "hide") {
+        context.save();
+        context.globalCompositeOperation = "destination-out";
+        gradient.addColorStop(0, `rgba(0,0,0,${opacity})`);
+        gradient.addColorStop(1, "rgba(0,0,0,0)");
+      } else {
+        context.save();
+        context.globalCompositeOperation = "source-over";
+        gradient.addColorStop(0, `rgba(255,255,255,${opacity})`);
+        gradient.addColorStop(1, "rgba(255,255,255,0)");
+      }
+
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.arc(point.x, point.y, radius, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+
+    function drawMaskSegment(from, to) {
+      const distance = Math.hypot(to.x - from.x, to.y - from.y);
+      const spacing = Math.max(1, Number(maskBrushSize.value) / 8);
+      const steps = Math.max(1, Math.ceil(distance / spacing));
+      for (let step = 0; step <= steps; step++) {
+        const ratio = step / steps;
+        drawMaskDab({
+          x: from.x + (to.x - from.x) * ratio,
+          y: from.y + (to.y - from.y) * ratio
+        });
+      }
+    }
 
     function sampleLiquifyPixel(data, width, height, x, y, channel) {
       const safeX = Math.max(0, Math.min(width - 1, x));
