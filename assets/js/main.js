@@ -73,19 +73,19 @@
 
     library: Object.freeze({
       path: "./library.html",
-      enabled: false,
+      enabled: true,
       label: "My Library"
     }),
 
     share: Object.freeze({
-      path: "./share.html",
-      enabled: false,
+      path: "./editor.html#export-studio",
+      enabled: true,
       label: "Share & Export"
     }),
 
     print: Object.freeze({
-      path: "./print.html",
-      enabled: false,
+      path: "./editor.html#editor-print",
+      enabled: true,
       label: "Print Studio"
     }),
 
