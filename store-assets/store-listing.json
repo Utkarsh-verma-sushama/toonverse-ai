@@ -1,20 +1,28 @@
 {
-  "schemaVersion":"1.0",
-  "productName":"ToonVerse AI",
-  "category":"Photo & Video / Graphics & Design",
-  "shortDescription":"Create, edit, understand and preserve visual stories with privacy-first AI tools.",
-  "fullDescription":"ToonVerse AI brings creation, professional editing, visual intelligence, coloring, wallpapers, memory films, project recovery and cross-device workflows into one accessible ecosystem. AI and cloud actions are explicit; originals remain protected.",
-  "keywords":["AI creative studio","photo editor","cartoon","coloring","wallpaper","memory video","visual intelligence"],
-  "privacyPolicyUrl":"https://utkarsh-verma-sushama.github.io/toonverse-ai/privacy.html",
-  "termsUrl":"https://utkarsh-verma-sushama.github.io/toonverse-ai/terms.html",
-  "supportUrl":"https://utkarsh-verma-sushama.github.io/toonverse-ai/support.html",
-  "marketingUrl":"https://utkarsh-verma-sushama.github.io/toonverse-ai/",
-  "status":{
-    "androidBundle":"not-built",
-    "iosArchive":"not-built",
-    "storeScreenshots":"capture-from-final-native-build",
-    "pricing":"server-and-store-verification-required",
-    "legalOperator":"required-before-submission",
-    "reviewAccount":"required-if-authentication-gates-review"
+  "schemaVersion": "1.0",
+  "productName": "ToonVerse AI",
+  "category": "Photo & Video / Graphics & Design",
+  "shortDescription": "Create, edit, understand and preserve visual stories with privacy-first AI tools.",
+  "fullDescription": "ToonVerse AI brings creation, professional editing, visual intelligence, coloring, wallpapers, memory films, project recovery and cross-device workflows into one accessible ecosystem. AI and cloud actions are explicit; originals remain protected.",
+  "keywords": [
+    "AI creative studio",
+    "photo editor",
+    "cartoon",
+    "coloring",
+    "wallpaper",
+    "memory video",
+    "visual intelligence"
+  ],
+  "privacyPolicyUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/privacy.html",
+  "termsUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/terms.html",
+  "supportUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/support.html",
+  "marketingUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/",
+  "status": {
+    "androidBundle": "ci-validated-unsigned-release-aab",
+    "iosArchive": "ci-validated-unsigned-simulator-build",
+    "storeScreenshots": "capture-from-signed-release-candidate",
+    "pricing": "server-and-store-verification-required",
+    "legalOperator": "required-before-submission",
+    "reviewAccount": "required-if-authentication-gates-review"
   }
 }
