@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const DB="toonverse-ai-jobs", VERSION=1, STORE="jobs";
-const supportedModes=new Set(["generate","cartoon","wallpaper","coloring","memory","camera","image-text","video-text","batch","ai-enhance","auto-fix","background-remove","background-change","object-remove","upscale","restore","colorize","portrait","lighting","prompt-edit","image-understanding","video-understanding","audio-understanding","ocr","transcribe","translate","summarize","scene-index","accessibility-description"]);
+const supportedModes=new Set(["generate","cartoon","wallpaper","coloring","memory","camera","image-text","video-text","batch","ai-enhance","auto-fix","background-remove","background-change","object-remove","upscale","restore","colorize","portrait","lighting","prompt-edit","image-understanding","video-understanding","audio-understanding","ocr","transcribe","translate","summarize","scene-index","accessibility-description","math","support"]);
 const listeners=new Set();
 let activeController=null;
 const base=()=>String(window.ToonVerseConfig?.services?.apiBaseUrl||"").replace(/\/$/,"");
