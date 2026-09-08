@@ -3890,6 +3890,13 @@ document.addEventListener(
 
             size:
               retouchSize.value
+          },
+
+          maskBrush: {
+            mode: maskBrushMode.value,
+            size: maskBrushSize.value,
+            softness: maskBrushSoftness.value,
+            opacity: maskBrushOpacity.value
           }
 
         }
@@ -4218,6 +4225,13 @@ document.addEventListener(
           retouchSize.value =
             saved.retouch.size ||
             32;
+        }
+
+        if (saved.maskBrush) {
+          maskBrushMode.value = saved.maskBrush.mode || "hide";
+          maskBrushSize.value = saved.maskBrush.size || 70;
+          maskBrushSoftness.value = saved.maskBrush.softness ?? 35;
+          maskBrushOpacity.value = saved.maskBrush.opacity || 100;
         }
 
         documentName.textContent =
@@ -7041,12 +7055,19 @@ document.addEventListener(
         notify("Unlock this layer before editing its mask.", "warning");
         return;
       }
+      if (state.perspectiveX || state.perspectiveY) {
+        notify("Apply or reset the Perspective preview before pixel-accurate mask painting.", "warning");
+        return;
+      }
       layer.maskEnabled = true;
       setOperation("mask-brush");
       renderAll();
       renderLayerList();
       notify("Mask Brush ready. Drag on the image to hide or reveal areas.");
     }
+
+    [maskBrushMode, maskBrushSize, maskBrushSoftness, maskBrushOpacity]
+      .forEach(control => control.addEventListener("change", scheduleAutoSave));
 
     $("edit-layer-mask").addEventListener("click", startMaskBrush);
     $("add-layer-mask").addEventListener("click", createLayerMask);
@@ -13180,7 +13201,7 @@ document.addEventListener(
       const radius = Math.max(2, Number(maskBrushSize.value) / 2);
       const softness = Math.max(0, Math.min(1, Number(maskBrushSoftness.value) / 100));
       const opacity = Math.max(.01, Number(maskBrushOpacity.value) / 100);
-      const inner = Math.max(0, radius * (1 - softness));
+      const inner = Math.max(0, Math.min(radius - .01, radius * (1 - softness)));
       const gradient = context.createRadialGradient(
         point.x, point.y, inner,
         point.x, point.y, radius
