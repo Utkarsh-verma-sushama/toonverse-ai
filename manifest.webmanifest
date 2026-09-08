@@ -131,6 +131,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "AI Camera & Visual Intelligence",
+      "short_name": "AI Camera",
+      "url": "./camera.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
