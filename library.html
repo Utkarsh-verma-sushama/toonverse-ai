@@ -163,6 +163,27 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
       create.className = "btn secondary";
       create.href = "create.html";
       create.textContent = "Create New";
+      const latestRestorableVersion = versions.find(version => version.snapshot);
+      let restore = null;
+      if (latestRestorableVersion) {
+        restore = document.createElement("button");
+        restore.className = "btn secondary";
+        restore.type = "button";
+        restore.textContent = "Restore Latest Save";
+        restore.addEventListener("click", async () => {
+          if (!confirm("Restore the latest explicitly saved version? Current unsaved recovery for this project will be replaced.")) return;
+          restore.disabled = true;
+          try {
+            await store.restoreVersion(latestRestorableVersion.id);
+            location.href = "editor.html";
+          } catch (error) {
+            console.error("Version restore failed.", error);
+            restore.disabled = false;
+            announce(error?.message || "The saved version could not be restored.");
+          }
+        });
+      }
+
       const remove = document.createElement("button");
       remove.className = "btn danger";
       remove.type = "button";
@@ -195,7 +216,9 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
           announce("Project could not be removed. Close other ToonVerse AI tabs and try again.");
         }
       });
-      actions.append(open, create, remove);
+      actions.append(open, create);
+      if (restore) actions.append(restore);
+      actions.append(remove);
       meta.append(title, details, actions);
       card.appendChild(meta);
       grid.appendChild(card);
