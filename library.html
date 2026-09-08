@@ -20,7 +20,7 @@ header{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-r
 main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,env(safe-area-inset-right)) max(40px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 .hero{text-align:center;margin-bottom:28px}.hero h1{font-size:clamp(30px,6vw,48px);margin:0 0 12px}.hero p{color:#b9c2da;line-height:1.6;margin:auto;max-width:720px}
 .panel{background:#131c34;border:1px solid #263253;border-radius:18px;padding:clamp(20px,4vw,32px);box-shadow:0 18px 50px rgba(0,0,0,.2)}
-.empty{text-align:center}.icon{font-size:46px}.card{display:grid;grid-template-columns:minmax(180px,320px) 1fr;gap:24px;align-items:center}.preview{width:100%;aspect-ratio:4/3;object-fit:contain;background:#080c18;border:1px solid #2a365a;border-radius:14px}.meta h2{margin:0 0 10px;overflow-wrap:anywhere}.details{color:#b9c2da;line-height:1.7}
+.syncbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding:14px 16px;border:1px solid #2a3860;border-radius:13px;background:#10182d}.syncbar strong{display:block}.syncbar small{color:#b9c2da}.pill{padding:7px 10px;border-radius:999px;background:#3b315f;color:#e8e3ff;font-size:.8rem;font-weight:750}.library-grid{display:grid;gap:18px}.empty{text-align:center}.icon{font-size:46px}.card{display:grid;grid-template-columns:minmax(180px,320px) 1fr;gap:24px;align-items:center}.preview{width:100%;aspect-ratio:4/3;object-fit:contain;background:#080c18;border:1px solid #2a365a;border-radius:14px}.meta h2{margin:0 0 10px;overflow-wrap:anywhere}.details{color:#b9c2da;line-height:1.7}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 18px;border:0;border-radius:10px;background:#6c63ff;color:#fff;text-decoration:none;font-weight:750;cursor:pointer}.btn.secondary{background:#1c2746}.btn.danger{background:#692d3b}.btn:focus-visible{outline:3px solid #c4bbff;outline-offset:2px}
 .status{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:#111a31;border:1px solid #34436e;padding:10px 14px;border-radius:10px;max-width:90vw}
 @media(max-width:700px){.card{grid-template-columns:1fr}nav{width:100%;overflow-x:auto;flex-wrap:nowrap}.actions .btn{flex:1 1 150px}}
@@ -37,55 +37,176 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
 </header>
 <main id="main">
 <section class="hero"><h1>My Library</h1><p>Continue the latest project saved on this device. Your editor also keeps automatic crash recovery locally.</p></section>
-<section class="panel" id="library-content" aria-live="polite"></section>
+<section class="syncbar" id="sync-summary" aria-live="polite">
+  <div><strong>Project system starting…</strong><small>Checking local storage and sync queue.</small></div>
+  <span class="pill">Offline-first</span>
+</section>
+<section class="panel" id="library-content" aria-live="polite" aria-busy="true"></section>
 </main>
 <div class="status" id="status" role="status" aria-live="polite" hidden></div>
+<script src="./assets/js/project-store.js"></script>
 <script>
 "use strict";
-(() => {
-  const content=document.getElementById("library-content");
-  const status=document.getElementById("status");
-  const announce=message=>{status.textContent=message;status.hidden=false;setTimeout(()=>status.hidden=true,2400)};
-  const escapeText=value=>String(value??"");
-  let project=null;
-  try{project=JSON.parse(localStorage.getItem("toonverse:editor:last-project")||"null")}catch(error){console.warn("Library metadata could not be read.",error)}
-  if(!project){
-    content.className="panel empty";
-    const icon=document.createElement("div");icon.className="icon";icon.setAttribute("aria-hidden","true");icon.textContent="📁";
-    const title=document.createElement("h2");title.textContent="No saved project yet";
-    const text=document.createElement("p");text.className="details";text.textContent="Create something or save a project in the editor. Automatic recovery remains available there.";
-    const actions=document.createElement("div");actions.className="actions";
-    actions.innerHTML='<a class="btn" href="create.html">Create New Project</a><a class="btn secondary" href="editor.html">Open Editor</a>';
-    content.append(icon,title,text,actions);
+(async () => {
+  const content = document.getElementById("library-content");
+  const status = document.getElementById("status");
+  const syncSummary = document.getElementById("sync-summary");
+  const announce = message => {
+    status.textContent = message;
+    status.hidden = false;
+    setTimeout(() => { status.hidden = true; }, 2800);
+  };
+  const formatBytes = value => {
+    const bytes = Number(value) || 0;
+    if (!bytes) return "Storage estimate unavailable";
+    const units = ["B", "KB", "MB", "GB"];
+    const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+    return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+  };
+  const store = globalThis.ToonVerseProjectStore;
+
+  function renderEmpty(message = "No saved project yet") {
+    content.className = "panel empty";
+    content.replaceChildren();
+    const icon = document.createElement("div");
+    icon.className = "icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "📁";
+    const title = document.createElement("h2");
+    title.textContent = message;
+    const text = document.createElement("p");
+    text.className = "details";
+    text.textContent = "Create something or save a project in the editor. Automatic recovery remains available there.";
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    actions.innerHTML = '<a class="btn" href="create.html">Create New Project</a><a class="btn secondary" href="editor.html">Open Editor</a>';
+    content.append(icon, title, text, actions);
+    content.removeAttribute("aria-busy");
+  }
+
+  if (!store) {
+    renderEmpty("Project storage is unavailable");
+    syncSummary.innerHTML = "<div><strong>Local-only compatibility mode</strong><small>The advanced project store could not start in this browser.</small></div><span class=\"pill\">Fallback</span>";
     return;
   }
-  const card=document.createElement("article");card.className="card";
-  if(project.preview){
-    const image=document.createElement("img");image.className="preview";image.src=project.preview;image.alt="Saved project preview";card.appendChild(image);
-  }
-  const meta=document.createElement("div");meta.className="meta";
-  const title=document.createElement("h2");title.textContent=escapeText(project.name||"Saved Project");
-  const details=document.createElement("p");details.className="details";
-  const saved=project.savedAt?new Date(project.savedAt):null;
-  details.textContent=`${Number(project.width)||0} × ${Number(project.height)||0} pixels · ${saved&&!Number.isNaN(saved.valueOf())?saved.toLocaleString():"Saved locally"}`;
-  const actions=document.createElement("div");actions.className="actions";
-  const open=document.createElement("a");open.className="btn";open.href="editor.html";open.textContent="Continue Editing";
-  const create=document.createElement("a");create.className="btn secondary";create.href="create.html";create.textContent="Create New";
-  const remove=document.createElement("button");remove.className="btn danger";remove.type="button";remove.textContent="Remove from Device";
-  remove.addEventListener("click",()=>{
-    if(!confirm("Remove the locally saved project and its recovery data from this device?"))return;
-    localStorage.removeItem("toonverse:editor:last-project");
-    if (!("indexedDB" in window)) {
-      announce("Local project removed. Recovery storage is unavailable in this browser.");
-      setTimeout(()=>location.reload(),500);
+
+  try {
+    await store.migrateLegacy();
+    const [projects, sync] = await Promise.all([
+      store.listProjects(),
+      store.syncStatus()
+    ]);
+
+    const syncTitle = sync.backendConnected
+      ? (sync.pending ? `${sync.pending} change${sync.pending === 1 ? "" : "s"} waiting to sync` : "All projects synced")
+      : "Cloud connection ready for backend";
+    const syncDetail = sync.backendConnected
+      ? `${sync.online ? "Online" : "Offline"} · ${formatBytes(sync.usage)} used locally`
+      : `Projects are safe on this device · ${sync.pending} encrypted-ready change${sync.pending === 1 ? "" : "s"} queued`;
+    syncSummary.replaceChildren();
+    const summaryText = document.createElement("div");
+    const strong = document.createElement("strong");
+    strong.textContent = syncTitle;
+    const small = document.createElement("small");
+    small.textContent = syncDetail;
+    summaryText.append(strong, small);
+    const pill = document.createElement("span");
+    pill.className = "pill";
+    pill.textContent = sync.backendConnected ? (sync.online ? "Cloud active" : "Offline") : "Offline-first";
+    syncSummary.append(summaryText, pill);
+
+    if (!projects.length) {
+      renderEmpty();
       return;
     }
-    const request=indexedDB.deleteDatabase("toonverse-editor");
-    request.onsuccess=()=>{announce("Local project removed.");setTimeout(()=>location.reload(),500)};
-    request.onerror=()=>announce("Recovery storage could not be removed. Close other ToonVerse AI tabs and try again.");
-    request.onblocked=()=>announce("Close other ToonVerse AI tabs to finish removing recovery data.");
-  });
-  actions.append(open,create,remove);meta.append(title,details,actions);card.appendChild(meta);content.appendChild(card);
+
+    content.className = "panel";
+    content.replaceChildren();
+    const grid = document.createElement("div");
+    grid.className = "library-grid";
+
+    for (const project of projects) {
+      const versions = await store.listVersions(project.id).catch(() => []);
+      const card = document.createElement("article");
+      card.className = "card";
+      if (project.preview) {
+        const image = document.createElement("img");
+        image.className = "preview";
+        image.src = project.preview;
+        image.alt = `Preview of ${project.name || "saved project"}`;
+        image.loading = "lazy";
+        image.decoding = "async";
+        card.appendChild(image);
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const title = document.createElement("h2");
+      title.textContent = project.name || "Saved Project";
+      const details = document.createElement("p");
+      details.className = "details";
+      const saved = new Date(project.updatedAt || project.savedAt || Date.now());
+      details.textContent =
+        `${Number(project.width) || 0} × ${Number(project.height) || 0} pixels · ` +
+        `${Number.isNaN(saved.valueOf()) ? "Saved locally" : saved.toLocaleString()} · ` +
+        `${versions.length} saved version${versions.length === 1 ? "" : "s"} · ` +
+        `${project.syncState === "synced" ? "Synced" : "Sync pending"}`;
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const open = document.createElement("a");
+      open.className = "btn";
+      open.href = "editor.html";
+      open.textContent = "Continue Editing";
+      open.addEventListener("click", () => store.setActiveProjectId(project.id));
+      const create = document.createElement("a");
+      create.className = "btn secondary";
+      create.href = "create.html";
+      create.textContent = "Create New";
+      const remove = document.createElement("button");
+      remove.className = "btn danger";
+      remove.type = "button";
+      remove.textContent = "Remove from Device";
+      remove.addEventListener("click", async () => {
+        if (!confirm(`Remove “${project.name || "Saved Project"}” and its local version history from this device?`)) return;
+        remove.disabled = true;
+        try {
+          await store.removeProject(project.id);
+          if (store.activeProjectId() === project.id) {
+            localStorage.removeItem("toonverse:editor:last-project");
+            if ("indexedDB" in window) {
+              const request = indexedDB.open("toonverse-editor", 1);
+              request.onsuccess = () => {
+                const db = request.result;
+                if (db.objectStoreNames.contains("projects")) {
+                  const tx = db.transaction("projects", "readwrite");
+                  tx.objectStore("projects").delete("last-project");
+                }
+                db.close();
+              };
+            }
+          }
+          announce("Local project and version history removed.");
+          card.remove();
+          if (!grid.children.length) renderEmpty();
+        } catch (error) {
+          console.error("Project removal failed.", error);
+          remove.disabled = false;
+          announce("Project could not be removed. Close other ToonVerse AI tabs and try again.");
+        }
+      });
+      actions.append(open, create, remove);
+      meta.append(title, details, actions);
+      card.appendChild(meta);
+      grid.appendChild(card);
+    }
+    content.appendChild(grid);
+    content.removeAttribute("aria-busy");
+  } catch (error) {
+    console.error("Library could not start.", error);
+    renderEmpty("Library could not be opened");
+    syncSummary.innerHTML = "<div><strong>Storage temporarily unavailable</strong><small>Close other ToonVerse AI tabs and reload this page.</small></div><span class=\"pill\">Needs attention</span>";
+  }
 })();
 </script>
 <script>
