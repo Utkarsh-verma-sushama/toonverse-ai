@@ -119,6 +119,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Coloring & Painting Studio",
+      "short_name": "Coloring",
+      "url": "./coloring.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
