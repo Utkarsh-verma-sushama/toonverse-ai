@@ -204,6 +204,36 @@
     return request(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
   }
 
+  async function getSecurityOverview() {
+    return request("/v1/auth/security");
+  }
+
+  async function requestPasswordReset(email) {
+    return request("/v1/auth/password/reset/request", {
+      method: "POST",
+      body: JSON.stringify({ email: String(email || "").trim() })
+    });
+  }
+
+  async function beginTotpEnrollment() {
+    return request("/v1/auth/mfa/totp/enroll", { method: "POST" });
+  }
+
+  async function confirmTotpEnrollment(challengeId, code) {
+    return request("/v1/auth/mfa/totp/confirm", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
+    });
+  }
+
+  async function rotateRecoveryCodes() {
+    return request("/v1/auth/mfa/recovery-codes/rotate", { method: "POST" });
+  }
+
+  async function signOutOtherDevices() {
+    return request("/v1/auth/sessions/revoke-others", { method: "POST" });
+  }
+
   async function beginPasskey() {
     if (!window.PublicKeyCredential || !navigator.credentials) throw new Error("Passkeys are unavailable on this device.");
     const options = await request("/v1/auth/passkeys/authenticate/options", { method: "POST" });
@@ -222,6 +252,8 @@
 
   window.ToonVerseAuth = Object.freeze({
     getState, subscribe, restore, signInWithEmail, createAccount, sendOtp, verifyOtp,
-    beginProvider, beginPasskey, getAccessToken, signOut, listSessions, revokeSession
+    beginProvider, beginPasskey, getAccessToken, signOut, listSessions, revokeSession,
+    getSecurityOverview, requestPasswordReset, beginTotpEnrollment,
+    confirmTotpEnrollment, rotateRecoveryCodes, signOutOtherDevices
   });
 })();
