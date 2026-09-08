@@ -3862,65 +3862,25 @@ document.addEventListener(
         return false;
       }
 
-      const recoveryLayers =
-        await Promise.all(
-          layers.map(
-            async layer => ({
-
-              id:
-                layer.id,
-
-              name:
-                layer.name,
-
-              visible:
-                layer.visible,
-
-              locked:
-                layer.locked,
-
-              opacity:
-                Number.isFinite(
-                  layer.opacity
-                )
-                ? layer.opacity
-                : 1,
-
-              blendMode:
-                layer.blendMode ||
-                "source-over",
-
-              groupId:
-                layer.groupId ||
-                null,
-
-              kind:
-                layer.kind ||
-                "raster",
-
-              contentData:
-                layer.contentData
-                ? {
-                    ...layer.contentData
-                  }
-                : null,
-
-              maskEnabled:
-                layer.maskEnabled !== false,
-
-              maskBlob:
-                layer.maskCanvas
-                ? await canvasToBlob(layer.maskCanvas)
-                : null,
-
-              blob:
-                await canvasToBlob(
-                  layer.canvas
-                )
-
-            })
-          )
-        );
+      const recoveryLayers = [];
+      // Encode sequentially to avoid holding several full-resolution encoder
+      // buffers in memory at once on phones, tablets and TV browsers.
+      for (const layer of layers) {
+        recoveryLayers.push({
+          id: layer.id,
+          name: layer.name,
+          visible: layer.visible,
+          locked: layer.locked,
+          opacity: Number.isFinite(layer.opacity) ? layer.opacity : 1,
+          blendMode: layer.blendMode || "source-over",
+          groupId: layer.groupId || null,
+          kind: layer.kind || "raster",
+          contentData: layer.contentData ? { ...layer.contentData } : null,
+          maskEnabled: layer.maskEnabled !== false,
+          maskBlob: layer.maskCanvas ? await canvasToBlob(layer.maskCanvas) : null,
+          blob: await canvasToBlob(layer.canvas)
+        });
+      }
 
       await recoveryRequest(
         "write",
@@ -14731,6 +14691,17 @@ document.addEventListener(
         )}%`;
     }
 
+    function createLibraryPreview(source) {
+      const maximum = 640;
+      const scale = Math.min(1, maximum / Math.max(source.width, source.height));
+      const preview = highQualityResizeCanvas(
+        source,
+        Math.max(1, Math.round(source.width * scale)),
+        Math.max(1, Math.round(source.height * scale))
+      );
+      return preview.toDataURL("image/jpeg", .82);
+    }
+
     async function saveProject() {
 
       if (
@@ -14774,7 +14745,7 @@ document.addEventListener(
             .toISOString(),
 
         preview:
-          canvasToDataURL(
+          createLibraryPreview(
             render
           )
       };
