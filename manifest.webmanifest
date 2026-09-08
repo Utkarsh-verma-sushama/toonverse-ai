@@ -167,6 +167,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Plans & Growth",
+      "short_name": "Plans",
+      "url": "./plans.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
