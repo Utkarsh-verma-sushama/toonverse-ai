@@ -12,8 +12,14 @@
 window.ToonVerseConfig = Object.freeze({
   app: Object.freeze({
     name: "ToonVerse AI",
-    version: "1.0.0",
-    environment: "development"
+    version: "1.1.0",
+    environment: "production"
+  }),
+
+  services: Object.freeze({
+    // Public endpoint only. Secrets and private keys belong on the backend.
+    apiBaseUrl: "",
+    requestTimeoutMs: 30000
   }),
 
   paths: Object.freeze({
