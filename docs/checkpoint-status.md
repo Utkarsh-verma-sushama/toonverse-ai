@@ -1,9 +1,9 @@
 # ToonVerse AI — Checkpoint Resume Record
 
 Last updated: 2026-09-08  
-Current locked checkpoint: 35  
-Exact next checkpoint: 36  
-Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 36. Do not repeat or reopen completed work unless a verified defect requires it.
+Current locked checkpoint: 36  
+Exact next checkpoint: 37  
+Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 37. Do not repeat or reopen completed work unless a verified defect requires it.
 
 ## Permanent execution rule
 
@@ -35,6 +35,9 @@ Locked with AI Enhance, Auto Fix, Background Remove/Change, Object Remove, Upsca
 ### Checkpoint 35 — Multimodal Understanding Framework
 Locked with image/video/audio/document understanding, OCR, transcription, translation, summaries, scene/chapter indexing, object/context extraction and accessibility descriptions; secure provider-neutral jobs, rights/consent, immutable originals, integrity metadata, safety/privacy controls, structured provenance, mobile/tablet/desktop/TV responsive workspace, keyboard/touch/stylus/D-pad accessibility, PWA discovery/offline shell and complete backend API contract.
 
+### Checkpoint 36 — AI Memory & Photo-to-Video Studio
+Locked with a cross-device, recoverable timeline for up to 2,000 photos/video/audio items; ordering, aspect/output/motion controls, immutable originals, local autosave, consent and rights controls, provider-neutral rendering jobs, truthful unavailable-backend handling, PWA/home discovery, offline shell, accessibility and safety/reliability contract.
+
 ## Resume point
 
-Checkpoint 35 is complete and locked. No part of Checkpoint 35 remains. The next work item is Checkpoint 36, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
+Checkpoint 36 is complete and locked. No part of Checkpoint 36 remains. The next work item is Checkpoint 37, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
