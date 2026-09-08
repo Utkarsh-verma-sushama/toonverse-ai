@@ -803,6 +803,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     </button>
 
     <button
+      class="top-button"
+      type="button"
+      data-editor-action="share"
+    >
+      ↗️
+      <span class="label">
+        Share
+      </span>
+    </button>
+
+    <button
       class="top-button primary-button"
       type="button"
       data-editor-action="export"
@@ -2593,6 +2604,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         </select>
       </div>
       <div class="property-row">
+        <label class="property-label" for="export-dpi">PDF DPI</label>
+        <input id="export-dpi" class="editor-input" type="number" min="72" max="1200" step="1" value="300" inputmode="numeric">
+      </div>
+      <div class="property-row">
         <span class="property-label">Print Color</span>
         <select id="print-color-mode" class="editor-select">
           <option value="color">Full Color</option>
@@ -3028,6 +3043,7 @@ document.addEventListener(
     const pdfOrientation = $("pdf-orientation");
     const pdfMargin = $("pdf-margin");
     const pdfPlacement = $("pdf-placement");
+    const exportDpi = $("export-dpi");
     const printColorMode = $("print-color-mode");
 
     const flipXInput =
@@ -14605,7 +14621,13 @@ document.addEventListener(
 
                 case "export":
 
-                  exportProject();
+                  exportProject("download");
+
+                  break;
+
+                case "share":
+
+                  exportProject("share");
 
                   break;
 
@@ -14853,7 +14875,7 @@ document.addEventListener(
       if (!jpegBlob) throw new Error("PDF image encoding failed.");
       const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
       const encoder = new TextEncoder();
-      const dpi = Math.max(1, Number($("resolution-input").value) || 300);
+      const dpi = Math.max(72, Math.min(1200, Number(exportDpi.value) || 300));
       let pageWidth;
       let pageHeight;
 
@@ -14967,157 +14989,269 @@ document.addEventListener(
       return cleaned || "toonverse-edit";
     }
 
-    async function exportProject() {
+    let exportBusy = false;
+
+    function triggerExportDownload(blob, filename) {
+      const anchor = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.rel = "noopener";
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      // Safari and slower mobile file handlers may consume the object URL later.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+
+    async function deliverExport(blob, filename, delivery) {
+      if (delivery === "share" && typeof navigator.share === "function" && typeof File === "function") {
+        const file = new File([blob], filename, {
+          type: blob.type || "application/octet-stream",
+          lastModified: Date.now()
+        });
+        let supportsFileShare = true;
+        if (typeof navigator.canShare === "function") {
+          try {
+            supportsFileShare = navigator.canShare({ files: [file] });
+          } catch {
+            supportsFileShare = false;
+          }
+        }
+        if (supportsFileShare) {
+          try {
+            await navigator.share({
+              title: safeExportName(documentName.textContent),
+              text: "Created with ToonVerse AI",
+              files: [file]
+            });
+            return "shared";
+          } catch (error) {
+            if (error?.name === "AbortError") return "cancelled";
+            console.warn("Native file sharing was unavailable.", error);
+          }
+        }
+        notify("Native file sharing is unavailable here. The file will be downloaded instead.", "warning");
+      }
+      triggerExportDownload(blob, filename);
+      return "downloaded";
+    }
+
+    async function exportProject(delivery = "download") {
       if (!currentFile) {
         notify("Import an image before export.", "warning");
         return;
       }
-
-      renderAll();
-
-      const requestedFormat = exportFormat.value;
-      const requestedMime =
-        requestedFormat === "jpeg"
-        ? "image/jpeg"
-        : requestedFormat === "webp"
-        ? "image/webp"
-        : "image/png";
-      const scale = Math.max(1, Math.min(4, Number(exportScale.value) || 1));
-      const outputWidth = Math.round(render.width * scale);
-      const outputHeight = Math.round(render.height * scale);
-      const pixelLimit =
-        (navigator.deviceMemory && navigator.deviceMemory <= 4)
-        ? 32000000
-        : 64000000;
-
-      if (
-        outputWidth > 16384 ||
-        outputHeight > 16384 ||
-        outputWidth * outputHeight > pixelLimit
-      ) {
-        notify(
-          `Export would be ${outputWidth}×${outputHeight}. Choose a lower scale for safe export on this device.`,
-          "warning"
-        );
+      if (exportBusy) {
+        notify("An export is already being prepared.", "warning");
         return;
       }
 
-      notify("Preparing high-quality export…");
+      exportBusy = true;
+      const exportButtons = [...document.querySelectorAll(
+        '[data-editor-action="export"], [data-editor-action="share"]'
+      )];
+      exportButtons.forEach(button => {
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+      });
 
-      const output =
-        highQualityResizeCanvas(
-          render,
-          outputWidth,
-          outputHeight
-        );
-      const outputContext =
-        configurePixelContext(
-          output.getContext("2d")
-        );
-      const preserveTransparency =
-        requestedFormat !== "pdf" &&
-        requestedMime !== "image/jpeg" &&
-        exportTransparency.checked;
-
-      if (!preserveTransparency) {
-        outputContext.save();
-        outputContext.globalCompositeOperation = "destination-over";
-        outputContext.fillStyle = exportBackground.value || "#ffffff";
-        outputContext.fillRect(0, 0, output.width, output.height);
-        outputContext.restore();
-      }
-
-      const quality = Math.max(.6, Math.min(1, Number(exportQuality.value) / 100));
-      let blob;
       try {
-        blob =
+        renderAll();
+
+        const requestedFormat = exportFormat.value;
+        const requestedMime =
+          requestedFormat === "jpeg"
+          ? "image/jpeg"
+          : requestedFormat === "webp"
+          ? "image/webp"
+          : "image/png";
+        const scale = Math.max(1, Math.min(4, Number(exportScale.value) || 1));
+        const outputWidth = Math.max(1, Math.round(render.width * scale));
+        const outputHeight = Math.max(1, Math.round(render.height * scale));
+        const deviceMemory = Number(navigator.deviceMemory) || 0;
+        const coarsePointer =
+          typeof matchMedia === "function" &&
+          matchMedia("(pointer: coarse)").matches;
+        const pixelLimit =
+          deviceMemory > 0 && deviceMemory <= 2
+          ? 20000000
+          : deviceMemory > 0 && deviceMemory <= 4
+          ? 32000000
+          : coarsePointer
+          ? 40000000
+          : 64000000;
+
+        if (
+          outputWidth > 16384 ||
+          outputHeight > 16384 ||
+          outputWidth * outputHeight > pixelLimit
+        ) {
+          notify(
+            `Export would be ${outputWidth}×${outputHeight}. Choose a lower scale for safe export on this device.`,
+            "warning"
+          );
+          return;
+        }
+
+        notify(
+          delivery === "share"
+          ? "Preparing a high-quality file to share…"
+          : "Preparing high-quality export…"
+        );
+
+        const output = highQualityResizeCanvas(render, outputWidth, outputHeight);
+        const outputContext = configurePixelContext(output.getContext("2d"));
+        if (!outputContext) throw new Error("Export canvas is unavailable.");
+
+        const preserveTransparency =
+          requestedFormat !== "pdf" &&
+          requestedMime !== "image/jpeg" &&
+          exportTransparency.checked;
+
+        if (!preserveTransparency) {
+          outputContext.save();
+          outputContext.globalCompositeOperation = "destination-over";
+          outputContext.fillStyle = exportBackground.value || "#ffffff";
+          outputContext.fillRect(0, 0, output.width, output.height);
+          outputContext.restore();
+        }
+
+        const quality = Math.max(.6, Math.min(1, Number(exportQuality.value) / 100));
+        const blob =
           requestedFormat === "pdf"
           ? await createImagePdfBlob(output, quality)
           : await canvasToExportBlob(output, requestedMime, quality);
+
+        if (!blob) {
+          notify("This browser could not create the selected format.", "error");
+          return;
+        }
+
+        const actualMime = blob.type || requestedMime;
+        const extension =
+          actualMime === "application/pdf"
+          ? "pdf"
+          : actualMime === "image/jpeg"
+          ? "jpg"
+          : actualMime === "image/webp"
+          ? "webp"
+          : "png";
+        const filename =
+          `${safeExportName(documentName.textContent)}-edited.${extension}`;
+        const result = await deliverExport(blob, filename, delivery);
+
+        if (result === "cancelled") {
+          notify("Sharing cancelled.");
+          return;
+        }
+
+        addHistoryMessage(
+          `${result === "shared" ? "Shared" : "Exported"} ${outputWidth}×${outputHeight} ${extension.toUpperCase()}`
+        );
+        notify(
+          result === "shared"
+          ? `${extension.toUpperCase()} shared successfully.`
+          : `Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()} successfully.`,
+          "success"
+        );
       } catch (error) {
         console.error("Export generation failed.", error);
-        notify("Export could not be generated on this device.", "error");
-        return;
+        const memoryFailure =
+          error?.name === "NS_ERROR_OUT_OF_MEMORY" ||
+          /memory|canvas|allocation/i.test(String(error?.message || ""));
+        notify(
+          memoryFailure
+          ? "This export is too large for the available device memory. Choose a lower scale."
+          : "Export could not be generated on this device.",
+          "error"
+        );
+      } finally {
+        exportBusy = false;
+        exportButtons.forEach(button => {
+          button.disabled = false;
+          button.removeAttribute("aria-busy");
+        });
       }
-      if (!blob) {
-        notify("This browser could not create the selected format.", "error");
-        return;
-      }
-
-      const actualMime = blob.type || requestedMime;
-      const extension =
-        actualMime === "application/pdf"
-        ? "pdf"
-        : actualMime === "image/jpeg"
-        ? "jpg"
-        : actualMime === "image/webp"
-        ? "webp"
-        : "png";
-      const anchor = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      anchor.href = url;
-      anchor.download = `${safeExportName(documentName.textContent)}-edited.${extension}`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-
-      addHistoryMessage(`Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()}`);
-      notify(
-        `Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()} successfully.`,
-        "success"
-      );
     }
 
-    function printRendered() {
+    async function printRendered() {
       if (!currentFile) {
         notify("Import an image first.", "warning");
         return;
       }
 
-      renderAll();
+      // Open synchronously so mobile browsers retain the user gesture.
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
         notify("Pop-up blocked. Allow pop-ups for printing.", "warning");
         return;
       }
-
-      const url = render.toDataURL("image/png");
-      const page =
-        pdfPageSize.value === "letter"
-        ? "Letter"
-        : pdfPageSize.value === "image"
-        ? "auto"
-        : "A4";
-      const desiredOrientation =
-        pdfOrientation.value === "auto"
-        ? (render.width >= render.height ? "landscape" : "portrait")
-        : pdfOrientation.value;
       printWindow.opener = null;
-      const marginPoints = Math.max(0, Number(pdfMargin.value) || 0);
-      const marginMillimetres = (marginPoints * 25.4 / 72).toFixed(2);
-      const pageRule = page === "auto" ? desiredOrientation : `${page} ${desiredOrientation}`;
-      const placement = pdfPlacement.value === "fill" ? "cover" : "contain";
-      const filter = printColorMode.value === "grayscale" ? "grayscale(100%)" : "none";
-      const safeTitle = safeExportName(documentName.textContent);
 
-      printWindow.addEventListener("load", () => {
-        printWindow.focus();
-        printWindow.print();
-      }, { once: true });
-      printWindow.document.open();
-      printWindow.document.write(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>${safeTitle} - Print</title>
+      let url = "";
+      try {
+        renderAll();
+        const blob = await canvasToExportBlob(render, "image/png", 1);
+        if (!blob) throw new Error("Print image encoding failed.");
+        url = URL.createObjectURL(blob);
+
+        const page =
+          pdfPageSize.value === "letter"
+          ? "Letter"
+          : pdfPageSize.value === "image"
+          ? "auto"
+          : "A4";
+        const desiredOrientation =
+          pdfOrientation.value === "auto"
+          ? (render.width >= render.height ? "landscape" : "portrait")
+          : pdfOrientation.value;
+        const marginPoints = Math.max(0, Number(pdfMargin.value) || 0);
+        const marginMillimetres = (marginPoints * 25.4 / 72).toFixed(2);
+        const pageRule =
+          page === "auto" ? desiredOrientation : `${page} ${desiredOrientation}`;
+        const placement = pdfPlacement.value === "fill" ? "cover" : "contain";
+        const filter =
+          printColorMode.value === "grayscale" ? "grayscale(100%)" : "none";
+        const safeTitle = safeExportName(documentName.textContent);
+
+        const releaseUrl = () => {
+          if (!url) return;
+          URL.revokeObjectURL(url);
+          url = "";
+        };
+        printWindow.addEventListener("afterprint", releaseUrl, { once: true });
+        setTimeout(releaseUrl, 120000);
+
+        printWindow.document.open();
+        printWindow.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle} - Print</title>
 <style>
 @page{size:${pageRule};margin:${marginMillimetres}mm}
 *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
 body{display:grid;place-items:center;min-height:100vh}
 img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filter};image-rendering:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{html,body{width:100%;height:100%}body{min-height:auto}img{height:100%;max-width:100%;max-height:100%}}
-</style></head><body><img src="${url}" alt=""></body></html>`);
-      printWindow.document.close();
-      addHistoryMessage(`Print ${page} ${desiredOrientation}`);
-      notify("Print layout prepared.", "success");
+</style></head><body><img id="print-image" src="${url}" alt="Print preview"></body></html>`);
+        printWindow.document.close();
+
+        const printImage = printWindow.document.getElementById("print-image");
+        const startPrint = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+        if (printImage?.complete) startPrint();
+        else printImage?.addEventListener("load", startPrint, { once: true });
+
+        addHistoryMessage(`Print ${page} ${desiredOrientation}`);
+        notify("Print layout prepared.", "success");
+      } catch (error) {
+        console.error("Print preparation failed.", error);
+        if (url) URL.revokeObjectURL(url);
+        printWindow.close();
+        notify("Print preview could not be prepared on this device.", "error");
+      }
     }
 
     function resetProject() {
