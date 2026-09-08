@@ -798,6 +798,17 @@
         display: none;
       }
 
+      .create-settings.open {
+        display: block;
+        position: fixed;
+        z-index: 1000;
+        inset: 68px 0 0 auto;
+        width: min(360px, 92vw);
+        height: calc(100dvh - 68px);
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+        box-shadow: -24px 0 60px rgba(0,0,0,.55);
+      }
+
       .mobile-panel-button {
         display: inline-grid;
       }
@@ -1460,7 +1471,7 @@
             class="create-upload-input"
             id="create-file-input"
             type="file"
-            accept="image/jpeg,image/png,image/webp,video/mp4"
+            accept="image/*,video/*"
             multiple
           >
 
@@ -1747,6 +1758,8 @@
 
       <aside
         class="create-settings"
+      id="create-settings"
+      aria-label="Generation settings"
         aria-label="Generation settings"
       >
 
@@ -2094,6 +2107,15 @@
       const variationValue =
         document.getElementById("variation-value");
 
+      const settingsPanel =
+        document.getElementById("create-settings");
+
+      let selectedMedia =
+        [];
+
+      let activeMode =
+        "generate";
+
 
       /* ===================================================
          PROMPT COUNTER
@@ -2170,6 +2192,8 @@
 
 
       function setCreateMode(mode) {
+
+        activeMode = mode;
 
         document
           .querySelectorAll("[data-create-mode]")
@@ -2255,13 +2279,19 @@
 
         selectedFiles.innerHTML = "";
 
-        if (!files.length) {
+        selectedMedia = Array.from(files || [])
+          .filter(file =>
+            (file.type.startsWith("image/") || file.type.startsWith("video/")) &&
+            file.size <= 500 * 1024 * 1024
+          )
+          .slice(0, 100);
+
+        if (!selectedMedia.length) {
           return;
         }
 
 
-        Array.from(files)
-          .slice(0, 100)
+        selectedMedia
           .forEach((file) => {
 
             const item =
@@ -2321,7 +2351,7 @@
 
 
         notify(
-          `${files.length} file${files.length === 1 ? "" : "s"} selected.`,
+          `${selectedMedia.length} file${selectedMedia.length === 1 ? "" : "s"} selected.`,
           "success"
         );
       }
@@ -2471,30 +2501,48 @@
 
                 case "enhance-prompt":
 
-                  if (
-                    !prompt ||
-                    !prompt.value.trim()
-                  ) {
-
-                    notify(
-                      "Write a prompt first, then ToonVerse AI can enhance it."
-                    );
-
+                  if (!prompt || !prompt.value.trim()) {
+                    notify("Write a prompt first, then ToonVerse AI can enhance it.");
                     break;
                   }
 
-                  notify(
-                    "Prompt enhancement engine will connect here."
-                  );
+                  {
+                    const qualityDirection =
+                      "Professional composition, natural detail, accurate colors, clean edges, balanced lighting, high-resolution result.";
+                    if (!prompt.value.toLowerCase().includes("professional composition")) {
+                      prompt.value = `${prompt.value.trim()}\n\n${qualityDirection}`;
+                      updatePromptCounter();
+                    }
+                    notify("Prompt enhanced with professional quality guidance.", "success");
+                  }
 
                   break;
 
 
                 case "voice":
 
-                  notify(
-                    "Voice prompt foundation is ready. Microphone services will connect here."
-                  );
+                  {
+                    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (!Recognition) {
+                      notify("Voice input is not supported by this browser. Type the prompt instead.", "warning");
+                      break;
+                    }
+                    const recognition = new Recognition();
+                    recognition.lang = document.documentElement.lang || navigator.language || "en-IN";
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+                    recognition.onresult = event => {
+                      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+                      if (transcript && prompt) {
+                        prompt.value = [prompt.value.trim(), transcript].filter(Boolean).join(" ");
+                        updatePromptCounter();
+                        notify("Voice prompt added.", "success");
+                      }
+                    };
+                    recognition.onerror = () => notify("Voice input could not start. Check microphone permission.", "warning");
+                    try { recognition.start(); }
+                    catch (error) { notify("Voice input is already active or unavailable.", "warning"); }
+                  }
 
                   break;
 
@@ -2508,6 +2556,12 @@
                       JSON.stringify({
                         prompt:
                           prompt?.value || "",
+
+                        mode:
+                          activeMode,
+
+                        variation:
+                          variation?.value || "1",
 
                         savedAt:
                           new Date().toISOString()
@@ -2532,9 +2586,17 @@
 
                 case "settings":
 
-                  notify(
-                    "Generation settings are available on larger screens. Mobile settings drawer will connect here."
+                  settingsPanel?.classList.toggle("open");
+                  button.setAttribute(
+                    "aria-expanded",
+                    settingsPanel?.classList.contains("open") ? "true" : "false"
                   );
+                  if (settingsPanel?.classList.contains("open")) {
+                    settingsPanel.querySelector("select, input, button")?.focus();
+                    notify("Generation settings opened.");
+                  } else {
+                    notify("Generation settings closed.");
+                  }
 
                   break;
 
@@ -2545,9 +2607,7 @@
                     prompt?.value.trim() || "";
 
                   const hasFiles =
-                    Boolean(
-                      fileInput?.files?.length
-                    );
+                    selectedMedia.length > 0;
 
 
                   if (
@@ -2566,8 +2626,8 @@
 
 
                   notify(
-                    "Create Studio is ready. The secure AI generation backend will connect at this action.",
-                    "success"
+                    `${modeNames[activeMode] || "This workflow"} needs the secure ToonVerse AI generation service before it can create final media.`,
+                    "warning"
                   );
 
                   break;
@@ -2608,6 +2668,15 @@
             prompt.value =
               parsed.prompt;
 
+            if (parsed.mode && modeNames[parsed.mode]) {
+              setCreateMode(parsed.mode);
+            }
+
+            if (parsed.variation && variation) {
+              variation.value = parsed.variation;
+              if (variationValue) variationValue.textContent = parsed.variation;
+            }
+
             updatePromptCounter();
 
             notify(
@@ -2625,6 +2694,19 @@
         );
       }
 
+
+
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && settingsPanel?.classList.contains("open")) {
+          settingsPanel.classList.remove("open");
+          document.querySelector('[data-create-action="settings"]')?.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      window.addEventListener("orientationchange", () => {
+        settingsPanel?.classList.remove("open");
+        document.querySelector('[data-create-action="settings"]')?.setAttribute("aria-expanded", "false");
+      });
     });
   </script>
 
