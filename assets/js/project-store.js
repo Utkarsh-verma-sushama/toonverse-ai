@@ -10,7 +10,7 @@
   const PROJECT_ID_KEY = "toonverse:project:active-id";
   const DEVICE_ID_KEY = "toonverse:device:id";
   const LEGACY_KEY = "toonverse:editor:last-project";
-  const MAX_VERSIONS = 20;
+  const MAX_VERSIONS = 5;
   const channel =
     typeof BroadcastChannel === "function"
       ? new BroadcastChannel("toonverse-projects")
@@ -154,20 +154,29 @@
       height: record.height,
       preview: record.preview || "",
       savedAt: now,
-      deviceId
+      deviceId,
+      snapshot: options.snapshot || null
     } : null;
 
     try {
       await withStore(
-        version ? [PROJECTS, QUEUE, VERSIONS] : [PROJECTS, QUEUE],
+        [PROJECTS, QUEUE],
         "readwrite",
         stores => {
           stores[PROJECTS].put(record);
           stores[QUEUE].put(queueRecord);
-          if (version) stores[VERSIONS].put(version);
         }
       );
-      if (version) await trimVersions(id);
+      if (version) {
+        try {
+          await withStore([VERSIONS], "readwrite", stores => {
+            stores[VERSIONS].put(version);
+          });
+          await trimVersions(id);
+        } catch (error) {
+          console.warn("Version snapshot was skipped because device storage is constrained.", error);
+        }
+      }
     } catch (error) {
       // Older/private TV and mobile WebViews can disable IndexedDB.
       try {
@@ -225,6 +234,41 @@
       );
       return records.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
     } finally { db.close(); }
+  }
+
+  async function restoreVersion(versionId) {
+    const db = await openDatabase();
+    let version;
+    try {
+      const tx = db.transaction(VERSIONS, "readonly");
+      version = await requestResult(tx.objectStore(VERSIONS).get(versionId));
+    } finally {
+      db.close();
+    }
+    if (!version?.snapshot) {
+      throw new Error("This saved version has no restorable project data.");
+    }
+
+    const recoveryDb = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("toonverse-editor", 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("Close the editor tab before restoring a version."));
+    });
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = recoveryDb.transaction("projects", "readwrite");
+        tx.objectStore("projects").put(version.snapshot, version.projectId);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error("Version restore was aborted."));
+      });
+    } finally {
+      recoveryDb.close();
+    }
+    setActiveProjectId(version.projectId);
+    channel?.postMessage({ type: "version-restored", projectId: version.projectId, at: new Date().toISOString() });
+    return version;
   }
 
   async function removeProject(projectId) {
@@ -333,6 +377,7 @@
     getProject,
     listProjects,
     listVersions,
+    restoreVersion,
     removeProject,
     syncStatus,
     registerSyncAdapter,
