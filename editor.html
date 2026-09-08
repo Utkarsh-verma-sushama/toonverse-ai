@@ -848,6 +848,7 @@ button{
     </button>
 
     <button
+      id="editor-print"
       class="command-button"
       type="button"
       data-editor-action="print"
@@ -2504,7 +2505,7 @@ button{
 
     </section>
 
-    <section class="property-group">
+    <section class="property-group" id="export-studio">
       <h3 class="property-title">Export Studio</h3>
       <div class="property-row">
         <span class="property-label">Format</span>
@@ -14778,7 +14779,7 @@ document.addEventListener(
 
         preview:
           canvasToDataURL(
-            work
+            render
           )
       };
 
