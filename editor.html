@@ -2512,6 +2512,7 @@ button{
           <option value="png">PNG — Lossless</option>
           <option value="jpeg">JPEG — Photo</option>
           <option value="webp">WebP — Modern</option>
+          <option value="pdf">PDF — Document</option>
         </select>
       </div>
       <div class="property-row">
@@ -2535,6 +2536,38 @@ button{
       <div class="property-row">
         <span class="property-label">Background</span>
         <input id="export-background" class="editor-input" type="color" value="#ffffff">
+      </div>
+      <div class="property-row">
+        <span class="property-label">PDF Page</span>
+        <select id="pdf-page-size" class="editor-select">
+          <option value="a4">A4</option>
+          <option value="letter">US Letter</option>
+          <option value="image">Exact Image Size</option>
+        </select>
+      </div>
+      <div class="property-row">
+        <span class="property-label">PDF Orientation</span>
+        <select id="pdf-orientation" class="editor-select">
+          <option value="auto">Auto</option>
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+      </div>
+      <div class="property-row">
+        <span class="property-label">PDF Margin</span>
+        <select id="pdf-margin" class="editor-select">
+          <option value="0">None</option>
+          <option value="18">Narrow</option>
+          <option value="36" selected>Standard</option>
+          <option value="54">Wide</option>
+        </select>
+      </div>
+      <div class="property-row">
+        <span class="property-label">PDF Placement</span>
+        <select id="pdf-placement" class="editor-select">
+          <option value="fit">Fit Entire Image</option>
+          <option value="fill">Fill Page</option>
+        </select>
       </div>
     </section>
 
@@ -2961,6 +2994,10 @@ document.addEventListener(
     const exportScale = $("export-scale");
     const exportTransparency = $("export-transparency");
     const exportBackground = $("export-background");
+    const pdfPageSize = $("pdf-page-size");
+    const pdfOrientation = $("pdf-orientation");
+    const pdfMargin = $("pdf-margin");
+    const pdfPlacement = $("pdf-placement");
 
     const flipXInput =
       $("flip-x-input");
@@ -3961,7 +3998,11 @@ document.addEventListener(
             quality: exportQuality.value,
             scale: exportScale.value,
             transparency: exportTransparency.checked,
-            background: exportBackground.value
+            background: exportBackground.value,
+            pdfPageSize: pdfPageSize.value,
+            pdfOrientation: pdfOrientation.value,
+            pdfMargin: pdfMargin.value,
+            pdfPlacement: pdfPlacement.value
           }
 
         }
@@ -4305,6 +4346,10 @@ document.addEventListener(
           exportScale.value = saved.exportSettings.scale || 1;
           exportTransparency.checked = saved.exportSettings.transparency !== false;
           exportBackground.value = saved.exportSettings.background || "#ffffff";
+          pdfPageSize.value = saved.exportSettings.pdfPageSize || "a4";
+          pdfOrientation.value = saved.exportSettings.pdfOrientation || "auto";
+          pdfMargin.value = saved.exportSettings.pdfMargin ?? 36;
+          pdfPlacement.value = saved.exportSettings.pdfPlacement || "fit";
         }
 
         documentName.textContent =
@@ -7192,7 +7237,8 @@ document.addEventListener(
     }
 
     [maskBrushMode, maskBrushSize, maskBrushSoftness, maskBrushOpacity,
-      exportFormat, exportQuality, exportScale, exportTransparency, exportBackground]
+      exportFormat, exportQuality, exportScale, exportTransparency, exportBackground,
+      pdfPageSize, pdfOrientation, pdfMargin, pdfPlacement]
       .forEach(control => control.addEventListener("change", scheduleAutoSave));
 
     $("edit-layer-mask").addEventListener("click", startMaskBrush);
@@ -14773,6 +14819,126 @@ document.addEventListener(
       });
     }
 
+    function joinByteArrays(parts) {
+      const length = parts.reduce((total, part) => total + part.length, 0);
+      const output = new Uint8Array(length);
+      let offset = 0;
+      parts.forEach(part => {
+        output.set(part, offset);
+        offset += part.length;
+      });
+      return output;
+    }
+
+    async function createImagePdfBlob(sourceCanvas, quality) {
+      const jpegBlob = await canvasToExportBlob(sourceCanvas, "image/jpeg", quality);
+      if (!jpegBlob) throw new Error("PDF image encoding failed.");
+      const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
+      const encoder = new TextEncoder();
+      const dpi = Math.max(1, Number($("resolution-input").value) || 300);
+      let pageWidth;
+      let pageHeight;
+
+      if (pdfPageSize.value === "letter") {
+        pageWidth = 612;
+        pageHeight = 792;
+      } else if (pdfPageSize.value === "image") {
+        pageWidth = Math.max(72, Math.min(14400, sourceCanvas.width * 72 / dpi));
+        pageHeight = Math.max(72, Math.min(14400, sourceCanvas.height * 72 / dpi));
+      } else {
+        pageWidth = 595.28;
+        pageHeight = 841.89;
+      }
+
+      const desiredOrientation =
+        pdfOrientation.value === "auto"
+        ? (sourceCanvas.width >= sourceCanvas.height ? "landscape" : "portrait")
+        : pdfOrientation.value;
+      if (
+        (desiredOrientation === "landscape" && pageHeight > pageWidth) ||
+        (desiredOrientation === "portrait" && pageWidth > pageHeight)
+      ) {
+        [pageWidth, pageHeight] = [pageHeight, pageWidth];
+      }
+
+      const margin = Math.max(0, Math.min(Math.min(pageWidth, pageHeight) / 3, Number(pdfMargin.value) || 0));
+      const boxWidth = Math.max(1, pageWidth - margin * 2);
+      const boxHeight = Math.max(1, pageHeight - margin * 2);
+      const imageRatio = sourceCanvas.width / sourceCanvas.height;
+      const boxRatio = boxWidth / boxHeight;
+      const fill = pdfPlacement.value === "fill";
+      let drawWidth;
+      let drawHeight;
+
+      if ((fill && imageRatio > boxRatio) || (!fill && imageRatio < boxRatio)) {
+        drawHeight = boxHeight;
+        drawWidth = drawHeight * imageRatio;
+      } else {
+        drawWidth = boxWidth;
+        drawHeight = drawWidth / imageRatio;
+      }
+
+      const drawX = margin + (boxWidth - drawWidth) / 2;
+      const drawY = margin + (boxHeight - drawHeight) / 2;
+      const content = [
+        "q",
+        `${margin.toFixed(2)} ${margin.toFixed(2)} ${boxWidth.toFixed(2)} ${boxHeight.toFixed(2)} re W n`,
+        `${drawWidth.toFixed(2)} 0 0 ${drawHeight.toFixed(2)} ${drawX.toFixed(2)} ${drawY.toFixed(2)} cm`,
+        "/Im0 Do",
+        "Q"
+      ].join("\n");
+      const contentBytes = encoder.encode(content);
+      const objects = [
+        null,
+        encoder.encode("<< /Type /Catalog /Pages 2 0 R >>"),
+        encoder.encode("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+        encoder.encode(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth.toFixed(2)} ${pageHeight.toFixed(2)}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`),
+        joinByteArrays([
+          encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${sourceCanvas.width} /Height ${sourceCanvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`),
+          jpegBytes,
+          encoder.encode("\nendstream")
+        ]),
+        joinByteArrays([
+          encoder.encode(`<< /Length ${contentBytes.length} >>\nstream\n`),
+          contentBytes,
+          encoder.encode("\nendstream")
+        ])
+      ];
+
+      const parts = [encoder.encode("%PDF-1.7\n%TVAI\n")];
+      const offsets = [0];
+      let byteOffset = parts[0].length;
+      for (let number = 1; number < objects.length; number++) {
+        offsets[number] = byteOffset;
+        const objectBytes = joinByteArrays([
+          encoder.encode(`${number} 0 obj\n`),
+          objects[number],
+          encoder.encode("\nendobj\n")
+        ]);
+        parts.push(objectBytes);
+        byteOffset += objectBytes.length;
+      }
+
+      const xrefOffset = byteOffset;
+      const xref = [
+        "xref",
+        `0 ${objects.length}`,
+        "0000000000 65535 f "
+      ];
+      for (let number = 1; number < objects.length; number++) {
+        xref.push(`${String(offsets[number]).padStart(10, "0")} 00000 n `);
+      }
+      xref.push(
+        "trailer",
+        `<< /Size ${objects.length} /Root 1 0 R >>`,
+        "startxref",
+        String(xrefOffset),
+        "%%EOF"
+      );
+      parts.push(encoder.encode(xref.join("\n")));
+      return new Blob([joinByteArrays(parts)], { type: "application/pdf" });
+    }
+
     function safeExportName(name) {
       const cleaned = String(name || "toonverse-edit")
         .replace(/\.[^.]+$/, "")
@@ -14831,6 +14997,7 @@ document.addEventListener(
           output.getContext("2d")
         );
       const preserveTransparency =
+        requestedFormat !== "pdf" &&
         requestedMime !== "image/jpeg" &&
         exportTransparency.checked;
 
@@ -14843,7 +15010,10 @@ document.addEventListener(
       }
 
       const quality = Math.max(.6, Math.min(1, Number(exportQuality.value) / 100));
-      let blob = await canvasToExportBlob(output, requestedMime, quality);
+      let blob =
+        requestedFormat === "pdf"
+        ? await createImagePdfBlob(output, quality)
+        : await canvasToExportBlob(output, requestedMime, quality);
       if (!blob) {
         notify("This browser could not create the selected format.", "error");
         return;
@@ -14851,7 +15021,9 @@ document.addEventListener(
 
       const actualMime = blob.type || requestedMime;
       const extension =
-        actualMime === "image/jpeg"
+        actualMime === "application/pdf"
+        ? "pdf"
+        : actualMime === "image/jpeg"
         ? "jpg"
         : actualMime === "image/webp"
         ? "webp"
