@@ -95,6 +95,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Multimodal Intelligence",
+      "short_name": "Understand",
+      "url": "./multimodal.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
