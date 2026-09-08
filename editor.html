@@ -747,7 +747,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 <body>
 
-<div class="editor-app">
+<main class="editor-app">
+<h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">ToonVerse AI Unified Creative Editor</h1>
 
 <header class="editor-topbar">
 
@@ -1962,7 +1963,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           type="number"
           value="1200"
           min="1"
-        >
+         aria-label="Document Width">
       </div>
 
       <div class="property-row">
@@ -1973,7 +1974,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           type="number"
           value="900"
           min="1"
-        >
+         aria-label="Document Height">
       </div>
 
       <div class="property-row">
@@ -1984,7 +1985,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           type="number"
           value="300"
           min="1"
-        >
+         aria-label="Resolution Input">
       </div>
 
       <div class="property-row">
@@ -1996,7 +1997,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         <select
           id="aspect-input"
           class="editor-select"
-        >
+         aria-label="Aspect Input">
           <option>Original</option>
           <option>1:1</option>
           <option>4:3</option>
@@ -2016,20 +2017,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Rotation</span>
-        <input id="rotation-input" class="editor-input" type="number" value="0" readonly>
+        <input id="rotation-input" class="editor-input" type="number" value="0" readonly aria-label="Rotation Input">
       </div>
       <div class="property-row">
         <span class="property-label">Straighten</span>
-        <input id="straighten-input" type="range" min="-45" max="45" step="0.1" value="0">
+        <input id="straighten-input" type="range" min="-45" max="45" step="0.1" value="0" aria-label="Straighten Input">
       </div>
       <button class="top-button" id="reset-straighten" type="button">Reset Straighten</button>
-      <div class="property-row"><span class="property-label">Perspective X</span><input id="perspective-x" type="range" min="-80" max="80" value="0"></div>
-      <div class="property-row"><span class="property-label">Perspective Y</span><input id="perspective-y" type="range" min="-80" max="80" value="0"></div>
+      <div class="property-row"><span class="property-label">Perspective X</span><input id="perspective-x" type="range" min="-80" max="80" value="0" aria-label="Perspective X"></div>
+      <div class="property-row"><span class="property-label">Perspective Y</span><input id="perspective-y" type="range" min="-80" max="80" value="0" aria-label="Perspective Y"></div>
       <div class="modal-actions"><button class="top-button" id="reset-perspective" type="button">Reset</button><button class="top-button primary-button" id="apply-perspective" type="button">Apply Perspective</button></div>
 
-      <div class="property-row"><span class="property-label">Liquify Mode</span><select id="liquify-mode" class="editor-select"><option value="push">Push</option><option value="grow">Grow</option><option value="shrink">Shrink</option><option value="smooth">Smooth</option></select></div>
-      <div class="property-row"><span class="property-label">Liquify Size</span><input id="liquify-size" type="range" min="12" max="300" value="90"></div>
-      <div class="property-row"><span class="property-label">Liquify Strength</span><input id="liquify-strength" type="range" min="1" max="100" value="35"></div>
+      <div class="property-row"><span class="property-label">Liquify Mode</span><select id="liquify-mode" class="editor-select" aria-label="Liquify Mode"><option value="push">Push</option><option value="grow">Grow</option><option value="shrink">Shrink</option><option value="smooth">Smooth</option></select></div>
+      <div class="property-row"><span class="property-label">Liquify Size</span><input id="liquify-size" type="range" min="12" max="300" value="90" aria-label="Liquify Size"></div>
+      <div class="property-row"><span class="property-label">Liquify Strength</span><input id="liquify-strength" type="range" min="1" max="100" value="35" aria-label="Liquify Strength"></div>
 
       <div class="property-row">
         <span class="property-label">Flip X</span>
@@ -2038,7 +2039,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           class="editor-input"
           value="No"
           readonly
-        >
+         aria-label="Flip X Input">
       </div>
 
       <div class="property-row">
@@ -2048,7 +2049,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           class="editor-input"
           value="No"
           readonly
-        >
+         aria-label="Flip Y Input">
       </div>
 
       <div class="property-row">
@@ -2059,7 +2060,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="0"
           max="100"
           value="100"
-        >
+         aria-label="Opacity Input">
       </div>
 
     </section>
@@ -2078,7 +2079,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="-100"
           max="100"
           value="0"
-        >
+         aria-label="Brightness Input">
       </div>
 
       <div class="property-row">
@@ -2089,7 +2090,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="-100"
           max="100"
           value="0"
-        >
+         aria-label="Contrast Input">
       </div>
 
       <div class="property-row">
@@ -2100,7 +2101,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="-100"
           max="100"
           value="0"
-        >
+         aria-label="Saturation Input">
       </div>
 
       <div class="property-row">
@@ -2111,7 +2112,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="-180"
           max="180"
           value="0"
-        >
+         aria-label="Hue Input">
       </div>
 
       <div class="property-row">
@@ -2122,7 +2123,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="0"
           max="20"
           value="0"
-        >
+         aria-label="Blur Input">
       </div>
 
       <div class="property-row">
@@ -2133,7 +2134,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="0"
           max="100"
           value="0"
-        >
+         aria-label="Grayscale Input">
       </div>
 
       <div class="property-row">
@@ -2144,47 +2145,47 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="0"
           max="100"
           value="0"
-        >
+         aria-label="Sepia Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Highlights</span>
-        <input id="highlights-input" type="range" min="-100" max="100" value="0">
+        <input id="highlights-input" type="range" min="-100" max="100" value="0" aria-label="Highlights Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Shadows</span>
-        <input id="shadows-input" type="range" min="-100" max="100" value="0">
+        <input id="shadows-input" type="range" min="-100" max="100" value="0" aria-label="Shadows Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Temperature</span>
-        <input id="temperature-input" type="range" min="-100" max="100" value="0">
+        <input id="temperature-input" type="range" min="-100" max="100" value="0" aria-label="Temperature Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Tint</span>
-        <input id="tint-input" type="range" min="-100" max="100" value="0">
+        <input id="tint-input" type="range" min="-100" max="100" value="0" aria-label="Tint Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Sharpness</span>
-        <input id="sharpness-input" type="range" min="0" max="100" value="0">
+        <input id="sharpness-input" type="range" min="0" max="100" value="0" aria-label="Sharpness Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Clarity</span>
-        <input id="clarity-input" type="range" min="-100" max="100" value="0">
+        <input id="clarity-input" type="range" min="-100" max="100" value="0" aria-label="Clarity Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Noise Reduction</span>
-        <input id="noise-reduction-input" type="range" min="0" max="100" value="0">
+        <input id="noise-reduction-input" type="range" min="0" max="100" value="0" aria-label="Noise Reduction Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Vignette</span>
-        <input id="vignette-input" type="range" min="0" max="100" value="0">
+        <input id="vignette-input" type="range" min="0" max="100" value="0" aria-label="Vignette Input">
       </div>
 
     </section>
@@ -2195,7 +2196,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Preset</span>
-        <select id="effect-preset" class="editor-select">
+        <select id="effect-preset" class="editor-select" aria-label="Effect Preset">
           <option value="none">Original</option>
           <option value="cinematic">Cinematic</option>
           <option value="vivid">Vivid</option>
@@ -2210,7 +2211,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Intensity</span>
-        <input id="effect-intensity" type="range" min="0" max="100" value="70">
+        <input id="effect-intensity" type="range" min="0" max="100" value="70" aria-label="Effect Intensity">
       </div>
 
       <button class="top-button" id="reset-effect" type="button">
@@ -2225,12 +2226,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Strength</span>
-        <input id="retouch-strength" type="range" min="1" max="100" value="35">
+        <input id="retouch-strength" type="range" min="1" max="100" value="35" aria-label="Retouch Strength">
       </div>
 
       <div class="property-row">
         <span class="property-label">Brush Size</span>
-        <input id="retouch-size" type="range" min="3" max="200" value="32">
+        <input id="retouch-size" type="range" min="3" max="200" value="32" aria-label="Retouch Size">
       </div>
 
       <button class="top-button" id="reset-clone-source" type="button">
@@ -2245,17 +2246,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Feather</span>
-        <input id="selection-feather" type="range" min="0" max="50" value="0">
+        <input id="selection-feather" type="range" min="0" max="50" value="0" aria-label="Selection Feather">
       </div>
 
       <div class="property-row">
         <span class="property-label">Magic Tolerance</span>
-        <input id="magic-tolerance" type="range" min="0" max="100" value="24">
+        <input id="magic-tolerance" type="range" min="0" max="100" value="24" aria-label="Magic Tolerance">
       </div>
 
       <div class="property-row">
         <span class="property-label">Adjustment</span>
-        <select id="selection-adjustment" class="editor-select">
+        <select id="selection-adjustment" class="editor-select" aria-label="Selection Adjustment">
           <option value="brightness">Brightness</option>
           <option value="contrast">Contrast</option>
           <option value="saturate">Saturation</option>
@@ -2266,7 +2267,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Amount</span>
-        <input id="selection-amount" type="range" min="0" max="200" value="120">
+        <input id="selection-amount" type="range" min="0" max="200" value="120" aria-label="Selection Amount">
       </div>
 
       <div class="modal-actions">
@@ -2292,7 +2293,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="1"
           max="200"
           value="25"
-        >
+         aria-label="Brush Size">
       </div>
 
       <div class="property-row">
@@ -2303,7 +2304,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="0"
           max="100"
           value="80"
-        >
+         aria-label="Brush Hardness">
       </div>
 
       <div class="property-row">
@@ -2313,7 +2314,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           class="editor-input"
           type="color"
           value="#ffffff"
-        >
+         aria-label="Brush Color">
       </div>
 
       <div class="property-row">
@@ -2324,7 +2325,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           min="1"
           max="100"
           value="100"
-        >
+         aria-label="Brush Opacity">
       </div>
 
     </section>
@@ -2337,12 +2338,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Content</span>
-        <input id="text-content" class="editor-input" type="text" value="ToonVerse AI" maxlength="120">
+        <input id="text-content" class="editor-input" type="text" value="ToonVerse AI" maxlength="120" aria-label="Text Content">
       </div>
 
       <div class="property-row">
         <span class="property-label">Font</span>
-        <select id="text-font" class="editor-select">
+        <select id="text-font" class="editor-select" aria-label="Text Font">
           <option value="Arial">Arial</option>
           <option value="Georgia">Georgia</option>
           <option value="Verdana">Verdana</option>
@@ -2353,17 +2354,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Size</span>
-        <input id="text-size" class="editor-input" type="number" min="8" max="500" value="64">
+        <input id="text-size" class="editor-input" type="number" min="8" max="500" value="64" aria-label="Text Size">
       </div>
 
       <div class="property-row">
         <span class="property-label">Color</span>
-        <input id="text-color" class="editor-input" type="color" value="#ffffff">
+        <input id="text-color" class="editor-input" type="color" value="#ffffff" aria-label="Text Color">
       </div>
 
       <div class="property-row">
         <span class="property-label">Align</span>
-        <select id="text-align" class="editor-select">
+        <select id="text-align" class="editor-select" aria-label="Text Align">
           <option value="left">Left</option>
           <option value="center" selected>Center</option>
           <option value="right">Right</option>
@@ -2382,7 +2383,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Type</span>
-        <select id="shape-type" class="editor-select">
+        <select id="shape-type" class="editor-select" aria-label="Shape Type">
           <option value="rectangle">Rectangle</option>
           <option value="rounded">Rounded</option>
           <option value="circle">Circle</option>
@@ -2393,27 +2394,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Width</span>
-        <input id="shape-width" class="editor-input" type="number" min="10" max="4000" value="240">
+        <input id="shape-width" class="editor-input" type="number" min="10" max="4000" value="240" aria-label="Shape Width">
       </div>
 
       <div class="property-row">
         <span class="property-label">Height</span>
-        <input id="shape-height" class="editor-input" type="number" min="10" max="4000" value="160">
+        <input id="shape-height" class="editor-input" type="number" min="10" max="4000" value="160" aria-label="Shape Height">
       </div>
 
       <div class="property-row">
         <span class="property-label">Fill</span>
-        <input id="shape-fill" class="editor-input" type="color" value="#7c5cff">
+        <input id="shape-fill" class="editor-input" type="color" value="#7c5cff" aria-label="Shape Fill">
       </div>
 
       <div class="property-row">
         <span class="property-label">Border</span>
-        <input id="shape-stroke" class="editor-input" type="color" value="#ffffff">
+        <input id="shape-stroke" class="editor-input" type="color" value="#ffffff" aria-label="Shape Stroke">
       </div>
 
       <div class="property-row">
         <span class="property-label">Border Size</span>
-        <input id="shape-stroke-width" class="editor-input" type="number" min="0" max="100" value="4">
+        <input id="shape-stroke-width" class="editor-input" type="number" min="0" max="100" value="4" aria-label="Shape Stroke Width">
       </div>
 
       <button class="top-button primary-button" id="apply-shape" type="button">
@@ -2428,7 +2429,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Sticker</span>
-        <select id="sticker-choice" class="editor-select">
+        <select id="sticker-choice" class="editor-select" aria-label="Sticker Choice">
           <option value="🌟">Star</option>
           <option value="❤️">Heart</option>
           <option value="✨">Sparkles</option>
@@ -2444,7 +2445,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Sticker Size</span>
-        <input id="sticker-size" type="range" min="24" max="500" value="120">
+        <input id="sticker-size" type="range" min="24" max="500" value="120" aria-label="Sticker Size">
       </div>
 
       <button class="top-button primary-button" id="add-sticker" type="button">
@@ -2453,7 +2454,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Frame Style</span>
-        <select id="frame-style" class="editor-select">
+        <select id="frame-style" class="editor-select" aria-label="Frame Style">
           <option value="classic">Classic</option>
           <option value="rounded">Rounded</option>
           <option value="double">Double</option>
@@ -2464,12 +2465,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Frame Color</span>
-        <input id="frame-color" class="editor-input" type="color" value="#ffffff">
+        <input id="frame-color" class="editor-input" type="color" value="#ffffff" aria-label="Frame Color">
       </div>
 
       <div class="property-row">
         <span class="property-label">Frame Width</span>
-        <input id="frame-width" type="range" min="4" max="120" value="28">
+        <input id="frame-width" type="range" min="4" max="120" value="28" aria-label="Frame Width">
       </div>
 
       <button class="top-button primary-button" id="add-frame" type="button">
@@ -2484,7 +2485,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Layout</span>
-        <select id="collage-layout" class="editor-select">
+        <select id="collage-layout" class="editor-select" aria-label="Collage Layout">
           <option value="grid">Smart Grid</option>
           <option value="vertical">Vertical Split</option>
           <option value="horizontal">Horizontal Split</option>
@@ -2494,12 +2495,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Gap</span>
-        <input id="collage-gap" type="range" min="0" max="80" value="12">
+        <input id="collage-gap" type="range" min="0" max="80" value="12" aria-label="Collage Gap">
       </div>
 
       <div class="property-row">
         <span class="property-label">Background</span>
-        <input id="collage-background" class="editor-input" type="color" value="#101426">
+        <input id="collage-background" class="editor-input" type="color" value="#101426" aria-label="Collage Background">
       </div>
 
       <button class="top-button primary-button" id="choose-collage-images" type="button">
@@ -2514,22 +2515,22 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">X</span>
-        <input id="content-x" class="editor-input" type="number" value="0">
+        <input id="content-x" class="editor-input" type="number" value="0" aria-label="Content X">
       </div>
 
       <div class="property-row">
         <span class="property-label">Y</span>
-        <input id="content-y" class="editor-input" type="number" value="0">
+        <input id="content-y" class="editor-input" type="number" value="0" aria-label="Content Y">
       </div>
 
       <div class="property-row">
         <span class="property-label">Width</span>
-        <input id="content-width" class="editor-input" type="number" min="1" value="100">
+        <input id="content-width" class="editor-input" type="number" min="1" value="100" aria-label="Content Width">
       </div>
 
       <div class="property-row">
         <span class="property-label">Height</span>
-        <input id="content-height" class="editor-input" type="number" min="1" value="100">
+        <input id="content-height" class="editor-input" type="number" min="1" value="100" aria-label="Content Height">
       </div>
 
       <button class="top-button primary-button" id="apply-content-transform" type="button">
@@ -2542,7 +2543,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       <h3 class="property-title">Export Studio</h3>
       <div class="property-row">
         <span class="property-label">Format</span>
-        <select id="export-format" class="editor-select">
+        <select id="export-format" class="editor-select" aria-label="Export Format">
           <option value="png">PNG — Lossless</option>
           <option value="jpeg">JPEG — Photo</option>
           <option value="webp">WebP — Modern</option>
@@ -2551,11 +2552,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="property-row">
         <span class="property-label">Quality</span>
-        <input id="export-quality" type="range" min="60" max="100" value="95">
+        <input id="export-quality" type="range" min="60" max="100" value="95" aria-label="Export Quality">
       </div>
       <div class="property-row">
         <span class="property-label">Scale</span>
-        <select id="export-scale" class="editor-select">
+        <select id="export-scale" class="editor-select" aria-label="Export Scale">
           <option value="1">1× Native</option>
           <option value="1.5">1.5×</option>
           <option value="2">2×</option>
@@ -2565,15 +2566,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="property-row">
         <span class="property-label">Transparency</span>
-        <input id="export-transparency" type="checkbox" checked>
+        <input id="export-transparency" type="checkbox" checked aria-label="Export Transparency">
       </div>
       <div class="property-row">
         <span class="property-label">Background</span>
-        <input id="export-background" class="editor-input" type="color" value="#ffffff">
+        <input id="export-background" class="editor-input" type="color" value="#ffffff" aria-label="Export Background">
       </div>
       <div class="property-row">
         <span class="property-label">PDF Page</span>
-        <select id="pdf-page-size" class="editor-select">
+        <select id="pdf-page-size" class="editor-select" aria-label="Pdf Page Size">
           <option value="a4">A4</option>
           <option value="a3">A3</option>
           <option value="a5">A5</option>
@@ -2587,7 +2588,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="property-row">
         <span class="property-label">PDF Orientation</span>
-        <select id="pdf-orientation" class="editor-select">
+        <select id="pdf-orientation" class="editor-select" aria-label="Pdf Orientation">
           <option value="auto">Auto</option>
           <option value="portrait">Portrait</option>
           <option value="landscape">Landscape</option>
@@ -2595,7 +2596,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="property-row">
         <span class="property-label">PDF Margin</span>
-        <select id="pdf-margin" class="editor-select">
+        <select id="pdf-margin" class="editor-select" aria-label="Pdf Margin">
           <option value="0">None</option>
           <option value="18">Narrow</option>
           <option value="36" selected>Standard</option>
@@ -2604,18 +2605,18 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="property-row">
         <span class="property-label">PDF Placement</span>
-        <select id="pdf-placement" class="editor-select">
+        <select id="pdf-placement" class="editor-select" aria-label="Pdf Placement">
           <option value="fit">Fit Entire Image</option>
           <option value="fill">Fill Page</option>
         </select>
       </div>
       <div class="property-row">
         <label class="property-label" for="export-dpi">PDF DPI</label>
-        <input id="export-dpi" class="editor-input" type="number" min="72" max="1200" step="1" value="300" inputmode="numeric">
+        <input id="export-dpi" class="editor-input" type="number" min="72" max="1200" step="1" value="300" inputmode="numeric" aria-label="Export Dpi">
       </div>
       <div class="property-row">
         <span class="property-label">Print Color</span>
-        <select id="print-color-mode" class="editor-select">
+        <select id="print-color-mode" class="editor-select" aria-label="Print Color Mode">
           <option value="color">Full Color</option>
           <option value="grayscale">Black & White</option>
         </select>
@@ -2630,17 +2631,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Name</span>
-        <input id="layer-name-input" class="editor-input" type="text" maxlength="80" value="Background">
+        <input id="layer-name-input" class="editor-input" type="text" maxlength="80" value="Background" aria-label="Layer Name Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Layer Opacity</span>
-        <input id="layer-opacity-input" type="range" min="0" max="100" value="100">
+        <input id="layer-opacity-input" type="range" min="0" max="100" value="100" aria-label="Layer Opacity Input">
       </div>
 
       <div class="property-row">
         <span class="property-label">Blend</span>
-        <select id="layer-blend-input" class="editor-select">
+        <select id="layer-blend-input" class="editor-select" aria-label="Layer Blend Input">
           <option value="source-over">Normal</option>
           <option value="multiply">Multiply</option>
           <option value="screen">Screen</option>
@@ -2669,22 +2670,22 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="property-row">
         <span class="property-label">Mask Brush</span>
-        <select id="mask-brush-mode" class="editor-select">
+        <select id="mask-brush-mode" class="editor-select" aria-label="Mask Brush Mode">
           <option value="hide">Hide</option>
           <option value="reveal">Reveal</option>
         </select>
       </div>
       <div class="property-row">
         <span class="property-label">Mask Size</span>
-        <input id="mask-brush-size" type="range" min="4" max="300" value="70">
+        <input id="mask-brush-size" type="range" min="4" max="300" value="70" aria-label="Mask Brush Size">
       </div>
       <div class="property-row">
         <span class="property-label">Mask Softness</span>
-        <input id="mask-brush-softness" type="range" min="0" max="100" value="35">
+        <input id="mask-brush-softness" type="range" min="0" max="100" value="35" aria-label="Mask Brush Softness">
       </div>
       <div class="property-row">
         <span class="property-label">Mask Opacity</span>
-        <input id="mask-brush-opacity" type="range" min="1" max="100" value="100">
+        <input id="mask-brush-opacity" type="range" min="1" max="100" value="100" aria-label="Mask Brush Opacity">
       </div>
       <button class="top-button primary-button" id="edit-layer-mask" type="button">
         Edit Mask
@@ -2811,21 +2812,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   accept="image/*"
   multiple
   hidden
->
+ aria-label="Collage File Input">
 
 <input
   id="editor-file-input"
   type="file"
   accept="image/*"
   hidden
->
+ aria-label="Editor File Input">
 
 <input
   id="overlay-file-input"
   type="file"
   accept="image/*"
   hidden
->
+ aria-label="Overlay File Input">
 
 <div
   class="modal"
@@ -2851,7 +2852,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           class="editor-input"
           type="number"
           min="1"
-        >
+         aria-label="Resize Width">
 
       </div>
 
@@ -2866,7 +2867,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
           class="editor-input"
           type="number"
           min="1"
-        >
+         aria-label="Resize Height">
 
       </div>
 
@@ -2886,7 +2887,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         id="resize-lock"
         type="checkbox"
         checked
-      >
+       aria-label="Resize Lock">
 
       Lock aspect ratio
 
@@ -6352,7 +6353,7 @@ document.addEventListener(
 
             <div class="layer-meta"></div>
 
-          </div>
+          </main>
 
           <span title="${layer.locked ? "Locked" : "Visible"}">
             ${layer.locked ? "🔒" : layer.visible ? "👁" : "🚫"}
