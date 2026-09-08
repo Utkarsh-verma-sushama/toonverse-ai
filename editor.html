@@ -2505,6 +2505,40 @@ button{
     </section>
 
     <section class="property-group">
+      <h3 class="property-title">Export Studio</h3>
+      <div class="property-row">
+        <span class="property-label">Format</span>
+        <select id="export-format" class="editor-select">
+          <option value="png">PNG — Lossless</option>
+          <option value="jpeg">JPEG — Photo</option>
+          <option value="webp">WebP — Modern</option>
+        </select>
+      </div>
+      <div class="property-row">
+        <span class="property-label">Quality</span>
+        <input id="export-quality" type="range" min="60" max="100" value="95">
+      </div>
+      <div class="property-row">
+        <span class="property-label">Scale</span>
+        <select id="export-scale" class="editor-select">
+          <option value="1">1× Native</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+          <option value="3">3×</option>
+          <option value="4">4×</option>
+        </select>
+      </div>
+      <div class="property-row">
+        <span class="property-label">Transparency</span>
+        <input id="export-transparency" type="checkbox" checked>
+      </div>
+      <div class="property-row">
+        <span class="property-label">Background</span>
+        <input id="export-background" class="editor-input" type="color" value="#ffffff">
+      </div>
+    </section>
+
+    <section class="property-group">
 
       <h3 class="property-title">
         Layers
@@ -2922,6 +2956,11 @@ document.addEventListener(
     const maskBrushSize = $("mask-brush-size");
     const maskBrushSoftness = $("mask-brush-softness");
     const maskBrushOpacity = $("mask-brush-opacity");
+    const exportFormat = $("export-format");
+    const exportQuality = $("export-quality");
+    const exportScale = $("export-scale");
+    const exportTransparency = $("export-transparency");
+    const exportBackground = $("export-background");
 
     const flipXInput =
       $("flip-x-input");
@@ -3915,6 +3954,14 @@ document.addEventListener(
             size: maskBrushSize.value,
             softness: maskBrushSoftness.value,
             opacity: maskBrushOpacity.value
+          },
+
+          exportSettings: {
+            format: exportFormat.value,
+            quality: exportQuality.value,
+            scale: exportScale.value,
+            transparency: exportTransparency.checked,
+            background: exportBackground.value
           }
 
         }
@@ -4250,6 +4297,14 @@ document.addEventListener(
           maskBrushSize.value = saved.maskBrush.size || 70;
           maskBrushSoftness.value = saved.maskBrush.softness ?? 35;
           maskBrushOpacity.value = saved.maskBrush.opacity || 100;
+        }
+
+        if (saved.exportSettings) {
+          exportFormat.value = saved.exportSettings.format || "png";
+          exportQuality.value = saved.exportSettings.quality || 95;
+          exportScale.value = saved.exportSettings.scale || 1;
+          exportTransparency.checked = saved.exportSettings.transparency !== false;
+          exportBackground.value = saved.exportSettings.background || "#ffffff";
         }
 
         documentName.textContent =
@@ -7136,7 +7191,8 @@ document.addEventListener(
       notify("Mask Brush ready. Drag on the image to hide or reveal areas.");
     }
 
-    [maskBrushMode, maskBrushSize, maskBrushSoftness, maskBrushOpacity]
+    [maskBrushMode, maskBrushSize, maskBrushSoftness, maskBrushOpacity,
+      exportFormat, exportQuality, exportScale, exportTransparency, exportBackground]
       .forEach(control => control.addEventListener("change", scheduleAutoSave));
 
     $("edit-layer-mask").addEventListener("click", startMaskBrush);
@@ -14711,83 +14767,104 @@ document.addEventListener(
       );
     }
 
-    function exportProject() {
+    function canvasToExportBlob(targetCanvas, mimeType, quality) {
+      return new Promise(resolve => {
+        targetCanvas.toBlob(resolve, mimeType, quality);
+      });
+    }
 
-      if (
-        !currentFile
-      ) {
+    function safeExportName(name) {
+      const cleaned = String(name || "toonverse-edit")
+        .replace(/\.[^.]+$/, "")
+        .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80);
+      return cleaned || "toonverse-edit";
+    }
 
-        notify(
-          "Import an image before export."
-        );
-
+    async function exportProject() {
+      if (!currentFile) {
+        notify("Import an image before export.", "warning");
         return;
       }
 
       renderAll();
 
-      render.toBlob(
-        blob => {
+      const requestedFormat = exportFormat.value;
+      const requestedMime =
+        requestedFormat === "jpeg"
+        ? "image/jpeg"
+        : requestedFormat === "webp"
+        ? "image/webp"
+        : "image/png";
+      const scale = Math.max(1, Math.min(4, Number(exportScale.value) || 1));
+      const outputWidth = Math.round(render.width * scale);
+      const outputHeight = Math.round(render.height * scale);
+      const pixelLimit =
+        (navigator.deviceMemory && navigator.deviceMemory <= 4)
+        ? 32000000
+        : 64000000;
 
-          if (
-            !blob
-          ) {
+      if (
+        outputWidth > 16384 ||
+        outputHeight > 16384 ||
+        outputWidth * outputHeight > pixelLimit
+      ) {
+        notify(
+          `Export would be ${outputWidth}×${outputHeight}. Choose a lower scale for safe export on this device.`,
+          "warning"
+        );
+        return;
+      }
 
-            notify(
-              "Export failed.",
-              "error"
-            );
+      notify("Preparing high-quality export…");
 
-            return;
-          }
+      const scaled =
+        scale === 1
+        ? highQualityResizeCanvas(render, render.width, render.height)
+        : highQualityResizeCanvas(render, outputWidth, outputHeight);
+      const output = document.createElement("canvas");
+      output.width = outputWidth;
+      output.height = outputHeight;
+      const outputContext = configurePixelContext(output.getContext("2d"));
+      const preserveTransparency =
+        requestedMime !== "image/jpeg" &&
+        exportTransparency.checked;
 
-          const anchor =
-            document.createElement(
-              "a"
-            );
+      if (!preserveTransparency) {
+        outputContext.fillStyle = exportBackground.value || "#ffffff";
+        outputContext.fillRect(0, 0, output.width, output.height);
+      }
+      outputContext.drawImage(scaled, 0, 0, output.width, output.height);
 
-          const url =
-            URL.createObjectURL(
-              blob
-            );
+      const quality = Math.max(.6, Math.min(1, Number(exportQuality.value) / 100));
+      let blob = await canvasToExportBlob(output, requestedMime, quality);
+      if (!blob) {
+        notify("This browser could not create the selected format.", "error");
+        return;
+      }
 
-          anchor.href =
-            url;
+      const actualMime = blob.type || requestedMime;
+      const extension =
+        actualMime === "image/jpeg"
+        ? "jpg"
+        : actualMime === "image/webp"
+        ? "webp"
+        : "png";
+      const anchor = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      anchor.href = url;
+      anchor.download = `${safeExportName(documentName.textContent)}-edited.${extension}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
 
-          anchor.download =
-            (
-              documentName.textContent
-                .replace(
-                  /\.[^.]+$/,
-                  ""
-                ) ||
-              "toonverse-edit"
-            ) +
-            "-edited.png";
-
-          document.body.appendChild(
-            anchor
-          );
-
-          anchor.click();
-
-          anchor.remove();
-
-          setTimeout(
-            () =>
-              URL.revokeObjectURL(
-                url
-              ),
-            1000
-          );
-
-          notify(
-            "Edited image exported as PNG.",
-            "success"
-          );
-
-        },
-        "image/png"
+      addHistoryMessage(`Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()}`);
+      notify(
+        `Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()} successfully.`,
+        "success"
       );
     }
 
