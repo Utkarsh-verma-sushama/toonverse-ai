@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0b1020">
+<meta name="description" content="Secure ToonVerse AI account and device management.">
+<title>Account & Security — ToonVerse AI</title>
+<style>
+*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#f8f9ff;background:radial-gradient(circle at 15% 0,#25205c 0,transparent 32%),linear-gradient(145deg,#070b17,#0e1732)}
+button,input{font:inherit}button{cursor:pointer}.shell{width:min(1120px,100%);margin:auto;padding:calc(16px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}.brand{color:#fff;text-decoration:none;font-weight:900;font-size:20px}.back{min-height:44px;padding:10px 14px;border:1px solid #ffffff22;border-radius:12px;color:#fff;background:#ffffff0a;text-decoration:none}
+.hero{max-width:760px;margin-bottom:22px}.eyebrow{color:#b9aaff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}.hero h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:10px 0}.hero p{color:#b9c2dd;line-height:1.65}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:18px}.card{border:1px solid #ffffff18;border-radius:18px;padding:20px;background:#10182de8;box-shadow:0 20px 60px #0005}.card h2{font-size:18px;margin:0 0 6px}.muted{color:#aeb8d6;font-size:13px;line-height:1.5}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:18px 0}.tab{min-height:44px;border:0;border-radius:11px;color:#b8c1db;background:#ffffff08}.tab.active{color:#fff;background:#765cff}
+.form{display:grid;gap:12px}.field{display:grid;gap:6px}.field span{font-size:12px;color:#d8def2}.field input{width:100%;min-height:48px;border:1px solid #ffffff22;border-radius:12px;padding:10px 12px;color:#fff;background:#080e20;outline:0}.field input:focus{border-color:#9f8eff;box-shadow:0 0 0 3px #765cff33}.primary,.provider,.security-action{min-height:48px;border:1px solid #ffffff1f;border-radius:12px;padding:10px 14px;color:#fff;background:#ffffff08}.primary{border:0;font-weight:800;background:linear-gradient(135deg,#765cff,#ff3d9a)}.providers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:#8994b3;font-size:11px}.divider:before,.divider:after{content:"";height:1px;flex:1;background:#ffffff16}
+.status{margin:0 0 16px;padding:12px;border:1px solid #ffffff18;border-radius:12px;color:#dbe2f8;background:#ffffff06}.status.warning{border-color:#f59e0b66;background:#f59e0b12}.status.success{border-color:#22c55e66;background:#22c55e12}.security-list{display:grid;gap:10px;margin-top:14px}.security-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.icon{font-size:21px}.security-item strong{display:block;font-size:13px}.security-item p{margin:4px 0 0;color:#9eabc9;font-size:11px;line-height:1.45}.notice{margin-top:18px;padding:14px;border-left:3px solid #765cff;color:#aeb8d6;background:#765cff10;font-size:12px;line-height:1.55}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1ff;outline-offset:3px}button:disabled{cursor:not-allowed;opacity:.5}@media(max-width:760px){.grid{grid-template-columns:1fr}.providers{grid-template-columns:1fr}.shell{padding-inline:12px}}@media(pointer:coarse){button,a,input{min-height:48px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+<header class="top"><a class="brand" href="./index.html">✨ ToonVerse AI</a><a class="back" href="./index.html" aria-label="Return home">← Home</a></header>
+<section class="hero"><div class="eyebrow">Unified identity foundation</div><h1>One secure account. Every creative device.</h1><p>Your projects, versions and preferences are designed to move safely between phone, tablet, computer and future ToonVerse AI apps.</p></section>
+<div class="grid">
+<section class="card" aria-labelledby="account-title">
+<h2 id="account-title">Account access</h2><p class="muted">Use a secure sign-in method. Passwords and provider tokens are never stored in this page.</p>
+<div id="service-status" class="status warning" role="status" aria-live="polite">Secure account service is not connected yet. Your existing local projects remain available.</div>
+<div class="tabs" role="tablist" aria-label="Account mode"><button class="tab active" id="sign-in-tab" role="tab" aria-selected="true">Sign in</button><button class="tab" id="register-tab" role="tab" aria-selected="false">Create account</button></div>
+<form id="account-form" class="form" novalidate>
+<label class="field" id="name-field" hidden><span>Name</span><input id="name" name="name" autocomplete="name" maxlength="80"></label>
+<label class="field"><span>Email address</span><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254"></label>
+<label class="field"><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" required minlength="10" maxlength="128"></label>
+<button class="primary" id="submit" type="submit" disabled>Sign in securely</button>
+</form>
+<div class="divider">or use a trusted provider</div>
+<div class="providers" id="providers">
+<button class="provider" data-provider="google" disabled>Google</button><button class="provider" data-provider="apple" disabled>Apple</button><button class="provider" data-provider="facebook" disabled>Facebook</button><button class="provider" data-provider="linkedin" disabled>LinkedIn</button>
+</div>
+<button class="security-action" id="passkey" style="width:100%;margin-top:8px" disabled>Use a passkey</button>
+<div class="notice">Account controls remain deliberately unavailable until the authenticated backend and provider credentials are configured. This prevents misleading or insecure “fake sign-in.”</div>
+</section>
+<aside class="card" aria-labelledby="security-title">
+<h2 id="security-title">Security designed in</h2><p class="muted">The foundation supports modern protections without tying the interface to one provider.</p>
+<div class="security-list">
+<div class="security-item"><span class="icon">🔑</span><div><strong>Passkeys and MFA-ready</strong><p>WebAuthn/passkeys, authenticator apps and recovery methods can attach to the same account.</p></div></div>
+<div class="security-item"><span class="icon">📱</span><div><strong>Device verification</strong><p>New-device checks, active-session visibility, remote logout and logout-all endpoints are defined.</p></div></div>
+<div class="security-item"><span class="icon">🛡️</span><div><strong>Short-lived credentials</strong><p>Access tokens remain in memory; secure refresh sessions belong in HttpOnly, Secure cookies.</p></div></div>
+<div class="security-item"><span class="icon">☁️</span><div><strong>Safe project continuity</strong><p>Local editing continues offline while authenticated sync waits safely in the project queue.</p></div></div>
+</div>
+</aside>
+</div>
+</main>
+<div id="announce" role="status" aria-live="polite" aria-atomic="true" style="position:fixed;left:-10000px;width:1px;height:1px;overflow:hidden"></div>
+<script src="./assets/js/config.js"></script><script src="./assets/js/auth.js"></script>
+<script>
+(() => {
+  "use strict";
+  const auth = window.ToonVerseAuth;
+  const connected = Boolean(window.ToonVerseConfig?.services?.apiBaseUrl && auth);
+  const status = document.getElementById("service-status");
+  const form = document.getElementById("account-form");
+  const submit = document.getElementById("submit");
+  const signInTab = document.getElementById("sign-in-tab");
+  const registerTab = document.getElementById("register-tab");
+  const nameField = document.getElementById("name-field");
+  const password = document.getElementById("password");
+  const announce = message => { document.getElementById("announce").textContent = message; };
+  let mode = "sign-in";
+
+  function setMode(next) {
+    mode = next;
+    const registering = mode === "register";
+    signInTab.classList.toggle("active", !registering);
+    registerTab.classList.toggle("active", registering);
+    signInTab.setAttribute("aria-selected", String(!registering));
+    registerTab.setAttribute("aria-selected", String(registering));
+    nameField.hidden = !registering;
+    document.getElementById("name").required = registering;
+    password.autocomplete = registering ? "new-password" : "current-password";
+    submit.textContent = registering ? "Create secure account" : "Sign in securely";
+  }
+  signInTab.addEventListener("click", () => setMode("sign-in"));
+  registerTab.addEventListener("click", () => setMode("register"));
+
+  document.querySelectorAll("[data-provider]").forEach(button => button.addEventListener("click", async () => {
+    try { await auth.beginProvider(button.dataset.provider); }
+    catch (error) { status.textContent = error.message; status.className = "status warning"; announce(error.message); }
+  }));
+  document.getElementById("passkey").addEventListener("click", async () => {
+    try { await auth.beginPasskey(); location.href = "./library.html"; }
+    catch (error) { status.textContent = error.message; status.className = "status warning"; announce(error.message); }
+  });
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!connected || !form.reportValidity()) return;
+    submit.disabled = true;
+    submit.setAttribute("aria-busy", "true");
+    try {
+      const email = document.getElementById("email").value;
+      const pwd = password.value;
+      if (mode === "register") await auth.createAccount({ name: document.getElementById("name").value, email, password: pwd });
+      else await auth.signInWithEmail(email, pwd);
+      location.href = "./library.html";
+    } catch (error) {
+      status.textContent = error.message || "Account access failed.";
+      status.className = "status warning";
+      announce(status.textContent);
+    } finally {
+      submit.disabled = !connected;
+      submit.removeAttribute("aria-busy");
+    }
+  });
+
+  if (connected) {
+    status.textContent = "Secure account service connected.";
+    status.className = "status success";
+    submit.disabled = false;
+    document.querySelectorAll("#providers button, #passkey").forEach(button => button.disabled = false);
+    auth.restore().then(session => {
+      if (session.status === "signed-in") location.href = "./library.html";
+    });
+  }
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn), { once: true });
+})();
+</script>
+</body>
+</html>
