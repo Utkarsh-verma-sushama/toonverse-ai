@@ -1158,6 +1158,14 @@ button{
 
         <button
           class="tool-button"
+          data-editor-operation="liquify"
+        >
+          <span class="tool-icon">🌊</span>
+          <span class="tool-name">Liquify</span>
+        </button>
+
+        <button
+          class="tool-button"
           data-editor-operation="reset-transform"
         >
           <span class="tool-icon">⟳</span>
@@ -1981,6 +1989,10 @@ button{
       <div class="property-row"><span class="property-label">Perspective X</span><input id="perspective-x" type="range" min="-80" max="80" value="0"></div>
       <div class="property-row"><span class="property-label">Perspective Y</span><input id="perspective-y" type="range" min="-80" max="80" value="0"></div>
       <div class="modal-actions"><button class="top-button" id="reset-perspective" type="button">Reset</button><button class="top-button primary-button" id="apply-perspective" type="button">Apply Perspective</button></div>
+
+      <div class="property-row"><span class="property-label">Liquify Mode</span><select id="liquify-mode" class="editor-select"><option value="push">Push</option><option value="grow">Grow</option><option value="shrink">Shrink</option><option value="smooth">Smooth</option></select></div>
+      <div class="property-row"><span class="property-label">Liquify Size</span><input id="liquify-size" type="range" min="12" max="300" value="90"></div>
+      <div class="property-row"><span class="property-label">Liquify Strength</span><input id="liquify-strength" type="range" min="1" max="100" value="35"></div>
 
       <div class="property-row">
         <span class="property-label">Flip X</span>
@@ -2869,6 +2881,9 @@ document.addEventListener(
 
     const perspectiveX = $("perspective-x");
     const perspectiveY = $("perspective-y");
+    const liquifyMode = $("liquify-mode");
+    const liquifySize = $("liquify-size");
+    const liquifyStrength = $("liquify-strength");
 
     const flipXInput =
       $("flip-x-input");
@@ -3140,6 +3155,12 @@ document.addEventListener(
       null;
 
     let retouchBlurData =
+      null;
+
+    let liquifyActive =
+      false;
+
+    let liquifyLastPoint =
       null;
 
     let multiSelectMode =
@@ -6767,7 +6788,8 @@ document.addEventListener(
             "dodge",
             "burn",
             "red-eye",
-            "skin-smooth"
+            "skin-smooth",
+            "liquify"
           ].includes(
             operation
           )
@@ -9915,6 +9937,21 @@ document.addEventListener(
                 return;
               }
 
+              if (operation === "liquify") {
+                if (!currentFile) {
+                  notify("Import an image before using Liquify.", "warning");
+                  return;
+                }
+                if (activeLayer()?.locked) {
+                  notify("Unlock the active layer before using Liquify.", "warning");
+                  return;
+                }
+                setOperation(operation);
+                liquifyMode.focus();
+                notify("Liquify ready. Drag on the image; choose Push, Grow, Shrink or Smooth in Properties.");
+                return;
+              }
+
               if (
                 operation ===
                 "add-text"
@@ -11881,7 +11918,8 @@ document.addEventListener(
             "dodge",
             "burn",
             "red-eye",
-            "skin-smooth"
+            "skin-smooth",
+            "liquify"
           ].includes(
             activeOperation
           )
@@ -12092,6 +12130,30 @@ document.addEventListener(
 
             return;
           }
+        }
+
+        if (
+          activeOperation ===
+          "liquify"
+        ) {
+          const layer = activeLayer();
+          if (!layer || layer.locked) {
+            notify("Select an unlocked layer before using Liquify.", "warning");
+            return;
+          }
+          if (layer.kind !== "raster") {
+            layer.kind = "raster";
+            layer.contentData = null;
+            renderLayerList();
+          }
+          pushUndo("Before Liquify");
+          liquifyActive = true;
+          liquifyLastPoint = renderedToWorkPoint(point);
+          if (liquifyMode.value !== "push") {
+            applyLiquifyDab(liquifyLastPoint, liquifyLastPoint);
+            renderAll();
+          }
+          return;
         }
 
         if (
@@ -12622,6 +12684,20 @@ document.addEventListener(
         }
 
         if (
+          liquifyActive &&
+          liquifyLastPoint
+        ) {
+          const samples = event.getCoalescedEvents ? event.getCoalescedEvents() : [event];
+          samples.forEach(sample => {
+            const nextPoint = renderedToWorkPoint(canvasPoint(sample));
+            applyLiquifySegment(liquifyLastPoint, nextPoint);
+            liquifyLastPoint = nextPoint;
+          });
+          renderAll();
+          return;
+        }
+
+        if (
           isDrawing
         ) {
 
@@ -12712,6 +12788,17 @@ document.addEventListener(
         }
 
         if (
+          liquifyActive
+        ) {
+          liquifyActive = false;
+          liquifyLastPoint = null;
+          addHistoryMessage("Liquify stroke");
+          renderLayerList();
+          scheduleAutoSave();
+          return;
+        }
+
+        if (
           isDrawing
         ) {
 
@@ -12766,8 +12853,88 @@ document.addEventListener(
 
         retouchBlurData =
           null;
+
+        liquifyActive =
+          false;
+
+        liquifyLastPoint =
+          null;
       }
     );
+
+    function sampleLiquifyPixel(data, width, height, x, y, channel) {
+      const safeX = Math.max(0, Math.min(width - 1, x));
+      const safeY = Math.max(0, Math.min(height - 1, y));
+      const x0 = Math.floor(safeX), y0 = Math.floor(safeY);
+      const x1 = Math.min(width - 1, x0 + 1), y1 = Math.min(height - 1, y0 + 1);
+      const tx = safeX - x0, ty = safeY - y0;
+      const a = data[(y0 * width + x0) * 4 + channel];
+      const b = data[(y0 * width + x1) * 4 + channel];
+      const c = data[(y1 * width + x0) * 4 + channel];
+      const d = data[(y1 * width + x1) * 4 + channel];
+      return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
+    }
+
+    function applyLiquifyDab(from, to) {
+      const layer = activeLayer();
+      if (!layer || layer.locked || !layer.canvas) return;
+      const radius = Math.max(6, Number(liquifySize.value) / 2);
+      const strength = Math.max(.01, Number(liquifyStrength.value) / 100);
+      const mode = liquifyMode.value;
+      const dx = to.x - from.x, dy = to.y - from.y;
+      if (mode === "push" && Math.hypot(dx, dy) < .1) return;
+      const target = layer.canvas;
+      const targetContext = target.getContext("2d", { willReadFrequently: true });
+      const padding = Math.ceil(radius*.6 + Math.max(Math.abs(dx),Math.abs(dy))*2 + 3);
+      const left = Math.max(0,Math.floor(to.x-radius-padding));
+      const top = Math.max(0,Math.floor(to.y-radius-padding));
+      const right = Math.min(target.width,Math.ceil(to.x+radius+padding));
+      const bottom = Math.min(target.height,Math.ceil(to.y+radius+padding));
+      const width = right-left, height = bottom-top;
+      if (width<1 || height<1) return;
+      let source;
+      try { source=targetContext.getImageData(left,top,width,height); }
+      catch(error){ notify("Liquify could not read this layer.","warning"); return; }
+      const output=new ImageData(new Uint8ClampedArray(source.data),width,height);
+      for(let ly=0;ly<height;ly++){
+        const gy=top+ly;
+        for(let lx=0;lx<width;lx++){
+          const gx=left+lx, ox=gx-to.x, oy=gy-to.y;
+          const distance=Math.hypot(ox,oy);
+          if(distance>radius)continue;
+          const n=1-distance/radius, falloff=n*n*(3-2*n);
+          let sx=lx,sy=ly;
+          if(mode==="push"){sx-=dx*strength*falloff*1.8;sy-=dy*strength*falloff*1.8}
+          else if(mode==="grow"){const f=1-.48*strength*falloff;sx=to.x-left+ox*f;sy=to.y-top+oy*f}
+          else if(mode==="shrink"){const f=1+.58*strength*falloff;sx=to.x-left+ox*f;sy=to.y-top+oy*f}
+          const index=(ly*width+lx)*4;
+          if(mode==="smooth"){
+            const blend=Math.min(.9,strength*falloff);
+            for(let ch=0;ch<4;ch++){
+              let total=0;
+              for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)total+=sampleLiquifyPixel(source.data,width,height,lx+xx,ly+yy,ch);
+              output.data[index+ch]=source.data[index+ch]*(1-blend)+total/9*blend;
+            }
+          }else{
+            for(let ch=0;ch<4;ch++)output.data[index+ch]=sampleLiquifyPixel(source.data,width,height,sx,sy,ch);
+          }
+        }
+      }
+      targetContext.putImageData(output,left,top);
+    }
+
+    function applyLiquifySegment(from,to){
+      const distance=Math.hypot(to.x-from.x,to.y-from.y);
+      const spacing=Math.max(2,Number(liquifySize.value)/10);
+      const steps=Math.max(1,Math.ceil(distance/spacing));
+      let previous=from;
+      for(let step=1;step<=steps;step++){
+        const ratio=step/steps;
+        const next={x:from.x+(to.x-from.x)*ratio,y:from.y+(to.y-from.y)*ratio};
+        applyLiquifyDab(previous,next);
+        previous=next;
+      }
+    }
 
     function applyRetouchDab(
       point
