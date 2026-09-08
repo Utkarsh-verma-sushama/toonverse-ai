@@ -2575,7 +2575,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         <span class="property-label">PDF Page</span>
         <select id="pdf-page-size" class="editor-select">
           <option value="a4">A4</option>
+          <option value="a3">A3</option>
+          <option value="a5">A5</option>
           <option value="letter">US Letter</option>
+          <option value="legal">US Legal</option>
+          <option value="tabloid">Tabloid</option>
+          <option value="photo-4x6">Photo 4 × 6 in</option>
+          <option value="photo-5x7">Photo 5 × 7 in</option>
           <option value="image">Exact Image Size</option>
         </select>
       </div>
@@ -14879,15 +14885,22 @@ document.addEventListener(
       let pageWidth;
       let pageHeight;
 
-      if (pdfPageSize.value === "letter") {
-        pageWidth = 612;
-        pageHeight = 792;
-      } else if (pdfPageSize.value === "image") {
+      const pageSizes = {
+        a3: [841.89, 1190.55],
+        a4: [595.28, 841.89],
+        a5: [419.53, 595.28],
+        letter: [612, 792],
+        legal: [612, 1008],
+        tabloid: [792, 1224],
+        "photo-4x6": [288, 432],
+        "photo-5x7": [360, 504]
+      };
+      if (pdfPageSize.value === "image") {
         pageWidth = Math.max(72, Math.min(14400, sourceCanvas.width * 72 / dpi));
         pageHeight = Math.max(72, Math.min(14400, sourceCanvas.height * 72 / dpi));
       } else {
-        pageWidth = 595.28;
-        pageHeight = 841.89;
+        [pageWidth, pageHeight] =
+          pageSizes[pdfPageSize.value] || pageSizes.a4;
       }
 
       const desiredOrientation =
@@ -15197,12 +15210,18 @@ document.addEventListener(
         if (!blob) throw new Error("Print image encoding failed.");
         url = URL.createObjectURL(blob);
 
-        const page =
-          pdfPageSize.value === "letter"
-          ? "Letter"
-          : pdfPageSize.value === "image"
-          ? "auto"
-          : "A4";
+        const printPageSizes = {
+          a3: "A3",
+          a4: "A4",
+          a5: "A5",
+          letter: "Letter",
+          legal: "Legal",
+          tabloid: "Tabloid",
+          "photo-4x6": "4in 6in",
+          "photo-5x7": "5in 7in",
+          image: "auto"
+        };
+        const page = printPageSizes[pdfPageSize.value] || "A4";
         const desiredOrientation =
           pdfOrientation.value === "auto"
           ? (render.width >= render.height ? "landscape" : "portrait")
