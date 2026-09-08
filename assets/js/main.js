@@ -97,8 +97,8 @@
 
     account: Object.freeze({
       path: "./account.html",
-      enabled: false,
-      label: "Account"
+      enabled: true,
+      label: "Account & Security"
     }),
 
     support: Object.freeze({
