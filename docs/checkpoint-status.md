@@ -1,9 +1,9 @@
 # ToonVerse AI — Checkpoint Resume Record
 
 Last updated: 2026-09-08  
-Current locked checkpoint: 40  
-Exact next checkpoint: 41  
-Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 41. Do not repeat or reopen completed work unless a verified defect requires it.
+Current locked checkpoint: 41  
+Exact next checkpoint: 42  
+Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 42. Do not repeat or reopen completed work unless a verified defect requires it.
 
 ## Permanent execution rule
 
@@ -50,6 +50,9 @@ Locked with an India-first global calendar and responsibly labeled festival esti
 ### Checkpoint 40 — Support & Community
 Locked with 24/7 provider-neutral AI support, explicit human escalation, searchable help center and tutorials, contact/report issue, opt-in minimal diagnostics, offline recoverable ticket/feedback outbox, truthful submission states, community guidance and updates; input/rate/privacy safeguards, home/PWA discovery, offline shell, responsive phone/tablet/desktop/TV UX and touch/stylus/mouse/keyboard/D-pad accessibility.
 
+### Checkpoint 41 — Monetization & Growth
+Locked with Free/Premium entitlement architecture, truthful server-verified pricing/payment readiness, hosted checkout and billing portal contracts, fair-use meters, strict one-to-two short-ad session cap and protected no-ad contexts, opt-in privacy-preserving analytics, consent-based marketing/referrals, secure webhook/refund/restore requirements, home/PWA discovery, offline shell, responsive phone/tablet/desktop/TV UX and touch/stylus/mouse/keyboard/D-pad accessibility.
+
 ## Resume point
 
-Checkpoint 40 is complete and locked. No part of Checkpoint 40 remains. The next work item is Checkpoint 41, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
+Checkpoint 41 is complete and locked. No part of Checkpoint 41 remains. The next work item is Checkpoint 42, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
