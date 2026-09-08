@@ -1,9 +1,9 @@
 "use strict";
-const CACHE_NAME = "toonverse-shell-v2";
+const CACHE_NAME = "toonverse-shell-v3";
 const CORE = [
   "./","./index.html","./create.html","./editor.html","./library.html","./404.html",
   "./assets/css/main.css","./assets/css/components.css","./assets/js/config.js","./assets/js/main.js",
-  "./assets/js/project-store.js",
+  "./assets/js/project-store.js","./assets/js/cloud-sync.js",
   "./manifest.webmanifest","./assets/toonverse-icon.svg"
 ];
 self.addEventListener("install", event => {
