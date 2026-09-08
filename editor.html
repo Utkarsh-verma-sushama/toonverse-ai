@@ -14820,23 +14820,27 @@ document.addEventListener(
 
       notify("Preparing high-quality export…");
 
-      const scaled =
-        scale === 1
-        ? highQualityResizeCanvas(render, render.width, render.height)
-        : highQualityResizeCanvas(render, outputWidth, outputHeight);
-      const output = document.createElement("canvas");
-      output.width = outputWidth;
-      output.height = outputHeight;
-      const outputContext = configurePixelContext(output.getContext("2d"));
+      const output =
+        highQualityResizeCanvas(
+          render,
+          outputWidth,
+          outputHeight
+        );
+      const outputContext =
+        configurePixelContext(
+          output.getContext("2d")
+        );
       const preserveTransparency =
         requestedMime !== "image/jpeg" &&
         exportTransparency.checked;
 
       if (!preserveTransparency) {
+        outputContext.save();
+        outputContext.globalCompositeOperation = "destination-over";
         outputContext.fillStyle = exportBackground.value || "#ffffff";
         outputContext.fillRect(0, 0, output.width, output.height);
+        outputContext.restore();
       }
-      outputContext.drawImage(scaled, 0, 0, output.width, output.height);
 
       const quality = Math.max(.6, Math.min(1, Number(exportQuality.value) / 100));
       let blob = await canvasToExportBlob(output, requestedMime, quality);
