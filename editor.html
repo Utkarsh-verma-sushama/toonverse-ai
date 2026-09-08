@@ -6183,6 +6183,14 @@ document.addEventListener(
                 layer.maskEnabled === false ? " • Mask Off" : " • Mask";
             }
 
+            if (layer.id === activeLayerId) {
+              $("toggle-layer-mask").textContent =
+                layer.maskEnabled === false ? "Enable Mask" : "Disable Mask";
+              $("invert-layer-mask").disabled = !layer.maskCanvas || layer.locked;
+              $("toggle-layer-mask").disabled = !layer.maskCanvas;
+              $("delete-layer-mask").disabled = !layer.maskCanvas || layer.locked;
+            }
+
             item.addEventListener(
               "click",
               () => {
@@ -10416,7 +10424,12 @@ document.addEventListener(
         return;
       }
       pushUndo("Before Apply Perspective");
-      layers.forEach(layer => applyPerspectiveWarp(layer.canvas, state.perspectiveX, state.perspectiveY));
+      layers.forEach(layer => {
+        applyPerspectiveWarp(layer.canvas, state.perspectiveX, state.perspectiveY);
+        if (layer.maskCanvas) {
+          applyPerspectiveWarp(layer.maskCanvas, state.perspectiveX, state.perspectiveY);
+        }
+      });
       state.perspectiveX = 0;
       state.perspectiveY = 0;
       syncControls();
@@ -10824,6 +10837,20 @@ document.addEventListener(
 
             layer.canvas =
               resized;
+
+            if (layer.maskCanvas) {
+              const resizedMask = document.createElement("canvas");
+              resizedMask.width = newWidth;
+              resizedMask.height = newHeight;
+              resizedMask.getContext("2d").drawImage(
+                layer.maskCanvas,
+                0,
+                0,
+                newWidth,
+                newHeight
+              );
+              layer.maskCanvas = resizedMask;
+            }
 
             if (
               isTransformableLayer(
@@ -14097,6 +14124,36 @@ document.addEventListener(
 
           layer.canvas =
             cropped;
+
+          if (layer.maskCanvas) {
+            const maskRender = document.createElement("canvas");
+            maskRender.width = transformed.w;
+            maskRender.height = transformed.h;
+            const maskRenderContext = maskRender.getContext("2d");
+            maskRenderContext.translate(transformed.w / 2, transformed.h / 2);
+            maskRenderContext.rotate(effectiveRotation() * Math.PI / 180);
+            maskRenderContext.scale(state.flipX ? -1 : 1, state.flipY ? -1 : 1);
+            maskRenderContext.drawImage(
+              layer.maskCanvas,
+              -layer.maskCanvas.width / 2,
+              -layer.maskCanvas.height / 2
+            );
+            const croppedMask = document.createElement("canvas");
+            croppedMask.width = width;
+            croppedMask.height = height;
+            croppedMask.getContext("2d").drawImage(
+              maskRender,
+              x,
+              y,
+              width,
+              height,
+              0,
+              0,
+              width,
+              height
+            );
+            layer.maskCanvas = croppedMask;
+          }
         }
       );
 
@@ -14971,6 +15028,14 @@ document.addEventListener(
                     0
                   );
 
+                let copyMask = null;
+                if (active.maskCanvas) {
+                  copyMask = document.createElement("canvas");
+                  copyMask.width = active.maskCanvas.width;
+                  copyMask.height = active.maskCanvas.height;
+                  copyMask.getContext("2d").drawImage(active.maskCanvas, 0, 0);
+                }
+
                 const copy = {
 
                   id:
@@ -14992,6 +15057,12 @@ document.addEventListener(
 
                   canvas:
                     copyCanvas,
+
+                  maskCanvas:
+                    copyMask,
+
+                  maskEnabled:
+                    active.maskEnabled !== false,
 
                   visible:
                     active.visible,
