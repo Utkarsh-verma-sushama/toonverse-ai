@@ -2083,6 +2083,9 @@
     defer
   ></script>
 
+  <script src="./assets/js/auth.js" defer></script>
+  <script src="./assets/js/ai-runtime.js" defer></script>
+
 
   <!-- =====================================================
        CREATE STUDIO CONTROLLER
@@ -2117,6 +2120,18 @@
 
       const settingsPanel =
         document.getElementById("create-settings");
+      const resultPanel = document.getElementById("create-result-panel");
+      const generateButton = document.getElementById("generate-button");
+      let activeJob = null;
+      function renderJobState(title, message, options = {}) {
+        if (!resultPanel) return; resultPanel.replaceChildren(); const wrap = document.createElement("div");
+        const icon = document.createElement("div"); icon.className = "result-icon"; icon.textContent = options.icon || "✨";
+        const heading = document.createElement("h3"); heading.className = "result-title"; heading.textContent = title;
+        const text = document.createElement("p"); text.className = "result-text"; text.textContent = message; wrap.append(icon, heading, text);
+        if (Number.isFinite(options.progress)) { const progress = document.createElement("progress"); progress.max=100; progress.value=Math.max(0,Math.min(100,options.progress)); progress.setAttribute("aria-label","Generation progress"); progress.style.width="min(420px, 80vw)"; progress.style.marginTop="14px"; wrap.appendChild(progress); }
+        if (options.cancel) { const cancel=document.createElement("button"); cancel.className="btn btn-secondary btn-small"; cancel.type="button"; cancel.style.marginTop="14px"; cancel.textContent="Cancel"; cancel.addEventListener("click",()=>window.ToonVerseAIJobs?.cancel(activeJob?.id)); wrap.appendChild(cancel); }
+        resultPanel.appendChild(wrap);
+      }
 
       let selectedMedia =
         [];
@@ -2239,7 +2254,7 @@
 
           button.addEventListener(
             "click",
-            () => {
+            async () => {
 
               const mode =
                 button.dataset.createMode;
@@ -2481,7 +2496,7 @@
 
           button.addEventListener(
             "click",
-            () => {
+            async () => {
 
               const action =
                 button.dataset.createAction;
@@ -2609,36 +2624,16 @@
                   break;
 
 
-                case "generate":
-
-                  const promptValue =
-                    prompt?.value.trim() || "";
-
-                  const hasFiles =
-                    selectedMedia.length > 0;
-
-
-                  if (
-                    !promptValue &&
-                    !hasFiles
-                  ) {
-
-                    notify(
-                      "Add a prompt or reference media before generating."
-                    );
-
-                    prompt?.focus();
-
-                    return;
-                  }
-
-
-                  notify(
-                    `${modeNames[activeMode] || "This workflow"} needs the secure ToonVerse AI generation service before it can create final media.`,
-                    "warning"
-                  );
-
-                  break;
+                case "generate": {
+                  const runtime=window.ToonVerseAIJobs;if(!runtime){notify("The AI job runtime could not load.","error");break}
+                  const promptValue=prompt?.value.trim()||"";if(!promptValue&&!selectedMedia.length){notify("Add a prompt or reference media before generating.","warning");prompt?.focus();break}
+                  generateButton.disabled=true;generateButton.setAttribute("aria-busy","true");renderJobState("Preparing your request","Validating media, settings and device capability…",{progress:2,cancel:true});
+                  try{activeJob=await runtime.submit({mode:activeMode,prompt:promptValue,files:selectedMedia,settings:{outputType:document.getElementById("output-type")?.value,aspectRatio:document.getElementById("aspect-ratio")?.value,quality:document.getElementById("quality")?.value,variations:variation?.value,preserveOriginal:document.getElementById("preserve-original")?.checked}});
+                    if(activeJob.status==="queued"&&!runtime.connected()){renderJobState("AI service connection required","Your validated request is preserved locally. Final generation becomes available after the secure AI backend is connected.",{icon:"🔒"});notify("AI service is not connected yet; the request was safely recorded.","warning")}
+                    else{renderJobState("Generation job submitted","Progress and final results will appear here.",{progress:activeJob.progress||5,cancel:true});notify("Generation job submitted securely.","success")}
+                  }catch(error){renderJobState("Generation could not start",error.message||"The request failed safely. Your original media was not changed.",{icon:"⚠️"});notify(error.message||"Generation could not start.","error")}
+                  finally{generateButton.disabled=false;generateButton.removeAttribute("aria-busy")}break;
+                }
 
 
                 default:
@@ -2649,6 +2644,13 @@
           );
         });
 
+
+      window.ToonVerseAIJobs?.subscribe(event => {
+        if(!activeJob||(event.job?.id&&event.job.id!==activeJob.id))return;
+        if(event.type==="progress"){activeJob=event.job;renderJobState(event.job.status==="completed"?"Creation complete":"Creating with ToonVerse AI",event.job.status==="completed"?"Your result is ready for preview, saving or opening in the editor.":"The secure AI service is processing your job.",{progress:Number(event.job.progress)||0,cancel:event.job.status!=="completed"})}
+        else if(event.type==="cancelled")renderJobState("Generation cancelled","The job was stopped safely. Your original media remains unchanged.",{icon:"■"});
+        else if(event.type==="offline")notify("Connection lost. The job state remains preserved.","warning");
+      });
 
       /* ===================================================
          DRAFT RECOVERY
