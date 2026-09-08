@@ -2758,7 +2758,7 @@ button{
 <input
   id="collage-file-input"
   type="file"
-  accept="image/jpeg,image/png,image/webp"
+  accept="image/*"
   multiple
   hidden
 >
@@ -2766,14 +2766,14 @@ button{
 <input
   id="editor-file-input"
   type="file"
-  accept="image/jpeg,image/png,image/webp"
+  accept="image/*"
   hidden
 >
 
 <input
   id="overlay-file-input"
   type="file"
-  accept="image/jpeg,image/png,image/webp"
+  accept="image/*"
   hidden
 >
 
@@ -6520,6 +6520,24 @@ document.addEventListener(
         }
       );
 
+    function isSafeRasterFile(file) {
+      if (!file || file.size > 150 * 1024 * 1024) return false;
+      const type = String(file.type || "").toLowerCase();
+      const extension = String(file.name || "").split(".").pop().toLowerCase();
+      if (type === "image/svg+xml" || extension === "svg") return false;
+      return type.startsWith("image/") ||
+        ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif", "gif", "bmp"].includes(extension);
+    }
+
+    function explainRejectedImage(file) {
+      notify(
+        file?.size > 150 * 1024 * 1024
+        ? "Choose an image smaller than 150 MB for safe browser editing."
+        : "Choose a browser-supported raster image. SVG files are not imported into the pixel editor.",
+        "warning"
+      );
+    }
+
     fileInput.addEventListener(
       "change",
       () => {
@@ -6534,21 +6552,8 @@ document.addEventListener(
           return;
         }
 
-        if (
-          ![
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-          ].includes(
-            file.type
-          )
-        ) {
-
-          notify(
-            "Use JPG, PNG or WebP image.",
-            "warning"
-          );
-
+        if (!isSafeRasterFile(file)) {
+          explainRejectedImage(file);
           return;
         }
 
@@ -6572,21 +6577,8 @@ document.addEventListener(
           return;
         }
 
-        if (
-          ![
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-          ].includes(
-            file.type
-          )
-        ) {
-
-          notify(
-            "Use JPG, PNG or WebP image.",
-            "warning"
-          );
-
+        if (!isSafeRasterFile(file)) {
+          explainRejectedImage(file);
           return;
         }
 
@@ -6852,6 +6844,8 @@ document.addEventListener(
         work.height =
           bitmap.naturalHeight ||
           bitmap.height;
+
+        configurePixelContext(wctx);
 
         wctx.clearRect(
           0,
@@ -14751,6 +14745,8 @@ document.addEventListener(
         return;
       }
 
+      renderAll();
+
       const project = {
 
         version:
@@ -16025,7 +16021,7 @@ document.addEventListener(
     });
 
     document.querySelectorAll("button").forEach(button => {
-      if (!button.getAttribute("aria-label") && !button.textContent.trim()) {
+      if (!button.getAttribute("aria-label")) {
         const action = button.dataset.editorAction || button.dataset.editorOperation;
         if (action) button.setAttribute("aria-label", formatOperation(action));
       }
