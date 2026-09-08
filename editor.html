@@ -4779,13 +4779,13 @@ document.addEventListener(
       let source = document.createElement("canvas");
       source.width = width;
       source.height = height;
-      source.getContext("2d").drawImage(targetCanvas, 0, 0);
+      configurePixelContext(source.getContext("2d")).drawImage(targetCanvas, 0, 0);
 
       if (amountX) {
         const output = document.createElement("canvas");
         output.width = width;
         output.height = height;
-        const context = output.getContext("2d");
+        const context = configurePixelContext(output.getContext("2d"));
         for (let y = 0; y < height; y++) {
           const normalized = height > 1 ? y / (height - 1) - 0.5 : 0;
           const scale = Math.max(0.15, 1 + normalized * amountX);
@@ -4799,7 +4799,7 @@ document.addEventListener(
         const output = document.createElement("canvas");
         output.width = width;
         output.height = height;
-        const context = output.getContext("2d");
+        const context = configurePixelContext(output.getContext("2d"));
         for (let x = 0; x < width; x++) {
           const normalized = width > 1 ? x / (width - 1) - 0.5 : 0;
           const scale = Math.max(0.15, 1 + normalized * amountY);
@@ -4809,7 +4809,7 @@ document.addEventListener(
         source = output;
       }
 
-      const context = targetCanvas.getContext("2d");
+      const context = configurePixelContext(targetCanvas.getContext("2d"));
       context.clearRect(0, 0, width, height);
       context.drawImage(source, 0, 0);
     }
@@ -5555,7 +5555,7 @@ document.addEventListener(
       const masked = document.createElement("canvas");
       masked.width = layer.canvas.width;
       masked.height = layer.canvas.height;
-      const context = masked.getContext("2d");
+      const context = configurePixelContext(masked.getContext("2d"));
       context.drawImage(layer.canvas, 0, 0);
       context.globalCompositeOperation = "destination-in";
       context.drawImage(layer.maskCanvas, 0, 0, masked.width, masked.height);
@@ -10940,6 +10940,23 @@ document.addEventListener(
           return;
         }
 
+        const pixelLimit =
+          (navigator.deviceMemory && navigator.deviceMemory <= 4)
+          ? 32000000
+          : 64000000;
+
+        if (
+          newWidth > 16384 ||
+          newHeight > 16384 ||
+          newWidth * newHeight > pixelLimit
+        ) {
+          notify(
+            `Requested size is too large for safe in-browser editing. Maximum safe canvas is 16,384px per side and ${Math.round(pixelLimit / 1000000)} megapixels on this device.`,
+            "warning"
+          );
+          return;
+        }
+
         pushUndo(
           "Before Resize"
         );
@@ -14276,8 +14293,10 @@ document.addEventListener(
             transformed.h;
 
           const layerContext =
-            layerRender.getContext(
-              "2d"
+            configurePixelContext(
+              layerRender.getContext(
+                "2d"
+              )
             );
 
           layerContext.translate(
@@ -14317,10 +14336,11 @@ document.addEventListener(
           cropped.height =
             height;
 
-          cropped
-            .getContext(
+          configurePixelContext(
+            cropped.getContext(
               "2d"
             )
+          )
             .drawImage(
               layerRender,
               x,
@@ -14340,7 +14360,7 @@ document.addEventListener(
             const maskRender = document.createElement("canvas");
             maskRender.width = transformed.w;
             maskRender.height = transformed.h;
-            const maskRenderContext = maskRender.getContext("2d");
+            const maskRenderContext = configurePixelContext(maskRender.getContext("2d"));
             maskRenderContext.translate(transformed.w / 2, transformed.h / 2);
             maskRenderContext.rotate(effectiveRotation() * Math.PI / 180);
             maskRenderContext.scale(state.flipX ? -1 : 1, state.flipY ? -1 : 1);
@@ -14352,7 +14372,7 @@ document.addEventListener(
             const croppedMask = document.createElement("canvas");
             croppedMask.width = width;
             croppedMask.height = height;
-            croppedMask.getContext("2d").drawImage(
+            configurePixelContext(croppedMask.getContext("2d")).drawImage(
               maskRender,
               x,
               y,
@@ -15232,10 +15252,11 @@ document.addEventListener(
                 copyCanvas.height =
                   active.canvas.height;
 
-                copyCanvas
-                  .getContext(
+                configurePixelContext(
+                  copyCanvas.getContext(
                     "2d"
                   )
+                )
                   .drawImage(
                     active.canvas,
                     0,
@@ -15247,7 +15268,7 @@ document.addEventListener(
                   copyMask = document.createElement("canvas");
                   copyMask.width = active.maskCanvas.width;
                   copyMask.height = active.maskCanvas.height;
-                  copyMask.getContext("2d").drawImage(active.maskCanvas, 0, 0);
+                  configurePixelContext(copyMask.getContext("2d")).drawImage(active.maskCanvas, 0, 0);
                 }
 
                 const copy = {
