@@ -1,0 +1,38 @@
+"use strict";
+const CACHE_NAME = "toonverse-shell-v1";
+const CORE = [
+  "./","./index.html","./create.html","./editor.html","./library.html","./404.html",
+  "./assets/css/main.css","./assets/css/components.css","./assets/js/config.js","./assets/js/main.js",
+  "./manifest.webmanifest","./assets/toonverse-icon.svg"
+];
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+self.addEventListener("fetch", event => {
+  const request = event.request;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  const networkFirst = request.mode === "navigate" || /\.(?:html|js|css|webmanifest)$/.test(url.pathname);
+  if (networkFirst) {
+    event.respondWith(
+      fetch(request).then(response => {
+        if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
+        return response;
+      }).catch(async () => (await caches.match(request)) || (request.mode === "navigate" ? caches.match("./index.html") : Response.error()))
+    );
+    return;
+  }
+  event.respondWith(
+    caches.match(request).then(cached => cached || fetch(request).then(response => {
+      if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
+      return response;
+    }))
+  );
+});
