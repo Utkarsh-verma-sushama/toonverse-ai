@@ -155,6 +155,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Support & Community",
+      "short_name": "Support",
+      "url": "./support.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
