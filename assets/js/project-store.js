@@ -236,6 +236,25 @@
     } finally { db.close(); }
   }
 
+  async function getRecoverySnapshot(projectId = activeProjectId()) {
+    if (!("indexedDB" in globalThis)) return null;
+    const recoveryDb = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("toonverse-editor", 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("Recovery storage is busy in another tab."));
+    });
+    try {
+      if (!recoveryDb.objectStoreNames.contains("projects")) return null;
+      const tx = recoveryDb.transaction("projects", "readonly");
+      const direct = await requestResult(tx.objectStore("projects").get(projectId));
+      if (direct !== undefined) return direct;
+      return await requestResult(tx.objectStore("projects").get("last-project"));
+    } finally {
+      recoveryDb.close();
+    }
+  }
+
   async function restoreVersion(versionId) {
     const db = await openDatabase();
     let version;
@@ -377,6 +396,7 @@
     getProject,
     listProjects,
     listVersions,
+    getRecoverySnapshot,
     restoreVersion,
     removeProject,
     syncStatus,
