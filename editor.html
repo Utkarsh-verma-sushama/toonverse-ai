@@ -2962,6 +2962,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 </div>
 
+<script src="./assets/js/project-store.js"></script>
 <script>
 
 "use strict";
@@ -4036,6 +4037,7 @@ document.addEventListener(
             pdfOrientation: pdfOrientation.value,
             pdfMargin: pdfMargin.value,
             pdfPlacement: pdfPlacement.value,
+            dpi: exportDpi.value,
             printColorMode: printColorMode.value
           }
 
@@ -14846,6 +14848,21 @@ document.addEventListener(
         console.warn(
           "Legacy project preview was not stored.",
           error
+        );
+      }
+
+      try {
+        if (globalThis.ToonVerseProjectStore) {
+          await globalThis.ToonVerseProjectStore.saveProject(
+            project,
+            { createVersion: true }
+          );
+        }
+      } catch (error) {
+        console.warn("Project index or sync queue was not updated.", error);
+        notify(
+          "The project is saved locally, but its cross-device sync record is pending.",
+          "warning"
         );
       }
 
