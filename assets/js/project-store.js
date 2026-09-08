@@ -249,7 +249,8 @@
       const tx = recoveryDb.transaction("projects", "readonly");
       const direct = await requestResult(tx.objectStore("projects").get(projectId));
       if (direct !== undefined) return direct;
-      return await requestResult(tx.objectStore("projects").get("last-project"));
+      const legacyTx = recoveryDb.transaction("projects", "readonly");
+      return await requestResult(legacyTx.objectStore("projects").get("last-project"));
     } finally {
       recoveryDb.close();
     }
