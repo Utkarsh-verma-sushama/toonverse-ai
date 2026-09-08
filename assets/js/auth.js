@@ -204,6 +204,45 @@
     return request(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
   }
 
+  async function requestDeviceVerification() {
+    return request("/v1/auth/devices/verification/request", { method: "POST" });
+  }
+
+  async function verifyDevice(challengeId, code) {
+    return request("/v1/auth/devices/verification/confirm", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
+    });
+  }
+
+  async function listSecurityEvents(options = {}) {
+    const limit = Math.max(1, Math.min(100, Number(options.limit) || 25));
+    const payload = await request(`/v1/auth/security/events?limit=${limit}`);
+    return Array.isArray(payload.events) ? payload.events : [];
+  }
+
+  async function listConnections() {
+    const payload = await request("/v1/auth/connections");
+    return Array.isArray(payload.connections) ? payload.connections : [];
+  }
+
+  async function disconnectProvider(provider) {
+    return request(`/v1/auth/connections/${encodeURIComponent(provider)}`, {
+      method: "DELETE"
+    });
+  }
+
+  async function requestDataExport() {
+    return request("/v1/account/export", { method: "POST" });
+  }
+
+  async function requestAccountDeletion(confirmation) {
+    return request("/v1/account/deletion/request", {
+      method: "POST",
+      body: JSON.stringify({ confirmation: String(confirmation || "") })
+    });
+  }
+
   async function getSecurityOverview() {
     return request("/v1/auth/security");
   }
@@ -254,6 +293,8 @@
     getState, subscribe, restore, signInWithEmail, createAccount, sendOtp, verifyOtp,
     beginProvider, beginPasskey, getAccessToken, signOut, listSessions, revokeSession,
     getSecurityOverview, requestPasswordReset, beginTotpEnrollment,
-    confirmTotpEnrollment, rotateRecoveryCodes, signOutOtherDevices
+    confirmTotpEnrollment, rotateRecoveryCodes, signOutOtherDevices,
+    requestDeviceVerification, verifyDevice, listSecurityEvents,
+    listConnections, disconnectProvider, requestDataExport, requestAccountDeletion
   });
 })();
