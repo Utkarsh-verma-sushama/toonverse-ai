@@ -47,6 +47,12 @@
     try { localStorage.setItem(PROJECT_ID_KEY, id); } catch {}
   }
 
+  function createProjectId() {
+    const id = makeId("project");
+    setActiveProjectId(id);
+    return id;
+  }
+
   function openDatabase() {
     if (!("indexedDB" in globalThis)) {
       return Promise.reject(new Error("IndexedDB is unavailable."));
@@ -322,6 +328,7 @@
   const api = Object.freeze({
     activeProjectId,
     setActiveProjectId,
+    createProjectId,
     saveProject,
     getProject,
     listProjects,
