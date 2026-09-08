@@ -20,7 +20,7 @@ await cp(new URL("../assets/", import.meta.url), new URL("../dist/assets/", impo
 for (const file of rootFiles.filter(name => name.endsWith(".html"))) {
   const path = new URL(`../dist/${file}`, import.meta.url);
   const source = await readFile(path, "utf8");
-  const nativeSafe = source.replace(/<script>\s*if \("serviceWorker" in navigator\)[\s\S]*?<\/script>/g, "");
+  const nativeSafe = source.replaceAll("navigator.serviceWorker.register", "Promise.resolve");
   await writeFile(path, nativeSafe);
 }
 
