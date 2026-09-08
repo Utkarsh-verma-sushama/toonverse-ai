@@ -1,9 +1,9 @@
 # ToonVerse AI — Checkpoint Resume Record
 
 Last updated: 2026-09-08  
-Current locked checkpoint: 36  
-Exact next checkpoint: 37  
-Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 37. Do not repeat or reopen completed work unless a verified defect requires it.
+Current locked checkpoint: 37  
+Exact next checkpoint: 38  
+Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 38. Do not repeat or reopen completed work unless a verified defect requires it.
 
 ## Permanent execution rule
 
@@ -38,6 +38,9 @@ Locked with image/video/audio/document understanding, OCR, transcription, transl
 ### Checkpoint 36 — AI Memory & Photo-to-Video Studio
 Locked with a cross-device, recoverable timeline for up to 2,000 photos/video/audio items; ordering, aspect/output/motion controls, immutable originals, local autosave, consent and rights controls, provider-neutral rendering jobs, truthful unavailable-backend handling, PWA/home discovery, offline shell, accessibility and safety/reliability contract.
 
+### Checkpoint 37 — AI Coloring & Painting Studio
+Locked with brush, eraser, tolerance fill, eyedropper, color/size/opacity controls, bounded undo/redo, imported line art and blank canvases, full-resolution PNG export, local autosave and crash recovery, provider-neutral AI Color Assist, truthful unavailable-backend handling, immutable originals, PWA/home discovery, offline shell, responsive mobile/tablet/desktop/TV layouts, touch/stylus/mouse/keyboard/D-pad accessibility, safety, privacy and low-memory safeguards.
+
 ## Resume point
 
-Checkpoint 36 is complete and locked. No part of Checkpoint 36 remains. The next work item is Checkpoint 37, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
+Checkpoint 37 is complete and locked. No part of Checkpoint 37 remains. The next work item is Checkpoint 38, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
