@@ -1,9 +1,9 @@
 # ToonVerse AI — Checkpoint Resume Record
 
 Last updated: 2026-09-08  
-Current locked checkpoint: 34  
-Exact next checkpoint: 35  
-Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 35. Do not repeat or reopen completed work unless a verified defect requires it.
+Current locked checkpoint: 35  
+Exact next checkpoint: 36  
+Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 36. Do not repeat or reopen completed work unless a verified defect requires it.
 
 ## Permanent execution rule
 
@@ -32,6 +32,9 @@ Locked with phone, tablet, desktop and TV presets; custom dimensions, safe-area 
 ### Checkpoint 34 — Expanded AI Capability Framework
 Locked with AI Enhance, Auto Fix, Background Remove/Change, Object Remove, Upscale, Restore, Colorize, Cartoon, Portrait, Lighting and Prompt Edit; consent controls, provider-neutral jobs, truthful progress, cancellation, result application as undoable edits, provenance/safety contract and offline caching.
 
+### Checkpoint 35 — Multimodal Understanding Framework
+Locked with image/video/audio/document understanding, OCR, transcription, translation, summaries, scene/chapter indexing, object/context extraction and accessibility descriptions; secure provider-neutral jobs, rights/consent, immutable originals, integrity metadata, safety/privacy controls, structured provenance, mobile/tablet/desktop/TV responsive workspace, keyboard/touch/stylus/D-pad accessibility, PWA discovery/offline shell and complete backend API contract.
+
 ## Resume point
 
-Checkpoint 34 is complete and locked. No part of Checkpoint 34 remains. The next work item is Checkpoint 35, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
+Checkpoint 35 is complete and locked. No part of Checkpoint 35 remains. The next work item is Checkpoint 36, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
