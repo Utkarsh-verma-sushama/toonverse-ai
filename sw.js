@@ -1,7 +1,7 @@
 "use strict";
-const CACHE_NAME = "toonverse-shell-v6";
+const CACHE_NAME = "toonverse-shell-v7";
 const CORE = [
-  "./","./index.html","./create.html","./editor.html","./layout.html","./library.html","./account.html","./404.html",
+  "./","./index.html","./create.html","./editor.html","./layout.html","./wallpaper.html","./library.html","./account.html","./404.html",
   "./assets/css/main.css","./assets/css/components.css","./assets/js/config.js","./assets/js/main.js",
   "./assets/js/project-store.js","./assets/js/cloud-sync.js","./assets/js/auth.js","./assets/js/ai-runtime.js",
   "./manifest.webmanifest","./assets/toonverse-icon.svg"
