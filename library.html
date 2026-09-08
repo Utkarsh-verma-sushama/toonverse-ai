@@ -75,6 +75,11 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
   remove.addEventListener("click",()=>{
     if(!confirm("Remove the locally saved project and its recovery data from this device?"))return;
     localStorage.removeItem("toonverse:editor:last-project");
+    if (!("indexedDB" in window)) {
+      announce("Local project removed. Recovery storage is unavailable in this browser.");
+      setTimeout(()=>location.reload(),500);
+      return;
+    }
     const request=indexedDB.deleteDatabase("toonverse-editor");
     request.onsuccess=()=>{announce("Local project removed.");setTimeout(()=>location.reload(),500)};
     request.onerror=()=>announce("Recovery storage could not be removed. Close other ToonVerse AI tabs and try again.");
