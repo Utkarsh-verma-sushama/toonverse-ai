@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: ToonVerse AI Backend API
+  version: 1.0.0
+  description: Secure, provider-independent contract for authenticated project synchronization.
+servers:
+  - url: https://api.example.invalid
+    description: Replace only after the production backend is deployed.
+security:
+  - bearerAuth: []
+paths:
+  /v1/health:
+    get:
+      security: []
+      operationId: health
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: { type: boolean }
+                  version: { type: string }
+  /v1/projects/sync:
+    post:
+      operationId: syncProject
+      summary: Idempotently upload or delete one authenticated user's project.
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 200 }
+        - in: header
+          name: X-ToonVerse-Schema
+          required: true
+          schema: { type: string, const: "1" }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [manifest]
+              properties:
+                manifest:
+                  type: string
+                  format: binary
+                  description: UTF-8 JSON project manifest. The server must ignore client-supplied ownership and derive the owner from the verified bearer token.
+                original:
+                  type: string
+                  format: binary
+                layer-0:
+                  type: string
+                  format: binary
+                mask-0:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Change committed or previously committed with the same idempotency key.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, revision, projectId]
+                properties:
+                  ok: { type: boolean, const: true }
+                  revision: { type: string }
+                  projectId: { type: string }
+                  syncedAt: { type: string, format: date-time }
+        "400": { description: Invalid manifest, file, or schema. }
+        "401": { description: Missing, expired, or invalid authentication. }
+        "403": { description: Project ownership or policy check failed. }
+        "409":
+          description: The server has a newer revision and returns conflict metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, serverRevision]
+                properties:
+                  code: { type: string, const: PROJECT_CONFLICT }
+                  serverRevision: { type: string }
+                  serverUpdatedAt: { type: string, format: date-time }
+        "413": { description: Upload exceeds the server's configured project limit. }
+        "415": { description: Unsupported media type. }
+        "429":
+          description: Rate limit exceeded.
+          headers:
+            Retry-After:
+              schema: { type: integer, minimum: 1 }
+        "500": { description: Internal error; the client retains the queued change. }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
