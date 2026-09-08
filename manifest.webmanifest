@@ -107,6 +107,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "AI Memory Studio",
+      "short_name": "Memory",
+      "url": "./memory.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
