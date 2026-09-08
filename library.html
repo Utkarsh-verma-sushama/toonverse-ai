@@ -180,7 +180,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
                 const db = request.result;
                 if (db.objectStoreNames.contains("projects")) {
                   const tx = db.transaction("projects", "readwrite");
-                  tx.objectStore("projects").delete("last-project");
+                  tx.objectStore("projects").delete(project.id);
                 }
                 db.close();
               };
