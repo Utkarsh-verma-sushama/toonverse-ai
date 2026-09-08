@@ -204,6 +204,49 @@
     return request(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
   }
 
+  async function beginAccountLink(provider) {
+    const allowed = new Set(["google", "apple", "microsoft", "facebook", "linkedin", "x", "github"]);
+    if (!allowed.has(provider)) throw new Error("Unsupported account provider.");
+    return request(`/v1/auth/links/${provider}/start`, { method: "POST" });
+  }
+
+  async function confirmAccountLink(challengeId, confirmationToken) {
+    return request("/v1/auth/links/confirm", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, confirmationToken })
+    });
+  }
+
+  async function resolveAccountConflict(challengeId, resolution, verificationToken) {
+    const allowed = new Set(["keep-current", "link-existing", "cancel"]);
+    if (!allowed.has(resolution)) throw new Error("Invalid account resolution.");
+    return request("/v1/auth/links/conflicts/resolve", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, resolution, verificationToken })
+    });
+  }
+
+  async function beginRecovery(identifier) {
+    return request("/v1/auth/recovery/start", {
+      method: "POST",
+      body: JSON.stringify({ identifier: String(identifier || "").trim() })
+    });
+  }
+
+  async function verifyRecovery(challengeId, code) {
+    return request("/v1/auth/recovery/verify", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
+    });
+  }
+
+  async function completeRecovery(recoveryToken, newPassword) {
+    return request("/v1/auth/recovery/complete", {
+      method: "POST",
+      body: JSON.stringify({ recoveryToken, newPassword: String(newPassword || "") })
+    });
+  }
+
   async function requestDeviceVerification() {
     return request("/v1/auth/devices/verification/request", { method: "POST" });
   }
@@ -295,6 +338,8 @@
     getSecurityOverview, requestPasswordReset, beginTotpEnrollment,
     confirmTotpEnrollment, rotateRecoveryCodes, signOutOtherDevices,
     requestDeviceVerification, verifyDevice, listSecurityEvents,
-    listConnections, disconnectProvider, requestDataExport, requestAccountDeletion
+    listConnections, disconnectProvider, requestDataExport, requestAccountDeletion,
+    beginAccountLink, confirmAccountLink, resolveAccountConflict,
+    beginRecovery, verifyRecovery, completeRecovery
   });
 })();
