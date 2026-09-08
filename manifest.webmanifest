@@ -71,6 +71,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Smart Auto Layout",
+      "short_name": "Auto Layout",
+      "url": "./layout.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
