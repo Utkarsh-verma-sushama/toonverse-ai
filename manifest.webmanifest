@@ -59,6 +59,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Account & Security",
+      "short_name": "Account",
+      "url": "./account.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
