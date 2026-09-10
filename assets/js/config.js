@@ -5,15 +5,27 @@
    Public Frontend Configuration — V1 Foundation
 
    IMPORTANT:
-   Never place passwords, private API keys, access tokens,
-   database credentials, or other secrets in this file.
+   Firebase's web configuration identifies the public app; it
+   does not grant administrative access. Passwords, service
+   account keys, private API keys, access tokens, and database
+   credentials must never be placed in this file.
    ========================================================= */
 
 window.ToonVerseConfig = Object.freeze({
   app: Object.freeze({
     name: "ToonVerse AI",
-    version: "1.1.0",
+    version: "1.2.0",
     environment: "production"
+  }),
+
+  firebase: Object.freeze({
+    apiKey: "AIzaSyCxYLPaubt0r17JCYpNQAGpg8y7Ki0oKXY",
+    authDomain: "toonverse-ai.firebaseapp.com",
+    projectId: "toonverse-ai",
+    storageBucket: "toonverse-ai.firebasestorage.app",
+    messagingSenderId: "594612167862",
+    appId: "1:594612167862:web:ef546372ab121fcf767217",
+    measurementId: "G-WGS4L16H5Z"
   }),
 
   services: Object.freeze({
