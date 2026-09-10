@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function allowedMedia() {
+      return request.resource.contentType.matches(
+        'image/.*|video/.*|audio/.*|application/pdf|text/plain'
+      );
+    }
+
+    // User uploads remain isolated by authenticated UID.
+    match /users/{uid}/{allPaths=**} {
+      allow read: if owns(uid);
+      allow create, update: if owns(uid)
+        && request.resource.size < 100 * 1024 * 1024
+        && allowedMedia();
+      allow delete: if owns(uid);
+    }
+
+    // Evidence is immutable to clients and served through controlled backend flows.
+    match /evidence/{allPaths=**} {
+      allow read: if false;
+      allow write: if isAdmin()
+        && request.resource.size < 500 * 1024 * 1024
+        && allowedMedia();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
