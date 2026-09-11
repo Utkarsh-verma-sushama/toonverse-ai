@@ -1,6 +1,6 @@
 # ToonVerse AI — Checkpoint Resume Record
 
-Last updated: 2026-09-08  
+Last updated: 2026-09-11  
 Current locked checkpoint: 43  
 Exact next checkpoint: 44  
 Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
@@ -63,6 +63,6 @@ Locked with final QA/polish gates, active Privacy Policy and Terms pages, versio
 
 Android and iOS native foundations use the stable application identifier \`ai.toonverse.app\`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. Store signing, legal operator metadata, real-device release validation, store review/publication and independent public reachability remain mandatory before this checkpoint can be locked.
 
-## Resume point
+## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
 Checkpoint 43 is complete and locked. No part of Checkpoint 43 remains. The next work item is Checkpoint 44, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
