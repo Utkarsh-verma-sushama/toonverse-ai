@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020"><meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Android Device Test Center · ToonVerse AI</title>
+<link rel="manifest" href="./manifest.webmanifest"><link rel="stylesheet" href="./assets/css/main.css">
+<style>
+:root{color-scheme:dark}.test-shell{width:min(100% - 24px,900px);margin:auto;padding:24px 0 80px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.meter{height:14px;background:#202a42;border-radius:999px;overflow:hidden}.meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7c5cff,#38d9c5);transition:width .2s}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat,.group{background:#111a30;border:1px solid #2a3553;border-radius:16px;padding:16px}.stat strong{font-size:1.5rem;display:block}.group{margin:14px 0}.group h2{font-size:1.15rem;margin:0 0 10px}.case{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:12px 0;border-top:1px solid #25304a}.case:first-of-type{border-top:0}.case input{width:24px;height:24px}.case small{display:block;color:#aab4cb;margin-top:3px}.actions{position:sticky;bottom:8px;display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:rgba(11,16,32,.94);border:1px solid #2a3553;border-radius:14px;backdrop-filter:blur(12px)}textarea{width:100%;min-height:100px}.pass{color:#58e0ba}.warn{color:#ffd166}@media(max-width:560px){.summary{grid-template-columns:1fr}.actions .btn{flex:1}}
+</style>
+</head>
+<body>
+<main class="test-shell">
+<div class="top"><div><a href="./launch.html">← Launch Center</a><h1>Android Device Test</h1><p class="text-muted">Complete on a real Android phone. Progress stays on this device.</p></div><span id="device" class="text-muted"></span></div>
+<div class="meter" aria-label="Test progress"><i id="bar"></i></div>
+<div class="summary"><div class="stat"><strong id="done">0</strong>Passed</div><div class="stat"><strong id="left">0</strong>Remaining</div><div class="stat"><strong id="percent">0%</strong>Complete</div></div>
+<form id="checks"></form>
+<section class="group"><h2>Tester notes</h2><label for="notes">Record device, Android version and any exact issue.</label><textarea id="notes" maxlength="4000" placeholder="Example: Vivo…, Android 16, Editor → Export…"></textarea></section>
+<div class="actions"><button class="btn btn-primary" id="export" type="button">Export report</button><button class="btn" id="copy" type="button">Copy summary</button><button class="btn" id="reset" type="button">Reset</button></div>
+<p id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="./assets/js/platform-runtime.js"></script>
+<script>
+(()=>{"use strict";
+const groups=[
+["Install & launch",[["install","Debug APK installs without security/runtime error."],["cold","Cold launch reaches Home without blank/black screen."],["resume","Background/resume preserves current work."],["rotate","Portrait/landscape rotation does not clip controls."]]],
+["Input & accessibility",[["touch","Tap, long-press, drag and pinch affect the intended control/canvas only."],["keyboard","Text fields and optional hardware keyboard work."],["focus","Visible focus and screen-reader labels identify important controls."],["textzoom","200% text/display scaling remains usable without horizontal loss."]]],
+["Editor integrity",[["import","Camera, Gallery and Files import JPG/PNG/WebP correctly."],["original","Original remains unchanged after edits."],["tools","Crop, resize, rotate, flip, filters, undo and redo behave correctly."],["quality","Zoom and repeated edits do not visibly damage source pixels."],["calculator","Exact size controls, aspect lock, units, DPI and live preview agree."],["finalpreview","Final preview can resume from current edit or restart safely."]]],
+["Save, export & sharing",[["autosave","Autosave and recovery restore the latest edit after forced app close."],["save","Save confirmation appears and output opens correctly."],["export","PNG/JPEG/WebP/PDF exports match preview, size and quality settings."],["share","Android share sheet opens with the actual exported file."],["delete","Delete requires confirmation and cancel preserves the item."]]],
+["Offline, network & performance",[["offline","Core shell/editor opens offline after first successful load."],["reconnect","Queued/local work survives offline→online transition."],["slow","Slow/Data Saver mode remains responsive and avoids duplicate jobs."],["memory","Large image failure is graceful; project remains recoverable."],["heat","15-minute edit does not cause runaway heat, battery drain or crash."]]],
+["Permissions & security",[["deny","Denying camera/files permission gives recovery guidance, not a crash."],["scope","Permissions are requested only when the related action is used."],["auth","Account/session screens do not expose tokens or another user's data."],["flags","Unavailable cloud/agent/provider features remain truthfully disabled."]]]
+];
+const key="toonverse-android-device-test-v1",form=document.getElementById("checks"),notes=document.getElementById("notes"),status=document.getElementById("status");
+let saved={};try{saved=JSON.parse(localStorage.getItem(key)||"{}")}catch{}
+for(const [title,cases] of groups){const section=document.createElement("section");section.className="group";const h=document.createElement("h2");h.textContent=title;section.append(h);for(const [id,label] of cases){const row=document.createElement("label");row.className="case";row.innerHTML=`<input type="checkbox" name="${id}"><span>${label}<small>Tick only after observing the expected result.</small></span>`;row.querySelector("input").checked=Boolean(saved.checks?.[id]);section.append(row)}form.append(section)}
+notes.value=saved.notes||"";
+function snapshot(){const checks=Object.fromEntries([...form.elements].map(x=>[x.name,x.checked])),total=Object.keys(checks).length,done=Object.values(checks).filter(Boolean).length;return {schema:"toonverse-device-test/1",appVersion:window.ToonVerseConfig?.app?.version||"unknown",createdAt:saved.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),device:navigator.userAgent,platform:window.ToonVersePlatform?.getProfile?.(),checks,notes:notes.value,total,passed:done,complete:done===total}}
+function render(){const x=snapshot(),p=Math.round(x.passed/x.total*100);document.getElementById("done").textContent=x.passed;document.getElementById("left").textContent=x.total-x.passed;document.getElementById("percent").textContent=p+"%";document.getElementById("bar").style.width=p+"%";document.getElementById("device").textContent=(x.platform?.platform||"device")+" · "+(x.platform?.online?"online":"offline");status.textContent=x.complete?"All device checks passed. Export the evidence report.":"Progress saved locally.";localStorage.setItem(key,JSON.stringify(x))}
+form.addEventListener("change",render);notes.addEventListener("input",render);
+document.getElementById("export").onclick=()=>{const x=snapshot(),blob=new Blob([JSON.stringify(x,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`toonverse-android-test-${Date.now()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);status.textContent="Report exported."};
+document.getElementById("copy").onclick=async()=>{const x=snapshot(),t=`ToonVerse Android test: ${x.passed}/${x.total} passed · ${x.complete?"COMPLETE":"INCOMPLETE"}`;await navigator.clipboard.writeText(t);status.textContent="Summary copied."};
+document.getElementById("reset").onclick=()=>{if(!confirm("Reset every device-test result and note?"))return;localStorage.removeItem(key);location.reload()};
+render();
+})();
+</script>
+</body></html>
