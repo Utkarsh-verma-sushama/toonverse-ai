@@ -616,3 +616,25 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Adaptive platform and TV safety ---------- */
+:focus-visible {
+  outline: 3px solid var(--brand-primary);
+  outline-offset: 3px;
+}
+html[data-platform="tv"] body {
+  padding-inline: var(--tv-safe-inline, 5vw);
+  padding-block: var(--tv-safe-block, 4vh);
+}
+html[data-platform="tv"] a,
+html[data-platform="tv"] button,
+html[data-platform="tv"] input,
+html[data-platform="tv"] select {
+  min-height: 48px;
+}
+html[data-save-data] video[autoplay] {
+  display: none;
+}
+html[data-reduced-motion] {
+  scroll-behavior: auto;
+}
