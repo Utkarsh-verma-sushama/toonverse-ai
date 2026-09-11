@@ -47,4 +47,5 @@ $("clear").onclick=()=>{media.forEach(x=>{URL.revokeObjectURL(x.preview);x.bitma
 ["preset","layout","gap","radius","background","fit"].forEach(id=>$(id).addEventListener("input",compose));$("compose").onclick=compose;$("export").onclick=exportPng;$("export-top").onclick=exportPng;
 window.addEventListener("pagehide",()=>media.forEach(x=>URL.revokeObjectURL(x.preview)));compose();syncButtons();if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn),{once:true});
 })();
-</script></body></html>
+</script><script src="./assets/js/platform-runtime.js" defer></script>
+</body></html>
