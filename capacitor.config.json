@@ -15,5 +15,12 @@
     "contentInset": "automatic",
     "scrollEnabled": true,
     "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "DARK",
+      "backgroundColor": "#0b1020"
+    }
   }
 }
