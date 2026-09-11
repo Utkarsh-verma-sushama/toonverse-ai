@@ -756,3 +756,19 @@ html[data-platform="ios"][data-input="touch"] .generate-bar {
   position: relative !important;
   bottom: auto !important;
 }
+
+
+/* Mobile Create Studio finishing pass: clean horizontal mode scrolling. */
+html[data-native-platform="true"] .mode-tabs,
+html[data-platform="android"][data-input="touch"] .mode-tabs,
+html[data-platform="ios"][data-input="touch"] .mode-tabs {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+html[data-native-platform="true"] .mode-tabs::-webkit-scrollbar,
+html[data-platform="android"][data-input="touch"] .mode-tabs::-webkit-scrollbar,
+html[data-platform="ios"][data-input="touch"] .mode-tabs::-webkit-scrollbar {
+  display: none;
+}
