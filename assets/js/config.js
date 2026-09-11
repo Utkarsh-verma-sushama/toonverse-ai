@@ -49,7 +49,9 @@ window.ToonVerseConfig = Object.freeze({
     library: true,
     sharing: true,
     printing: true,
+    // Rollout flag only. Fax also requires a server-verified paid entitlement.
     fax: false,
+    faxAllowedPlans: Object.freeze(["premium", "business", "pro"]),
 
     photoToCartoon: false,
     aiImageGeneration: false,
