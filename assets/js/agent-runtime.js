@@ -4,7 +4,7 @@ const DB="toonverse-agent-runs",VERSION=1,STORE="runs";
 const terminal=new Set(["completed","failed","cancelled","expired"]);
 const risky=new Set(["delete","publish","share","purchase","send","external-write","account-change"]);
 const base=()=>String(window.ToonVerseConfig?.services?.apiBaseUrl||"").replace(/\/$/,"");
-function openDb(){return new Promise((resolve,reject)=>{if(!indexedDB)return reject(new Error("Agent storage unavailable."));const q=indexedDB.open(DB,VERSION);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE,{keyPath:"id"})};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)})}
+function openDb(){return new Promise((resolve,reject)=>{if(!("indexedDB" in globalThis))return reject(new Error("Agent storage unavailable."));const q=indexedDB.open(DB,VERSION);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(STORE))q.result.createObjectStore(STORE,{keyPath:"id"})};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)})}
 async function persist(run){const db=await openDb();try{await new Promise((ok,no)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(run);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}finally{db.close()}return run}
 function normalize(raw={}){
  const objective=String(raw.objective||"").trim();if(!objective)throw new Error("Agent objective is required.");if(objective.length>4000)throw new Error("Agent objective is too long.");
