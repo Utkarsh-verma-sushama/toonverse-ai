@@ -657,3 +657,13 @@ html[data-native-platform="true"] body::after {
   background: var(--bg-primary, #070b17);
   pointer-events: none;
 }
+
+/* Sticky headers must retain the inset after the page begins scrolling. */
+html[data-native-platform="true"] :is(.site-header, .create-topbar, .editor-topbar, .topbar) {
+  top: max(env(safe-area-inset-top, 0px), 24px) !important;
+}
+@media (max-width: 760px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
