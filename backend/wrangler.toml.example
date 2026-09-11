@@ -1,0 +1,29 @@
+name = "toonverse-core-api"
+main = "worker.mjs"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+AUTH_REQUIRED = "true"
+ALLOWED_ORIGINS = "https://YOUR_DOMAIN"
+MODEL_CATALOG_JSON = "[]"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "toonverse-core"
+database_id = "SET_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "toonverse-media"
+
+[[queues.producers]]
+binding = "AGENT_QUEUE"
+queue = "toonverse-agent-runs"
+
+[[queues.consumers]]
+queue = "toonverse-agent-runs"
+max_batch_size = 5
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "toonverse-agent-dead-letter"
