@@ -1,0 +1,22 @@
+(() => {
+"use strict";
+const listeners=new Set(),root=document.documentElement;
+const media=q=>globalThis.matchMedia?.(q).matches||false;
+function detect(){
+ const ua=navigator.userAgent||"",coarse=media("(pointer: coarse)"),hover=media("(hover: hover)");
+ const tv=/TV|SMART-TV|HbbTV|NetCast|Web0S|Tizen|AFT|BRAVIA|GoogleTV/i.test(ua)||(!coarse&&!hover&&innerWidth>=960);
+ const standalone=media("(display-mode: standalone)")||navigator.standalone===true;
+ const platform=tv?"tv":/Android/i.test(ua)?"android":/iPad|iPhone|iPod/i.test(ua)?"ios":/Mac/i.test(ua)?"macos":/Win/i.test(ua)?"windows":/Linux/i.test(ua)?"linux":"web";
+ return Object.freeze({platform,tv,standalone,coarse,hover,online:navigator.onLine,reducedMotion:media("(prefers-reduced-motion: reduce)"),highContrast:media("(prefers-contrast: more)"),saveData:Boolean(navigator.connection?.saveData),effectiveType:navigator.connection?.effectiveType||"unknown",memoryGB:Number(navigator.deviceMemory)||null,cores:navigator.hardwareConcurrency||null});
+}
+let profile=detect();
+function emit(type,detail={}){profile=detect();const event={type,profile,...detail,at:new Date().toISOString()};listeners.forEach(fn=>{try{fn(event)}catch{}});window.dispatchEvent(new CustomEvent("toonverse:platform",{detail:event}))}
+function apply(){root.dataset.platform=profile.platform;root.dataset.input=profile.tv?"remote":profile.coarse?"touch":"pointer";root.toggleAttribute("data-reduced-motion",profile.reducedMotion);root.toggleAttribute("data-save-data",profile.saveData);root.style.setProperty("--tv-safe-inline",profile.tv?"5vw":"0px");root.style.setProperty("--tv-safe-block",profile.tv?"4vh":"0px")}
+function focusables(){return [...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(x=>!x.hidden&&x.getClientRects().length)}
+function move(key){const all=focusables(),current=document.activeElement;if(!all.length)return;const i=Math.max(0,all.indexOf(current)),a=current?.getBoundingClientRect?.()||all[i].getBoundingClientRect();const axis=/Left|Right/.test(key)?"x":"y",dir=/Left|Up/.test(key)?-1:1;let best=null,score=Infinity;for(const el of all){if(el===current)continue;const b=el.getBoundingClientRect(),dx=(b.left+b.right-a.left-a.right)/2,dy=(b.top+b.bottom-a.top-a.bottom)/2,primary=axis==="x"?dx:dy;if(Math.sign(primary)!==dir)continue;const cross=axis==="x"?dy:dx,s=Math.abs(primary)+Math.abs(cross)*2;if(s<score){score=s;best=el}}(best||all[(i+dir+all.length)%all.length]).focus({preventScroll:false})}
+function onKey(e){if(!profile.tv||!/^Arrow(Up|Down|Left|Right)$/.test(e.key)||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;e.preventDefault();move(e.key)}
+async function storage(){if(!navigator.storage?.estimate)return null;const x=await navigator.storage.estimate();return {usage:x.usage||0,quota:x.quota||0,percent:x.quota?x.usage/x.quota*100:0,persisted:await navigator.storage.persisted?.()||false}}
+function budget(){const low=(profile.memoryGB&&profile.memoryGB<=2)||profile.saveData;return Object.freeze({tier:low?"constrained":"standard",maxPreviewPixels:low?4_000_000:16_000_000,maxConcurrentJobs:low?1:3,preferLocal:!profile.online,animations:!profile.reducedMotion&&!low})}
+["online","offline"].forEach(x=>addEventListener(x,()=>{apply();emit(x)}));navigator.connection?.addEventListener?.("change",()=>{apply();emit("connection-change")});addEventListener("resize",()=>{profile=detect();apply()},{passive:true});addEventListener("keydown",onKey);profile=detect();apply();
+window.ToonVersePlatform=Object.freeze({getProfile:()=>profile,getBudget:budget,storage,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)},refresh(){profile=detect();apply();emit("refresh");return profile}});
+})();
