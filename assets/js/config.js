@@ -31,6 +31,7 @@ window.ToonVerseConfig = Object.freeze({
   services: Object.freeze({
     // Public endpoint only. Secrets and private keys belong on the backend.
     apiBaseUrl: "",
+    faxApiBaseUrl: "",
     requestTimeoutMs: 30000
   }),
 
@@ -48,6 +49,7 @@ window.ToonVerseConfig = Object.freeze({
     library: true,
     sharing: true,
     printing: true,
+    fax: false,
 
     photoToCartoon: false,
     aiImageGeneration: false,
