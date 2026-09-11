@@ -5,7 +5,8 @@ const media=q=>globalThis.matchMedia?.(q).matches||false;
 function detect(){
  const ua=navigator.userAgent||"",coarse=media("(pointer: coarse)"),hover=media("(hover: hover)");
  const tv=/TV|SMART-TV|HbbTV|NetCast|Web0S|Tizen|AFT|BRAVIA|GoogleTV/i.test(ua)||(!coarse&&!hover&&innerWidth>=960);
- const native=Boolean(globalThis.Capacitor?.isNativePlatform?.());\n const standalone=native||media("(display-mode: standalone)")||navigator.standalone===true;
+ const native=Boolean(globalThis.Capacitor?.isNativePlatform?.());
+ const standalone=native||media("(display-mode: standalone)")||navigator.standalone===true;
  const platform=tv?"tv":/Android/i.test(ua)?"android":/iPad|iPhone|iPod/i.test(ua)?"ios":/Mac/i.test(ua)?"macos":/Win/i.test(ua)?"windows":/Linux/i.test(ua)?"linux":"web";
  return Object.freeze({platform,tv,native,standalone,coarse,hover,online:navigator.onLine,reducedMotion:media("(prefers-reduced-motion: reduce)"),highContrast:media("(prefers-contrast: more)"),saveData:Boolean(navigator.connection?.saveData),effectiveType:navigator.connection?.effectiveType||"unknown",memoryGB:Number(navigator.deviceMemory)||null,cores:navigator.hardwareConcurrency||null});
 }
