@@ -678,3 +678,31 @@ html[data-native-platform="true"] body::before {
   background: var(--bg-primary, #070b17);
   pointer-events: none;
 }
+
+/* Native phone layout is capability-driven; it does not depend on CSS viewport reporting. */
+html[data-native-platform="true"][data-platform="android"] .create-layout,
+html[data-native-platform="true"][data-platform="ios"] .create-layout {
+  display: block !important;
+  width: 100% !important;
+}
+html[data-native-platform="true"][data-platform="android"] .create-sidebar,
+html[data-native-platform="true"][data-platform="ios"] .create-sidebar {
+  display: none !important;
+}
+html[data-native-platform="true"][data-platform="android"] .create-settings:not(.open),
+html[data-native-platform="true"][data-platform="ios"] .create-settings:not(.open) {
+  display: none !important;
+}
+html[data-native-platform="true"][data-platform="android"] .create-workspace,
+html[data-native-platform="true"][data-platform="ios"] .create-workspace {
+  width: 100% !important;
+  padding: 16px 14px 32px !important;
+}
+html[data-native-platform="true"][data-platform="android"] .quick-tool-grid,
+html[data-native-platform="true"][data-platform="ios"] .quick-tool-grid {
+  grid-template-columns: 1fr !important;
+}
+html[data-native-platform="true"][data-platform="android"] .mobile-panel-button,
+html[data-native-platform="true"][data-platform="ios"] .mobile-panel-button {
+  display: inline-grid !important;
+}
