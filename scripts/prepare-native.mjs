@@ -5,7 +5,7 @@ const routes = [
   "index.html", "create.html", "editor.html", "library.html", "account.html",
   "layout.html", "wallpaper.html", "multimodal.html", "memory.html",
   "coloring.html", "camera.html", "utilities.html", "support.html",
-  "plans.html", "privacy.html", "terms.html", "launch.html", "qa.html", "404.html"
+  "plans.html", "privacy.html", "terms.html", "launch.html", "qa.html", "device-test.html", "404.html"
 ];
 const rootFiles = [...routes, "manifest.webmanifest", "sw.js"];
 
