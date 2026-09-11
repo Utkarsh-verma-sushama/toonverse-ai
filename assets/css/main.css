@@ -638,3 +638,8 @@ html[data-save-data] video[autoplay] {
 html[data-reduced-motion] {
   scroll-behavior: auto;
 }
+
+/* Native WebView status/notch safe-area. Browser pages remain unchanged. */
+html[data-native-platform="true"] body {
+  padding-top: max(env(safe-area-inset-top, 0px), 24px) !important;
+}
