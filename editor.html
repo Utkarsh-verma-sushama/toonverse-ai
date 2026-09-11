@@ -16452,8 +16452,21 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
       }
     });
 
-    const faxEnabled = Boolean(window.ToonVerseConfig?.features?.fax);
-    $("preview-fax").hidden = !faxEnabled;
+    const faxAllowedPlans = new Set(
+      (window.ToonVerseConfig?.features?.faxAllowedPlans || ["premium", "business", "pro"])
+        .map(value => String(value).toLowerCase())
+    );
+    const updateFaxButtonAccess = authState => {
+      const faxEnabled = Boolean(window.ToonVerseConfig?.features?.fax);
+      const plan = String(authState?.user?.plan || "free").toLowerCase();
+      const entitlements = Array.isArray(authState?.user?.entitlements)
+        ? authState.user.entitlements.map(value => String(value).toLowerCase())
+        : [];
+      const entitled = faxAllowedPlans.has(plan) || entitlements.includes("fax") || entitlements.includes("fax.send");
+      $("preview-fax").hidden = !(faxEnabled && entitled);
+    };
+    updateFaxButtonAccess(window.ToonVerseAuth?.getState?.());
+    window.ToonVerseAuth?.subscribe?.(updateFaxButtonAccess);
 
     resetVisualState();
 
