@@ -1499,3 +1499,13 @@ input[type="range"] {
     color: #000000 !important;
   }
 }
+
+/* Readable mobile tool cards: long capability descriptions never become cramped. */
+@media (max-width: 760px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+  .tool-card {
+    min-height: 0;
+  }
+}
