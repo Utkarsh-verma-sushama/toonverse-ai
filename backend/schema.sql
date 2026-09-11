@@ -1,0 +1,9 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE IF NOT EXISTS agent_runs (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('queued','planning','running','awaiting_approval','completed','failed','cancelled','expired')), objective TEXT NOT NULL, payload_json TEXT NOT NULL, error_code TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, idempotency_key TEXT NOT NULL, UNIQUE(owner_id,idempotency_key));
+CREATE INDEX IF NOT EXISTS idx_agent_runs_owner_updated ON agent_runs(owner_id,updated_at DESC);
+CREATE TABLE IF NOT EXISTS agent_steps (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES agent_runs(id) ON DELETE CASCADE, sequence_no INTEGER NOT NULL, tool_name TEXT, status TEXT NOT NULL, input_hash TEXT, output_ref TEXT, cost_usd REAL NOT NULL DEFAULT 0, started_at TEXT, finished_at TEXT, UNIQUE(run_id,sequence_no));
+CREATE TABLE IF NOT EXISTS agent_approvals (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES agent_runs(id) ON DELETE CASCADE, owner_id TEXT NOT NULL, action_type TEXT NOT NULL, summary TEXT NOT NULL, decision TEXT NOT NULL DEFAULT 'pending' CHECK(decision IN ('pending','approve','deny','expired')), reason TEXT, expires_at TEXT NOT NULL, decided_at TEXT);
+CREATE INDEX IF NOT EXISTS idx_agent_approvals_pending ON agent_approvals(owner_id,decision,expires_at);
+CREATE TABLE IF NOT EXISTS route_decisions (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, task TEXT NOT NULL, modalities_json TEXT NOT NULL, policy_json TEXT NOT NULL, selected_provider TEXT NOT NULL, selected_model TEXT NOT NULL, fallback_json TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, actor_type TEXT NOT NULL, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, details_json TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_audit_owner_created ON audit_events(owner_id,created_at DESC);
