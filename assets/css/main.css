@@ -667,3 +667,14 @@ html[data-native-platform="true"] :is(.site-header, .create-topbar, .editor-topb
     grid-template-columns: 1fr;
   }
 }
+
+html[data-native-platform="true"] body::before {
+  content: "";
+  position: fixed;
+  z-index: 2147483647;
+  inset-inline: 0;
+  top: 0;
+  height: max(env(safe-area-inset-top, 0px), 24px);
+  background: var(--bg-primary, #070b17);
+  pointer-events: none;
+}
