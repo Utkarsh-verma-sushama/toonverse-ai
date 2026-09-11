@@ -706,3 +706,11 @@ html[data-native-platform="true"][data-platform="android"] .mobile-panel-button,
 html[data-native-platform="true"][data-platform="ios"] .mobile-panel-button {
   display: inline-grid !important;
 }
+
+/* Android touch fallback for WebViews/PWAs that do not expose the native bridge. */
+html[data-platform="android"][data-input="touch"] .create-layout { display:block!important; width:100%!important; }
+html[data-platform="android"][data-input="touch"] .create-sidebar { display:none!important; }
+html[data-platform="android"][data-input="touch"] .create-settings:not(.open) { display:none!important; }
+html[data-platform="android"][data-input="touch"] .create-workspace { width:100%!important; padding:16px 14px 32px!important; }
+html[data-platform="android"][data-input="touch"] .quick-tool-grid { grid-template-columns:1fr!important; }
+html[data-platform="android"][data-input="touch"] .mobile-panel-button { display:inline-grid!important; }
