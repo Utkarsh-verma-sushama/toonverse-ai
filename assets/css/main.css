@@ -696,7 +696,7 @@ html[data-native-platform="true"][data-platform="ios"] .create-settings:not(.ope
 html[data-native-platform="true"][data-platform="android"] .create-workspace,
 html[data-native-platform="true"][data-platform="ios"] .create-workspace {
   width: 100% !important;
-  padding: 16px 14px 32px !important;
+  padding: 16px 14px max(128px, calc(env(safe-area-inset-bottom, 0px) + 104px)) !important;
 }
 html[data-native-platform="true"][data-platform="android"] .quick-tool-grid,
 html[data-native-platform="true"][data-platform="ios"] .quick-tool-grid {
@@ -711,7 +711,7 @@ html[data-native-platform="true"][data-platform="ios"] .mobile-panel-button {
 html[data-platform="android"][data-input="touch"] .create-layout { display:block!important; width:100%!important; }
 html[data-platform="android"][data-input="touch"] .create-sidebar { display:none!important; }
 html[data-platform="android"][data-input="touch"] .create-settings:not(.open) { display:none!important; }
-html[data-platform="android"][data-input="touch"] .create-workspace { width:100%!important; padding:16px 14px 32px!important; }
+html[data-platform="android"][data-input="touch"] .create-workspace { width:100%!important; padding:16px 14px max(128px, calc(env(safe-area-inset-bottom, 0px) + 104px))!important; }
 html[data-platform="android"][data-input="touch"] .quick-tool-grid { grid-template-columns:1fr!important; }
 html[data-platform="android"][data-input="touch"] .mobile-panel-button { display:inline-grid!important; }
 
