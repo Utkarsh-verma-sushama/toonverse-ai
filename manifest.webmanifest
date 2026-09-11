@@ -203,6 +203,18 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Android Device Test",
+      "short_name": "Device Test",
+      "url": "./device-test.html",
+      "icons": [
+        {
+          "src": "./assets/toonverse-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
