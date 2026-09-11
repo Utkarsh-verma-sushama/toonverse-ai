@@ -760,6 +760,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .modal-card:focus{outline:none}
 @media(max-width:650px){.preview-header{align-items:flex-start}.preview-footer{align-items:stretch}.preview-status{width:100%}.preview-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.preview-actions button{width:100%;min-height:44px}.preview-stage{padding:8px}.preview-stage img{max-height:calc(100dvh - 205px)}}
 
+
+/* Exact creative sizing */
+.creative-resize-card{width:min(920px,96vw)}
+.creative-resize-layout{display:grid;grid-template-columns:minmax(280px,1fr) minmax(260px,1fr);gap:16px}
+.creative-controls{display:grid;gap:10px}
+.dimension-control{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:end}
+.dimension-control .form-field{min-width:0}
+.step-button{width:38px;min-height:34px;padding:4px}
+.creative-preview-panel{min-width:0;display:grid;align-content:start;gap:10px}
+.creative-preview-frame{min-height:230px;display:grid;place-items:center;overflow:auto;padding:12px;border:1px solid var(--border);border-radius:12px;background:#080d1b}
+#creative-size-preview{display:block;max-width:100%;max-height:300px;background:#05070d;box-shadow:0 14px 35px rgba(0,0,0,.4)}
+.creative-readout{color:var(--muted);font-size:11px;line-height:1.5}
+.range-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+@media(max-width:720px){.creative-resize-layout{grid-template-columns:1fr}.creative-preview-frame{min-height:170px}#creative-size-preview{max-height:210px}.creative-resize-card{max-height:92vh}.dimension-control{grid-template-columns:1fr 42px 42px}}
+
 </style>
 </head>
 
@@ -2851,91 +2866,41 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   hidden
  aria-label="Overlay File Input">
 
-<div
-  class="modal"
-  id="resize-modal"
->
-
-  <div class="modal-card">
-
-    <div class="modal-title">
-      Resize Image
-    </div>
-
-    <div class="form-grid">
-
-      <div class="form-field">
-
-        <label>
-          Width (px)
-        </label>
-
-        <input
-          id="resize-width"
-          class="editor-input"
-          type="number"
-          min="1"
-         aria-label="Resize Width">
-
+<div class="modal" id="resize-modal" role="dialog" aria-modal="true" aria-labelledby="resize-title">
+  <div class="modal-card creative-resize-card">
+    <div class="modal-title" id="resize-title">Creative Calculator — Live Size</div>
+    <div class="creative-resize-layout">
+      <div class="creative-controls">
+        <div class="form-grid">
+          <div class="form-field"><label for="resize-unit">Unit</label><select id="resize-unit" class="editor-select"><option value="px">Pixels (px)</option><option value="in">Inches (in)</option><option value="cm">Centimetres (cm)</option><option value="mm">Millimetres (mm)</option></select></div>
+          <div class="form-field"><label for="resize-dpi">Resolution (DPI/PPI)</label><input id="resize-dpi" class="editor-input" type="number" min="1" max="2400" step="1" value="300" inputmode="decimal"></div>
+        </div>
+        <div class="dimension-control">
+          <div class="form-field"><label for="resize-width">Width</label><input id="resize-width" class="editor-input" type="number" min="0.1" step="1" inputmode="decimal"></div>
+          <button class="top-button step-button" type="button" data-size-step="width:-1" aria-label="Decrease width">−</button>
+          <button class="top-button step-button" type="button" data-size-step="width:1" aria-label="Increase width">＋</button>
+        </div>
+        <div class="dimension-control">
+          <div class="form-field"><label for="resize-height">Height</label><input id="resize-height" class="editor-input" type="number" min="0.1" step="1" inputmode="decimal"></div>
+          <button class="top-button step-button" type="button" data-size-step="height:-1" aria-label="Decrease height">−</button>
+          <button class="top-button step-button" type="button" data-size-step="height:1" aria-label="Increase height">＋</button>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:11px"><input id="resize-lock" type="checkbox" checked> Lock aspect ratio</label>
+        <div class="form-field"><label for="resize-mode">Sizing mode</label><select id="resize-mode" class="editor-select"><option value="fit">Fit — preserve entire image</option><option value="fill">Fill — cover and centre crop</option><option value="stretch">Stretch — exact dimensions</option><option value="original">Original dimensions</option></select></div>
+        <div class="form-field"><label for="resize-percent">Percentage resize</label><div class="range-row"><input id="resize-percent" type="range" min="1" max="400" step="1" value="100"><output id="resize-percent-value">100%</output></div></div>
+        <div class="creative-readout" id="creative-size-details">Exact output dimensions will appear here.</div>
       </div>
-
-      <div class="form-field">
-
-        <label>
-          Height (px)
-        </label>
-
-        <input
-          id="resize-height"
-          class="editor-input"
-          type="number"
-          min="1"
-         aria-label="Resize Height">
-
+      <div class="creative-preview-panel">
+        <div class="creative-preview-frame"><canvas id="creative-size-preview" width="360" height="240" aria-label="Live resized image preview"></canvas></div>
+        <p class="creative-readout">This live preview does not change the original. Select <strong>Lock Size</strong> to apply the verified dimensions. Undo remains available.</p>
       </div>
-
     </div>
-
-    <label
-      style="
-        display:flex;
-        gap:8px;
-        align-items:center;
-        margin-top:10px;
-        font-size:11px
-      "
-    >
-
-      <input
-        id="resize-lock"
-        type="checkbox"
-        checked
-       aria-label="Resize Lock">
-
-      Lock aspect ratio
-
-    </label>
-
     <div class="modal-actions">
-
-      <button
-        class="top-button"
-        data-modal-close="resize-modal"
-      >
-        Cancel
-      </button>
-
-      <button
-        class="top-button primary-button"
-        id="resize-apply"
-      >
-        Apply Resize
-      </button>
-
+      <button class="top-button" id="resize-reset" type="button">Reset</button>
+      <button class="top-button" data-modal-close="resize-modal" type="button">Cancel</button>
+      <button class="top-button primary-button" id="resize-apply" type="button">Lock Size</button>
     </div>
-
   </div>
-
 </div>
 
 <div
@@ -11026,206 +10991,264 @@ document.addEventListener(
       }
     );
 
-    function openResize() {
 
-      resizeRatio =
-        work.width /
-        work.height;
+    const ExactCalc = (() => {
+      const abs = value => value < 0n ? -value : value;
+      const gcd = (a, b) => {
+        a = abs(a); b = abs(b);
+        while (b) { const next = a % b; a = b; b = next; }
+        return a || 1n;
+      };
+      const normalise = (numerator, denominator = 1n) => {
+        if (!denominator) throw new RangeError("Division by zero");
+        if (denominator < 0n) { numerator = -numerator; denominator = -denominator; }
+        const divisor = gcd(numerator, denominator);
+        return Object.freeze({ n: numerator / divisor, d: denominator / divisor });
+      };
+      const parse = value => {
+        const text = String(value).trim();
+        const match = text.match(/^([+-]?)(\d+)(?:\.(\d+))?$/);
+        if (!match) throw new TypeError("Enter a valid decimal number.");
+        const fraction = match[3] || "";
+        const sign = match[1] === "-" ? -1n : 1n;
+        return normalise(sign * BigInt(match[2] + fraction), 10n ** BigInt(fraction.length));
+      };
+      const mul = (a, b) => normalise(a.n * b.n, a.d * b.d);
+      const div = (a, b) => normalise(a.n * b.d, a.d * b.n);
+      const add = (a, b) => normalise(a.n * b.d + b.n * a.d, a.d * b.d);
+      const sub = (a, b) => normalise(a.n * b.d - b.n * a.d, a.d * b.d);
+      const round = value => {
+        const sign = value.n < 0n ? -1n : 1n;
+        const n = abs(value.n);
+        return Number(sign * ((n * 2n + value.d) / (2n * value.d)));
+      };
+      const toNumber = value => Number(value.n) / Number(value.d);
+      const unitFactor = unit => unit === "in" ? normalise(1n) : unit === "cm" ? normalise(50n,127n) : unit === "mm" ? normalise(5n,127n) : normalise(1n);
+      const toPixels = (value, unit, dpi) => unit === "px" ? round(parse(value)) : round(mul(mul(parse(value), unitFactor(unit)), parse(dpi)));
+      const fromPixels = (pixels, unit, dpi) => {
+        if (unit === "px") return String(Math.round(pixels));
+        const value = div(div(normalise(BigInt(Math.round(pixels))), unitFactor(unit)), parse(dpi));
+        return String(+toNumber(value).toFixed(4));
+      };
+      const percent = (value, pct) => round(div(mul(normalise(BigInt(value)), parse(pct)), normalise(100n)));
+      return Object.freeze({ parse, add, sub, mul, div, round, toNumber, toPixels, fromPixels, percent });
+    })();
+    globalThis.ToonVerseCalculationEngine = ExactCalc;
 
-      $("resize-width").value =
-        work.width;
+    let creativeBaseWidth = 1;
+    let creativeBaseHeight = 1;
+    let creativeInputGuard = false;
 
-      $("resize-height").value =
-        work.height;
-
-      $("resize-modal")
-        .classList
-        .add(
-          "open"
-        );
+    function creativeStep() {
+      return $("resize-unit").value === "px" ? 1 : 0.1;
     }
 
-    $("resize-width").addEventListener(
-      "input",
-      () => {
-
-        if (
-          $("resize-lock").checked
-        ) {
-
-          $("resize-height").value =
-            Math.max(
-              1,
-              Math.round(
-                Number(
-                  $("resize-width").value
-                ) /
-                resizeRatio
-              )
-            );
-        }
+    function creativePixels() {
+      const unit = $("resize-unit").value;
+      const dpi = Math.max(1, Math.min(2400, Number($("resize-dpi").value) || 300));
+      let width = ExactCalc.toPixels($("resize-width").value, unit, dpi);
+      let height = ExactCalc.toPixels($("resize-height").value, unit, dpi);
+      const mode = $("resize-mode").value;
+      if (mode === "original" && originalBitmap) {
+        width = originalBitmap.naturalWidth || originalBitmap.width;
+        height = originalBitmap.naturalHeight || originalBitmap.height;
       }
-    );
-
-    $("resize-height").addEventListener(
-      "input",
-      () => {
-
-        if (
-          $("resize-lock").checked
-        ) {
-
-          $("resize-width").value =
-            Math.max(
-              1,
-              Math.round(
-                Number(
-                  $("resize-height").value
-                ) *
-                resizeRatio
-              )
-            );
-        }
+      if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1) {
+        throw new RangeError("Dimensions must produce at least one pixel.");
       }
-    );
+      return { width, height, dpi, unit, mode };
+    }
 
-    $("resize-apply").addEventListener(
-      "click",
-      () => {
-
-        const newWidth =
-          Math.max(
-            1,
-            Number(
-              $("resize-width").value
-            ) |
-            0
-          );
-
-        const newHeight =
-          Math.max(
-            1,
-            Number(
-              $("resize-height").value
-            ) |
-            0
-          );
-
-        if (
-          !newWidth ||
-          !newHeight
-        ) {
-
-          return;
-        }
-
-        const pixelLimit =
-          (navigator.deviceMemory && navigator.deviceMemory <= 4)
-          ? 32000000
-          : 64000000;
-
-        if (
-          newWidth > 16384 ||
-          newHeight > 16384 ||
-          newWidth * newHeight > pixelLimit
-        ) {
-          notify(
-            `Requested size is too large for safe in-browser editing. Maximum safe canvas is 16,384px per side and ${Math.round(pixelLimit / 1000000)} megapixels on this device.`,
-            "warning"
-          );
-          return;
-        }
-
-        pushUndo(
-          "Before Resize"
-        );
-
-        const oldWidth =
-          work.width;
-
-        const oldHeight =
-          work.height;
-
-        layers.forEach(
-          layer => {
-
-            layer.canvas =
-              highQualityResizeCanvas(
-                layer.canvas,
-                newWidth,
-                newHeight
-              );
-
-            if (layer.maskCanvas) {
-              layer.maskCanvas =
-                highQualityResizeCanvas(
-                  layer.maskCanvas,
-                  newWidth,
-                  newHeight
-                );
-            }
-
-            if (
-              isTransformableLayer(
-                layer
-              ) &&
-              layer.contentData
-            ) {
-
-              layer.contentData.x *=
-                newWidth /
-                oldWidth;
-
-              layer.contentData.y *=
-                newHeight /
-                oldHeight;
-
-              layer.contentData.width *=
-                newWidth /
-                oldWidth;
-
-              layer.contentData.height *=
-                newHeight /
-                oldHeight;
-
-              if (
-                layer.kind ===
-                "text"
-              ) {
-
-                layer.contentData.size *=
-                  newHeight /
-                  oldHeight;
-              }
-            }
-          }
-        );
-
-        selectLayer(
-          activeLayerId,
-          false
-        );
-
-        $("resize-modal")
-          .classList
-          .remove(
-            "open"
-          );
-
-        updateDocumentMeta();
-
+    function drawCreativeSizePreview() {
+      const preview = $("creative-size-preview");
+      const pctx = configurePixelContext(preview.getContext("2d"));
+      try {
         renderAll();
-
-        addHistoryMessage(
-          `Resized to ${newWidth}×${newHeight}`
-        );
-
-        notify(
-          "Resize applied.",
-          "success"
-        );
+        const target = creativePixels();
+        const maxWidth = 520;
+        const maxHeight = 320;
+        const displayScale = Math.min(maxWidth / target.width, maxHeight / target.height, 1);
+        preview.width = Math.max(1, Math.round(target.width * displayScale));
+        preview.height = Math.max(1, Math.round(target.height * displayScale));
+        pctx.clearRect(0, 0, preview.width, preview.height);
+        const sourceRatio = render.width / render.height;
+        const targetRatio = preview.width / preview.height;
+        let dx = 0, dy = 0, dw = preview.width, dh = preview.height;
+        if (target.mode === "fit") {
+          if (sourceRatio > targetRatio) { dh = dw / sourceRatio; dy = (preview.height - dh) / 2; }
+          else { dw = dh * sourceRatio; dx = (preview.width - dw) / 2; }
+        } else if (target.mode === "fill") {
+          if (sourceRatio > targetRatio) { dw = dh * sourceRatio; dx = (preview.width - dw) / 2; }
+          else { dh = dw / sourceRatio; dy = (preview.height - dh) / 2; }
+        }
+        pctx.drawImage(render, dx, dy, dw, dh);
+        const inchesW = target.width / target.dpi;
+        const inchesH = target.height / target.dpi;
+        $("creative-size-details").textContent =
+          "Output: " + target.width + " × " + target.height + " px • " +
+          inchesW.toFixed(2) + " × " + inchesH.toFixed(2) + " in at " + target.dpi + " DPI • " +
+          (target.width * target.height / 1000000).toFixed(2) + " MP";
+      } catch (error) {
+        $("creative-size-details").textContent = error.message;
       }
-    );
+    }
+
+    function syncCreativeInputs(unit = $("resize-unit").value) {
+      creativeInputGuard = true;
+      const dpi = Math.max(1, Math.min(2400, Number($("resize-dpi").value) || 300));
+      $("resize-width").step = unit === "px" ? "1" : "0.1";
+      $("resize-height").step = unit === "px" ? "1" : "0.1";
+      $("resize-width").value = ExactCalc.fromPixels(creativeBaseWidth, unit, dpi);
+      $("resize-height").value = ExactCalc.fromPixels(creativeBaseHeight, unit, dpi);
+      $("resize-percent").value = "100";
+      $("resize-percent-value").textContent = "100%";
+      creativeInputGuard = false;
+      drawCreativeSizePreview();
+    }
+
+    function openResize() {
+      if (!currentFile) {
+        notify("Import an image first.", "warning");
+        return;
+      }
+      creativeBaseWidth = work.width;
+      creativeBaseHeight = work.height;
+      resizeRatio = creativeBaseWidth / creativeBaseHeight;
+      $("resize-mode").value = "fit";
+      syncCreativeInputs();
+      $("resize-modal").classList.add("open");
+      $("resize-width").focus();
+    }
+
+    function updateCreativePair(source) {
+      if (creativeInputGuard) return;
+      try {
+        if ($("resize-lock").checked) {
+          creativeInputGuard = true;
+          const unit = $("resize-unit").value;
+          const dpi = Math.max(1, Number($("resize-dpi").value) || 300);
+          if (source === "width") {
+            const widthPx = ExactCalc.toPixels($("resize-width").value, unit, dpi);
+            $("resize-height").value = ExactCalc.fromPixels(Math.max(1, Math.round(widthPx / resizeRatio)), unit, dpi);
+          } else {
+            const heightPx = ExactCalc.toPixels($("resize-height").value, unit, dpi);
+            $("resize-width").value = ExactCalc.fromPixels(Math.max(1, Math.round(heightPx * resizeRatio)), unit, dpi);
+          }
+          creativeInputGuard = false;
+        }
+        drawCreativeSizePreview();
+      } catch (error) {
+        creativeInputGuard = false;
+        $("creative-size-details").textContent = error.message;
+      }
+    }
+
+    $("resize-width").addEventListener("input", () => updateCreativePair("width"));
+    $("resize-height").addEventListener("input", () => updateCreativePair("height"));
+    $("resize-dpi").addEventListener("input", drawCreativeSizePreview);
+    $("resize-lock").addEventListener("change", drawCreativeSizePreview);
+    $("resize-mode").addEventListener("change", drawCreativeSizePreview);
+    $("resize-unit").addEventListener("change", () => syncCreativeInputs($("resize-unit").value));
+    $("resize-percent").addEventListener("input", () => {
+      const pct = $("resize-percent").value;
+      $("resize-percent-value").textContent = pct + "%";
+      creativeInputGuard = true;
+      const unit = $("resize-unit").value;
+      const dpi = Math.max(1, Number($("resize-dpi").value) || 300);
+      $("resize-width").value = ExactCalc.fromPixels(ExactCalc.percent(creativeBaseWidth, pct), unit, dpi);
+      $("resize-height").value = ExactCalc.fromPixels(ExactCalc.percent(creativeBaseHeight, pct), unit, dpi);
+      creativeInputGuard = false;
+      drawCreativeSizePreview();
+    });
+    document.querySelectorAll("[data-size-step]").forEach(button => {
+      button.addEventListener("click", () => {
+        const [field, direction] = button.dataset.sizeStep.split(":");
+        const input = $(field === "width" ? "resize-width" : "resize-height");
+        const next = Math.max(creativeStep(), (Number(input.value) || 0) + Number(direction) * creativeStep());
+        input.value = String(+next.toFixed(4));
+        updateCreativePair(field);
+      });
+    });
+    $("resize-reset").addEventListener("click", () => {
+      creativeBaseWidth = work.width;
+      creativeBaseHeight = work.height;
+      resizeRatio = creativeBaseWidth / creativeBaseHeight;
+      $("resize-mode").value = "fit";
+      syncCreativeInputs();
+      notify("Creative size preview reset.");
+    });
+
+    function resizeLayerCanvas(source, width, height, mode) {
+      if (mode !== "fill") return highQualityResizeCanvas(source, width, height);
+      const scale = Math.max(width / source.width, height / source.height);
+      const scaledWidth = Math.max(1, Math.round(source.width * scale));
+      const scaledHeight = Math.max(1, Math.round(source.height * scale));
+      const scaled = highQualityResizeCanvas(source, scaledWidth, scaledHeight);
+      const output = document.createElement("canvas");
+      output.width = width; output.height = height;
+      configurePixelContext(output.getContext("2d")).drawImage(
+        scaled,
+        Math.round((width - scaledWidth) / 2),
+        Math.round((height - scaledHeight) / 2)
+      );
+      return output;
+    }
+
+    $("resize-apply").addEventListener("click", () => {
+      let target;
+      try { target = creativePixels(); }
+      catch (error) { notify(error.message, "warning"); return; }
+
+      let newWidth = target.width;
+      let newHeight = target.height;
+      const oldWidth = work.width;
+      const oldHeight = work.height;
+      if (target.mode === "fit") {
+        const scale = Math.min(newWidth / oldWidth, newHeight / oldHeight);
+        newWidth = Math.max(1, Math.round(oldWidth * scale));
+        newHeight = Math.max(1, Math.round(oldHeight * scale));
+      }
+      const pixelLimit = navigator.deviceMemory && navigator.deviceMemory <= 4 ? 32000000 : 64000000;
+      if (newWidth > 16384 || newHeight > 16384 || newWidth * newHeight > pixelLimit) {
+        notify("Requested size exceeds this device's safe editing limit.", "warning");
+        return;
+      }
+
+      pushUndo("Before Creative Resize");
+      const scaleX = newWidth / oldWidth;
+      const scaleY = newHeight / oldHeight;
+      const fillScale = Math.max(newWidth / oldWidth, newHeight / oldHeight);
+      const fillOffsetX = (newWidth - oldWidth * fillScale) / 2;
+      const fillOffsetY = (newHeight - oldHeight * fillScale) / 2;
+
+      layers.forEach(layer => {
+        layer.canvas = resizeLayerCanvas(layer.canvas, newWidth, newHeight, target.mode);
+        if (layer.maskCanvas) layer.maskCanvas = resizeLayerCanvas(layer.maskCanvas, newWidth, newHeight, target.mode);
+        if (isTransformableLayer(layer) && layer.contentData) {
+          if (target.mode === "fill") {
+            layer.contentData.x = layer.contentData.x * fillScale + fillOffsetX;
+            layer.contentData.y = layer.contentData.y * fillScale + fillOffsetY;
+            layer.contentData.width *= fillScale;
+            layer.contentData.height *= fillScale;
+            if (layer.kind === "text") layer.contentData.size *= fillScale;
+          } else {
+            layer.contentData.x *= scaleX;
+            layer.contentData.y *= scaleY;
+            layer.contentData.width *= scaleX;
+            layer.contentData.height *= scaleY;
+            if (layer.kind === "text") layer.contentData.size *= scaleY;
+          }
+        }
+      });
+
+      selectLayer(activeLayerId, false);
+      $("resize-modal").classList.remove("open");
+      updateDocumentMeta();
+      renderAll();
+      addHistoryMessage("Creative size locked at " + newWidth + "×" + newHeight);
+      scheduleAutoSave();
+      notify("Size locked at " + newWidth + " × " + newHeight + " px. Undo is available.", "success");
+    });
 
     document
       .querySelectorAll(
