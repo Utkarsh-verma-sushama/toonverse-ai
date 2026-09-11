@@ -2956,7 +2956,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <div class="preview-shell">
     <header class="preview-header"><div><div class="preview-title" id="final-preview-title">Final Preview</div><div class="preview-meta" id="final-preview-meta">Review every detail before saving or publishing.</div></div><button class="top-button" id="preview-close" type="button" aria-label="Close final preview">✕ Close</button></header>
     <div class="preview-stage"><img id="final-preview-image" alt="Final edited project preview"></div>
-    <footer class="preview-footer"><div class="preview-status" id="final-preview-status">Your editable project remains protected.</div><div class="preview-actions"><button class="top-button" id="preview-edit" type="button">✏️ Edit Again</button><button class="top-button" id="preview-save" type="button">💾 Final Save</button><button class="top-button" id="preview-export" type="button">📤 Export</button><button class="top-button" id="preview-share" type="button">↗️ Share</button><button class="top-button primary-button" id="preview-publish" type="button">🚀 Publish</button></div></footer>
+    <footer class="preview-footer"><div class="preview-status" id="final-preview-status">Your editable project remains protected.</div><div class="preview-actions"><button class="top-button" id="preview-edit" type="button">✏️ Edit Again</button><button class="top-button" id="preview-save" type="button">💾 Final Save</button><button class="top-button" id="preview-export" type="button">📤 Export</button><button class="top-button" id="preview-share" type="button">↗️ Share</button><button class="top-button" id="preview-fax" type="button">📠 Fax</button><button class="top-button primary-button" id="preview-publish" type="button">🚀 Publish</button></div></footer>
   </div>
 </div>
 <div class="modal" id="reedit-modal" role="dialog" aria-modal="true" aria-labelledby="reedit-title" aria-hidden="true">
@@ -14780,6 +14780,48 @@ document.addEventListener(
     });
     $("preview-export").addEventListener("click", () => exportProject("download"));
     $("preview-share").addEventListener("click", () => exportProject("share"));
+
+    async function stageCurrentProjectForFax() {
+      if (!currentFile) {
+        notify("Import an image before sending a fax.", "warning");
+        return;
+      }
+      renderAll();
+      try {
+        const blob = await canvasToExportBlob(render, "image/png", 1);
+        if (!blob) throw new Error("Fax document encoding failed.");
+        const database = await new Promise((resolve, reject) => {
+          const request = indexedDB.open("toonverse-delivery", 1);
+          request.onupgradeneeded = () => {
+            if (!request.result.objectStoreNames.contains("drafts")) {
+              request.result.createObjectStore("drafts");
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        await new Promise((resolve, reject) => {
+          const transaction = database.transaction("drafts", "readwrite");
+          transaction.objectStore("drafts").put({
+            blob,
+            name: safeExportName(documentName.textContent) + "-edited.png",
+            mimeType: "image/png",
+            width: render.width,
+            height: render.height,
+            createdAt: new Date().toISOString()
+          }, "fax-draft");
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error);
+        });
+        database.close();
+        location.href = "./fax.html";
+      } catch (error) {
+        console.error("Fax handoff failed.", error);
+        notify("The project could not be prepared for Fax Center.", "error");
+      }
+    }
+
+    $("preview-fax").addEventListener("click", stageCurrentProjectForFax);
     $("preview-publish").addEventListener("click", () => exportProject("publish"));
 
     document
@@ -16409,6 +16451,9 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
         if (action) button.setAttribute("aria-label", formatOperation(action));
       }
     });
+
+    const faxEnabled = Boolean(window.ToonVerseConfig?.features?.fax);
+    $("preview-fax").hidden = !faxEnabled;
 
     resetVisualState();
 
