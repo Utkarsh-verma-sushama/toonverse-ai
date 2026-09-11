@@ -18,7 +18,7 @@ function policy(input={}){
  return Object.freeze({contractVersion:"1.0",task:tasks.has(detected.task)?detected.task:"generate",modalities:detected.modalities,quality,privacy,
  latencyBudgetMs:Math.max(1000,Math.min(120000,Number(settings.latencyBudgetMs)||30000)),
  costCeilingUsd:Math.max(0,Math.min(100,Number(settings.costCeilingUsd)||1)),
- region:String(settings.region||"auto"),fallbacks:Math.max(0,Math.min(3,Number(settings.fallbacks)??2)),
+ region:String(settings.region||"auto"),fallbacks:Math.max(0,Math.min(3,Number.isFinite(Number(settings.fallbacks))?Number(settings.fallbacks):2)),
  requireProvenance:true,allowTraining:false});
 }
 function validateRoute(route){
