@@ -32,7 +32,7 @@ async function request(path,options={}){
  try{const headers=new Headers(options.headers||{});const t=await token();if(t)headers.set("Authorization",`Bearer ${t}`);headers.set("Accept","application/json");const response=await fetch(`${base()}${path}`,{...options,headers,credentials:"include",cache:"no-store",signal:controller.signal});const body=await response.json().catch(()=>({}));if(!response.ok){const e=new Error(body.message||"AI request failed.");e.code=body.code||`HTTP_${response.status}`;throw e}return body}finally{clearTimeout(timer);if(activeController===controller)activeController=null}
 }
 async function submit(raw){
- const input=validate(raw);const localId=crypto.randomUUID?.()||`job-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+ const input=validate(raw);const routingPolicy=window.ToonVerseModelRouter?.policy?.(input)||null;if(routingPolicy)input.settings.routingPolicy=routingPolicy;const localId=crypto.randomUUID?.()||`job-${Date.now()}-${Math.random().toString(36).slice(2)}`;
  const record={id:localId,status:connected()&&navigator.onLine?"preparing":"queued",mode:input.mode,prompt:input.prompt,settings:input.settings,fileMeta:input.files.map(f=>({name:f.name,type:f.type,size:f.size,lastModified:f.lastModified})),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),progress:0};
  await save(record).catch(()=>record);emit(record.status,{job:record});
  if(!connected()){emit("service-unavailable",{job:record});return record}
