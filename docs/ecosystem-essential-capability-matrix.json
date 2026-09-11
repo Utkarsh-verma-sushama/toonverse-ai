@@ -1,0 +1,25 @@
+{
+  "version":"1.0",
+  "principle":"shared core, platform adapters, server-owned secrets",
+  "platforms":{
+    "web":{"shell":"implemented","offline":"implemented","installable":"implemented"},
+    "android":{"wrapper":"implemented","signedRelease":"owner_action","realDeviceCertification":"pending"},
+    "ios":{"wrapper":"implemented","signedRelease":"owner_action","realDeviceCertification":"pending"},
+    "windows":{"pwa":"implemented","storePackage":"deferred"},
+    "macos":{"pwa":"implemented","storePackage":"deferred"},
+    "linux":{"pwa":"implemented","nativePackage":"deferred"},
+    "tabletFoldable":{"responsiveCore":"implemented","realDeviceCertification":"pending"},
+    "tv":{"responsiveCore":"implemented","dpad":"implemented","vendorPackages":"owner_action"}
+  },
+  "mandatoryLayers":{
+    "accessibility":"implemented_foundation",
+    "offlineRecovery":"implemented_foundation",
+    "securityPrivacy":"implemented_foundation",
+    "performanceBudgets":"implemented_foundation",
+    "featureFlagsRollback":"implemented_foundation",
+    "observability":"contract_only",
+    "cloudBackend":"deployment_required",
+    "autonomousAgents":"deployment_required",
+    "multimodalRouting":"providers_required"
+  }
+}
