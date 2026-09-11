@@ -63,6 +63,10 @@ window.ToonVerseConfig = Object.freeze({
     imageToText: false,
 
     cloudSync: false,
+    // Safe-off until production cloud bindings, identity and providers pass release gates.
+    cloudBackend: false,
+    autonomousAgents: false,
+    multimodalModelRouting: false,
     authentication: false,
     payments: false
   }),
