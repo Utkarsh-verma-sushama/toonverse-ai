@@ -15524,7 +15524,8 @@ document.addEventListener(
 body{display:grid;place-items:center;min-height:100vh}
 img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filter};image-rendering:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{html,body{width:100%;height:100%}body{min-height:auto}img{height:100%;max-width:100%;max-height:100%}}
-</style></head><body><img id="print-image" src="${url}" alt="Print preview"></body></html>`);
+</style></head><body><img id="print-image" src="${url}" alt="Print preview"><script src="./assets/js/platform-runtime.js" defer></script>
+</body></html>`);
         printWindow.document.close();
 
         const printImage = printWindow.document.getElementById("print-image");
