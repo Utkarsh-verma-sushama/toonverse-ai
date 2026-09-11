@@ -643,3 +643,17 @@ html[data-reduced-motion] {
 html[data-native-platform="true"] body {
   padding-top: max(env(safe-area-inset-top, 0px), 24px) !important;
 }
+
+html[data-native-platform="true"] body {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 28px) !important;
+}
+html[data-native-platform="true"] body::after {
+  content: "";
+  position: fixed;
+  z-index: 2147483646;
+  inset-inline: 0;
+  bottom: 0;
+  height: max(env(safe-area-inset-bottom, 0px), 28px);
+  background: var(--bg-primary, #070b17);
+  pointer-events: none;
+}
