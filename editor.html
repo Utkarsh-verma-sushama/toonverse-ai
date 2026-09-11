@@ -742,6 +742,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(forced-colors:active){
   button,a,input,select,textarea{border:1px solid ButtonText}
 }
+
+/* Final review, confirmation, and delivery workflow */
+.preview-modal{padding:0;background:rgba(2,5,14,.94)}
+.preview-modal .preview-shell{width:100%;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:linear-gradient(145deg,#070b17,#101938)}
+.preview-header,.preview-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px max(12px,env(safe-area-inset-right)) 12px max(12px,env(safe-area-inset-left));background:rgba(12,18,39,.98);border-color:var(--border)}
+.preview-header{border-bottom:1px solid var(--border)}
+.preview-footer{border-top:1px solid var(--border);flex-wrap:wrap;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.preview-title{font-size:15px;font-weight:800}
+.preview-meta{color:var(--muted);font-size:11px;margin-top:3px}
+.preview-stage{min-height:0;display:grid;place-items:center;overflow:auto;padding:18px;background:#090e1b}
+.preview-stage img{display:block;max-width:100%;max-height:calc(100dvh - 150px);object-fit:contain;background:#05070d;box-shadow:0 24px 70px rgba(0,0,0,.58)}
+.preview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.preview-status{color:var(--muted);font-size:11px}
+.danger-button{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.45);color:#fecaca}
+.modal-copy{color:var(--muted);font-size:12px;line-height:1.55}
+.modal-card:focus{outline:none}
+@media(max-width:650px){.preview-header{align-items:flex-start}.preview-footer{align-items:stretch}.preview-status{width:100%}.preview-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.preview-actions button{width:100%;min-height:44px}.preview-stage{padding:8px}.preview-stage img{max-height:calc(100dvh - 205px)}}
+
 </style>
 </head>
 
@@ -791,6 +809,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 
   <div class="topbar-group">
+
+
+    <button class="top-button" type="button" data-editor-action="preview">
+      👁️ <span class="label">Preview</span>
+    </button>
 
     <button
       class="top-button"
@@ -2961,6 +2984,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
   </div>
 
+</div>
+
+
+<div class="modal preview-modal" id="final-preview-modal" role="dialog" aria-modal="true" aria-labelledby="final-preview-title" aria-hidden="true">
+  <div class="preview-shell">
+    <header class="preview-header"><div><div class="preview-title" id="final-preview-title">Final Preview</div><div class="preview-meta" id="final-preview-meta">Review every detail before saving or publishing.</div></div><button class="top-button" id="preview-close" type="button" aria-label="Close final preview">✕ Close</button></header>
+    <div class="preview-stage"><img id="final-preview-image" alt="Final edited project preview"></div>
+    <footer class="preview-footer"><div class="preview-status" id="final-preview-status">Your editable project remains protected.</div><div class="preview-actions"><button class="top-button" id="preview-edit" type="button">✏️ Edit Again</button><button class="top-button" id="preview-save" type="button">💾 Final Save</button><button class="top-button" id="preview-export" type="button">📤 Export</button><button class="top-button" id="preview-share" type="button">↗️ Share</button><button class="top-button primary-button" id="preview-publish" type="button">🚀 Publish</button></div></footer>
+  </div>
+</div>
+<div class="modal" id="reedit-modal" role="dialog" aria-modal="true" aria-labelledby="reedit-title" aria-hidden="true">
+  <div class="modal-card" tabindex="-1"><div class="modal-title" id="reedit-title">How would you like to edit?</div><p class="modal-copy">Your current edited version is saved. Continue from this exact point, or restart from the original while keeping the saved version recoverable.</p><div class="modal-actions"><button class="top-button" id="reedit-cancel" type="button">Cancel</button><button class="top-button danger-button" id="reedit-original" type="button">Start from Original</button><button class="top-button primary-button" id="reedit-current" type="button">Continue from Here</button></div></div>
+</div>
+<div class="modal" id="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" aria-hidden="true">
+  <div class="modal-card" tabindex="-1"><div class="modal-title" id="confirm-title">Please confirm</div><p class="modal-copy" id="confirm-message"></p><div class="modal-actions"><button class="top-button" id="confirm-cancel" type="button">Cancel</button><button class="top-button danger-button" id="confirm-accept" type="button">Confirm</button></div></div>
 </div>
 
 <script src="./assets/js/config.js"></script>
@@ -14599,6 +14637,128 @@ document.addEventListener(
       );
     }
 
+
+    let previewObjectUrl = "";
+    let previewReturnFocus = null;
+    let confirmationResolver = null;
+
+    function setModalOpen(modal, open, focusTarget) {
+      if (!modal) return;
+      modal.classList.toggle("open", open);
+      modal.setAttribute("aria-hidden", open ? "false" : "true");
+      if (open) (focusTarget || modal.querySelector("button, [tabindex]"))?.focus();
+    }
+
+    function closeFinalPreview() {
+      setModalOpen($("final-preview-modal"), false);
+      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = "";
+      $("final-preview-image").removeAttribute("src");
+      previewReturnFocus?.focus?.();
+      previewReturnFocus = null;
+    }
+
+    async function openFinalPreview() {
+      if (!currentFile) {
+        notify("Import an image before preview.", "warning");
+        return;
+      }
+      previewReturnFocus = document.activeElement;
+      renderAll();
+      try {
+        await saveProject({ quiet: true });
+        const blob = await canvasToExportBlob(render, "image/png", 1);
+        if (!blob) throw new Error("Preview encoding failed.");
+        if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+        previewObjectUrl = URL.createObjectURL(blob);
+        $("final-preview-image").src = previewObjectUrl;
+        $("final-preview-meta").textContent = documentName.textContent + " • " + render.width + " × " + render.height + " px";
+        $("final-preview-status").textContent = "Editable version auto-saved • Review, edit again, save, export, share or publish.";
+        setModalOpen($("final-preview-modal"), true, $("preview-edit"));
+        addHistoryMessage("Final preview opened");
+      } catch (error) {
+        console.error("Final preview failed.", error);
+        notify("Final preview could not be prepared on this device.", "error");
+      }
+    }
+
+    function requestConfirmation(title, message, confirmLabel) {
+      $("confirm-title").textContent = title;
+      $("confirm-message").textContent = message;
+      $("confirm-accept").textContent = confirmLabel || "Confirm";
+      setModalOpen($("confirm-modal"), true, $("confirm-cancel"));
+      return new Promise(resolve => {
+        if (confirmationResolver) confirmationResolver(false);
+        confirmationResolver = resolve;
+      });
+    }
+
+    function finishConfirmation(result) {
+      if (!confirmationResolver) return;
+      const resolve = confirmationResolver;
+      confirmationResolver = null;
+      setModalOpen($("confirm-modal"), false);
+      resolve(result);
+    }
+
+    function restartFromOriginal() {
+      if (!currentFile || !originalBitmap) {
+        notify("The original image is not available.", "warning");
+        return;
+      }
+      pushUndo("Before Restart From Original");
+      const width = originalBitmap.naturalWidth || originalBitmap.width;
+      const height = originalBitmap.naturalHeight || originalBitmap.height;
+      const originalCanvas = document.createElement("canvas");
+      originalCanvas.width = width;
+      originalCanvas.height = height;
+      configurePixelContext(originalCanvas.getContext("2d")).drawImage(originalBitmap, 0, 0);
+      work = originalCanvas;
+      wctx = configurePixelContext(work.getContext("2d", { willReadFrequently: true }));
+      resetVisualState();
+      clearPixelSelection(false);
+      setMainLayer(currentFile.name);
+      zoom = 1;
+      compareMode = false;
+      updateZoom();
+      updateDocumentMeta();
+      renderAll();
+      addHistoryMessage("Restarted from original");
+      scheduleAutoSave();
+      notify("Editing restarted from the original. Your previous version remains saved.", "success");
+    }
+
+    $("preview-close").addEventListener("click", closeFinalPreview);
+    $("preview-edit").addEventListener("click", () => {
+      setModalOpen($("final-preview-modal"), false);
+      setModalOpen($("reedit-modal"), true, $("reedit-current"));
+    });
+    $("reedit-cancel").addEventListener("click", () => {
+      setModalOpen($("reedit-modal"), false);
+      setModalOpen($("final-preview-modal"), true, $("preview-edit"));
+    });
+    $("reedit-current").addEventListener("click", () => {
+      setModalOpen($("reedit-modal"), false);
+      closeFinalPreview();
+      notify("Continue editing from your saved version.", "success");
+    });
+    $("reedit-original").addEventListener("click", async () => {
+      const confirmed = await requestConfirmation("Restart from the original?", "The current edited version is already saved. The editor will return to the original image and create a new editable state.", "Restart");
+      if (!confirmed) return;
+      setModalOpen($("reedit-modal"), false);
+      closeFinalPreview();
+      restartFromOriginal();
+    });
+    $("confirm-cancel").addEventListener("click", () => finishConfirmation(false));
+    $("confirm-accept").addEventListener("click", () => finishConfirmation(true));
+    $("preview-save").addEventListener("click", async () => {
+      await saveProject({ quiet: false });
+      $("final-preview-status").textContent = "Final editable project saved successfully.";
+    });
+    $("preview-export").addEventListener("click", () => exportProject("download"));
+    $("preview-share").addEventListener("click", () => exportProject("share"));
+    $("preview-publish").addEventListener("click", () => exportProject("publish"));
+
     document
       .querySelectorAll(
         "[data-editor-action]"
@@ -14627,7 +14787,19 @@ document.addEventListener(
 
                 case "new":
 
-                  resetProject();
+                  if (!currentFile) {
+                    resetProject();
+                    break;
+                  }
+
+                  requestConfirmation("Start a new project?", "Your current editable project will be closed. Save or export it first if you need another copy.", "Start New")
+                    .then(confirmed => { if (confirmed) resetProject(); });
+
+                  break;
+
+                case "preview":
+
+                  openFinalPreview();
 
                   break;
 
@@ -14774,7 +14946,7 @@ document.addEventListener(
       return preview.toDataURL("image/jpeg", .82);
     }
 
-    async function saveProject() {
+    async function saveProject(options = {}) {
 
       if (
         !currentFile
@@ -14883,10 +15055,10 @@ document.addEventListener(
         "Project saved"
       );
 
-      notify(
-        "Project saved locally.",
-        "success"
-      );
+      if (!options.quiet) {
+        notify("Project saved successfully. Export, share or publish whenever you are ready.", "success");
+      }
+      return true;
     }
 
     function canvasToExportBlob(targetCanvas, mimeType, quality) {
@@ -15049,7 +15221,8 @@ document.addEventListener(
     }
 
     async function deliverExport(blob, filename, delivery) {
-      if (delivery === "share" && typeof navigator.share === "function" && typeof File === "function") {
+      const nativeDelivery = delivery === "share" || delivery === "publish";
+      if (nativeDelivery && typeof navigator.share === "function" && typeof File === "function") {
         const file = new File([blob], filename, {
           type: blob.type || "application/octet-stream",
           lastModified: Date.now()
@@ -15069,13 +15242,13 @@ document.addEventListener(
               text: "Created with ToonVerse AI",
               files: [file]
             });
-            return "shared";
+            return delivery === "publish" ? "publish-ready" : "shared";
           } catch (error) {
             if (error?.name === "AbortError") return "cancelled";
             console.warn("Native file sharing was unavailable.", error);
           }
         }
-        notify("Native file sharing is unavailable here. The file will be downloaded instead.", "warning");
+        notify(delivery === "publish" ? "Direct publishing needs a supported app and permission. A publish-ready file will be downloaded instead." : "Native file sharing is unavailable here. The file will be downloaded instead.", "warning");
       }
       triggerExportDownload(blob, filename);
       return "downloaded";
@@ -15141,6 +15314,8 @@ document.addEventListener(
         notify(
           delivery === "share"
           ? "Preparing a high-quality file to share…"
+          : delivery === "publish"
+          ? "Preparing a publish-ready file…"
           : "Preparing high-quality export…"
         );
 
@@ -15191,12 +15366,14 @@ document.addEventListener(
         }
 
         addHistoryMessage(
-          `${result === "shared" ? "Shared" : "Exported"} ${outputWidth}×${outputHeight} ${extension.toUpperCase()}`
+          `${result === "shared" ? "Shared" : result === "publish-ready" ? "Sent to publisher" : "Exported"} ${outputWidth}×${outputHeight} ${extension.toUpperCase()}`
         );
         notify(
           result === "shared"
           ? `${extension.toUpperCase()} shared successfully.`
-          : `Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()} successfully.`,
+          : result === "publish-ready"
+          ? `${extension.toUpperCase()} sent to the selected publishing app.`
+          : `Exported ${outputWidth}×${outputHeight} ${extension.toUpperCase()} successfully.`, 
           "success"
         );
       } catch (error) {
@@ -15811,50 +15988,22 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
                 action ===
                 "delete"
               ) {
-
-                if (
-                  layers.length <=
-                  1
-                ) {
-
-                  notify(
-                    "At least one layer must remain.",
-                    "warning"
-                  );
-
+                if (layers.length <= 1) {
+                  notify("At least one layer must remain.", "warning");
                   return;
                 }
-
-                pushUndo(
-                  "Before Delete Layer"
-                );
-
-                const activeIndex =
-                  layers.indexOf(
-                    active
-                  );
-
-                layers.splice(
-                  activeIndex,
-                  1
-                );
-
-                selectLayer(
-                  layers[
-                    Math.max(
-                      0,
-                      activeIndex - 1
-                    )
-                  ].id,
-                  false
-                );
-
-                renderAll();
-
-                addHistoryMessage(
-                  "Layer deleted"
-                );
-
+                requestConfirmation("Delete this layer?", "The selected layer will be removed. You can still use Undo after deletion.", "Delete Layer")
+                  .then(confirmed => {
+                    if (!confirmed) return;
+                    pushUndo("Before Delete Layer");
+                    const activeIndex = layers.indexOf(active);
+                    layers.splice(activeIndex, 1);
+                    selectLayer(layers[Math.max(0, activeIndex - 1)].id, false);
+                    renderAll();
+                    addHistoryMessage("Layer deleted");
+                    scheduleAutoSave();
+                    notify("Layer deleted. Undo is available.", "success");
+                  });
                 return;
               }
 
