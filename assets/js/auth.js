@@ -28,7 +28,12 @@
     return state;
   };
 
-  const getState = () => ({ ...state, user: state.user ? { ...state.user } : null });
+  const getState = () => ({
+    ...state,
+    user: state.user
+      ? { ...state.user, entitlements: [...(state.user.entitlements || [])] }
+      : null
+  });
 
   const deviceId = () => {
     try {
@@ -86,7 +91,13 @@
       email: String(payload.user.email || ""),
       avatar: String(payload.user.avatar || ""),
       emailVerified: Boolean(payload.user.emailVerified),
-      mfaEnabled: Boolean(payload.user.mfaEnabled)
+      mfaEnabled: Boolean(payload.user.mfaEnabled),
+      plan: String(payload.user.plan || "free").toLowerCase(),
+      entitlements: Object.freeze(
+        Array.isArray(payload.user.entitlements)
+          ? [...new Set(payload.user.entitlements.map(value => String(value).toLowerCase()))]
+          : []
+      )
     } : null;
     if (!user?.id) throw new Error("INVALID_SESSION");
     const expiresAt = Number(payload.expiresAt) || Date.now() + 10 * 60 * 1000;
