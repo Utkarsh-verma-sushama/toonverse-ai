@@ -43,4 +43,5 @@ $("preset").onchange=()=>{if($("preset").value!=="custom"){const[w,h]=$("preset"
 ["width","height","guides","fit","scale","x","y","blur","dim","background","text","text-size","text-color"].forEach(id=>$(id).addEventListener("input",render));
 $("reset").onclick=()=>{["scale","x","y","blur","dim"].forEach((id,i)=>$(id).value=i===0?100:0);render();notify("Positioning reset.")};$("export").onclick=()=>deliver(false);$("top-export").onclick=()=>deliver(false);$("share").onclick=()=>deliver(true);
 $("width").disabled=$("height").disabled=true;render();buttons();if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn),{once:true});
-})();</script></body></html>
+})();</script><script src="./assets/js/platform-runtime.js" defer></script>
+</body></html>
