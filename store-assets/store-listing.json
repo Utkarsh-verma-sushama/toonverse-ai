@@ -22,8 +22,12 @@
     "iosArchive": "ci-validated-unsigned-simulator-build",
     "storeScreenshots": "capture-from-signed-release-candidate",
     "pricing": "server-and-store-verification-required",
-    "legalOperator": "required-before-submission",
-    "reviewAccount": "required-if-authentication-gates-review"
+    "legalOperator": "Utkarsh Prakash Verma (individual interim operator; registered entity pending)",
+    "reviewAccount": "required-if-authentication-gates-review",
+    "privacyContact": "support-page-active; dedicated-email-and-business-address-required-before-commercial-launch",
+    "governingLawAndDisputes": "qualified-legal-review-required-before-commercial-launch",
+    "aiProvider": "not-selected-or-connected",
+    "cloudFoundation": "Google Firebase configured; production cloud features release-gated"
   },
   "providerStatus": {
     "cloudFoundation": "Google Firebase (configured; production cloud features currently disabled)",
