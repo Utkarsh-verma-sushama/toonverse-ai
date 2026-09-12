@@ -20,6 +20,8 @@ for(const route of htmlRoutes){
 }
 const schema=await readFile(new URL("../backend/schema.sql",import.meta.url),"utf8");
 for(const table of ["agent_runs","agent_steps","agent_approvals","route_decisions","audit_events"])if(!schema.includes("CREATE TABLE IF NOT EXISTS "+table))throw new Error("Missing table "+table);
+const platformRuntime=await readFile(new URL("../assets/js/platform-runtime.js",import.meta.url),"utf8");
+for(const contract of ["toonverse-network-status","installNetworkStatus","Network status: online","Network status: offline","data-state=online","data-state=offline"])if(!platformRuntime.includes(contract))throw new Error("Missing global network-status contract: "+contract);
 const config=await readFile(new URL("../assets/js/config.js",import.meta.url),"utf8");
 for(const flag of ["autonomousAgents","multimodalModelRouting","cloudBackend"])if(!config.includes(flag+": false"))throw new Error(flag+" must default to safe-off.");
 const matrix=JSON.parse(await readFile(new URL("../docs/ecosystem-essential-capability-matrix.json",import.meta.url),"utf8"));
