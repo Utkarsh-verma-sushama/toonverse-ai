@@ -24,5 +24,11 @@
     "pricing": "server-and-store-verification-required",
     "legalOperator": "required-before-submission",
     "reviewAccount": "required-if-authentication-gates-review"
+  },
+  "providerStatus": {
+    "cloudFoundation": "Google Firebase (configured; production cloud features currently disabled)",
+    "publicWebHosting": "GitHub Pages",
+    "productionAiProvider": "not selected or connected",
+    "disclosureGate": "Provider identity, purpose, data categories, location, retention, training policy, subprocessors, deletion controls and transfer safeguards must be published before enablement"
   }
 }
