@@ -1,6 +1,6 @@
 # ToonVerse AI — Checkpoint Resume Record
 
-Last updated: 2026-09-11  
+Last updated: 2026-09-12  
 Current locked checkpoint: 43  
 Exact next checkpoint: 44  
 Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
@@ -61,7 +61,9 @@ Locked with final QA/polish gates, active Privacy Policy and Terms pages, versio
 
 ## Checkpoint 44 — Official Launch (in progress, not locked)
 
-Android and iOS native foundations use the stable application identifier \`ai.toonverse.app\`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. Store signing, legal operator metadata, real-device release validation, store review/publication and independent public reachability remain mandatory before this checkpoint can be locked.
+Android and iOS native foundations use the stable application identifier \`ai.toonverse.app\`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. The 12 September 2026 pre-launch audit also passed cloud runtime, native bundle, Pages deployment, complete internal route/asset integrity, safe Back navigation, draft recovery and offline-shell asset validation.
+
+Assistant-controlled release foundation is complete. Checkpoint 44 cannot be truthfully locked until owner-controlled gates pass: company/legal operator identity, final product name and domain, protected Android/iOS signing credentials, production backend/provider activation, physical Android/iPhone/iPad validation, accurate screenshots from the signed release candidate, store privacy/content declarations, Google Play and Apple review approval, staged rollout, and independent public reachability.
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
