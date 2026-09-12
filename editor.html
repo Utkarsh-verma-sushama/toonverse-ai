@@ -2934,7 +2934,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         id="recovery-new"
         type="button"
       >
-        Start New
+        Discard & Start New
       </button>
 
       <button
@@ -16427,6 +16427,10 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
         writeRecovery().catch(error => console.warn("Page-exit save failed.", error));
       }
     });
+
+    globalThis.ToonVerseBeforeBack = async () => {
+      if (currentFile) await writeRecovery();
+    };
 
     document.querySelectorAll("button").forEach(button => {
       if (!button.getAttribute("aria-label")) {
