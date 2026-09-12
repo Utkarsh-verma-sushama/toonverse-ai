@@ -26,4 +26,6 @@ if (!createSource.includes("ToonVerseBeforeBack") || !createSource.includes("Con
 const platformSource = await readFile(new URL("../dist/assets/js/platform-runtime.js", import.meta.url), "utf8");
 if (!platformSource.includes('addListener?.("backButton"') || !platformSource.includes("history.back()")) throw new Error("Native hardware Back navigation is not wired.");
 
+for (const contract of ["saveRouteRecovery", "recoveryDialog", "Continue", "Discard", "getRecoveryVersions", "unhandledrejection"]) { if (!platformSource.includes(contract)) throw new Error(`Shared recovery contract is missing: ${contract}`); }
+
 console.log(`Verified ${htmlFiles.length} native routes and ${required.length} critical assets.`);
