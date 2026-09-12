@@ -486,7 +486,13 @@
     }
 
     .create-upload-input {
-      display: none;
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      left: -10000px;
+      top: 0;
+      opacity: 0;
+      pointer-events: none;
     }
 
     /* =====================================================
@@ -2128,6 +2134,19 @@
       const uploadZone =
         document.getElementById("create-upload-zone");
 
+      function openCreateMediaPicker(event) {
+        if (!fileInput) {
+          notify("Media picker is unavailable. Please reopen Create Studio.", "error");
+          return;
+        }
+
+        // Android WebViews may not activate a display:none file input from a label.
+        // Keep it off-screen and invoke it directly during the trusted tap event.
+        if (event) event.preventDefault();
+        fileInput.value = "";
+        fileInput.click();
+      }
+
       const selectedFiles =
         document.getElementById("selected-files");
 
@@ -2416,6 +2435,11 @@
 
       if (uploadZone) {
 
+        uploadZone.addEventListener(
+          "click",
+          openCreateMediaPicker
+        );
+
         [
           "dragenter",
           "dragover"
@@ -2481,7 +2505,7 @@
 
               event.preventDefault();
 
-              fileInput?.click();
+              openCreateMediaPicker(event);
             }
           }
         );
