@@ -97,6 +97,22 @@ button{
   cursor:pointer
 }
 
+.navigation-button{
+  width:auto;
+  min-width:38px;
+  height:38px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:0 9px;
+  border-radius:10px;
+  font-size:12px;
+  font-weight:700
+}
+
+.navigation-button .nav-label{display:inline}
+
 .home-button{
   width:38px;
   height:38px;
@@ -658,6 +674,8 @@ button{
 }
 
 @media(max-width:650px){
+  .navigation-button{padding:0 7px}
+  .navigation-button .nav-label{display:none}
   .editor-topbar{
     min-height:58px;
     padding-inline:7px
@@ -787,13 +805,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
   <div class="topbar-group">
 
-    <a
-      href="./index.html"
-      class="home-button"
-      aria-label="Home"
-    >
-      ←
-    </a>
+    <button id="editor-back" class="home-button" type="button" aria-label="Back" title="Back">←</button>
+    <button id="editor-home" class="top-button navigation-button" type="button" aria-label="Home" title="Home">⌂ <span class="nav-label">Home</span></button>
 
     <a
       href="./index.html"
@@ -825,6 +838,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
   <div class="topbar-group">
 
+    <button id="editor-close" class="top-button navigation-button" type="button" aria-label="Close editor" title="Close editor">✕ <span class="nav-label">Close</span></button>
 
     <button class="top-button" type="button" data-editor-action="preview">
       👁️ <span class="label">Preview</span>
@@ -918,6 +932,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         Redo
       </span>
     </button>
+
+    <button id="version-history-button" class="command-button" type="button" title="Saved versions">🕘 <span class="command-label">Versions</span></button>
 
     <button
       id="editor-print"
@@ -2962,6 +2978,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="modal" id="reedit-modal" role="dialog" aria-modal="true" aria-labelledby="reedit-title" aria-hidden="true">
   <div class="modal-card" tabindex="-1"><div class="modal-title" id="reedit-title">How would you like to edit?</div><p class="modal-copy">Your current edited version is saved. Continue from this exact point, or restart from the original while keeping the saved version recoverable.</p><div class="modal-actions"><button class="top-button" id="reedit-cancel" type="button">Cancel</button><button class="top-button danger-button" id="reedit-original" type="button">Start from Original</button><button class="top-button primary-button" id="reedit-current" type="button">Continue from Here</button></div></div>
 </div>
+<div class="modal" id="navigation-modal" role="alertdialog" aria-modal="true" aria-labelledby="navigation-title" aria-describedby="navigation-message" aria-hidden="true">
+  <div class="modal-card" tabindex="-1">
+    <div class="modal-title" id="navigation-title">Leave the editor?</div>
+    <p class="modal-copy" id="navigation-message">Your work is auto-saved as a recoverable draft.</p>
+    <div class="modal-actions">
+      <button class="top-button" id="navigation-cancel" type="button">Cancel</button>
+      <button class="top-button" id="navigation-discard" type="button">Discard & Leave</button>
+      <button class="top-button primary-button" id="navigation-continue" type="button">Keep Draft & Leave</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="versions-modal" role="dialog" aria-modal="true" aria-labelledby="versions-title" aria-hidden="true">
+  <div class="modal-card" tabindex="-1">
+    <div class="modal-title" id="versions-title">Version History</div>
+    <p class="modal-copy">Restore any saved version. Your current draft stays protected until you confirm.</p>
+    <div id="versions-list" class="history-list" style="margin-top:12px"></div>
+    <div class="modal-actions"><button class="top-button" id="versions-close" type="button">Close</button></div>
+  </div>
+</div>
+
 <div class="modal" id="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" aria-hidden="true">
   <div class="modal-card" tabindex="-1"><div class="modal-title" id="confirm-title">Please confirm</div><p class="modal-copy" id="confirm-message"></p><div class="modal-actions"><button class="top-button" id="confirm-cancel" type="button">Cancel</button><button class="top-button danger-button" id="confirm-accept" type="button">Confirm</button></div></div>
 </div>
@@ -3363,6 +3400,9 @@ document.addEventListener(
 
     let autoSaveTimer =
       null;
+
+    let hasUnsavedChanges = false;
+    let navigationTarget = null;
 
     let recoveryInProgress =
       false;
@@ -4058,6 +4098,8 @@ document.addEventListener(
     }
 
     function scheduleAutoSave() {
+
+      hasUnsavedChanges = true;
 
       if (
         !currentFile ||
@@ -14687,6 +14729,75 @@ document.addEventListener(
       }
     }
 
+    function navigateNow(target) {
+      hasUnsavedChanges = false;
+      if (target === "back") {
+        if (history.length > 1) history.back();
+        else location.assign("./index.html");
+        return;
+      }
+      if (target === "close") {
+        window.close();
+        setTimeout(() => location.assign("./index.html"), 120);
+        return;
+      }
+      location.assign("./index.html");
+    }
+
+    function requestNavigation(target) {
+      navigationTarget = target;
+      if (!currentFile || !hasUnsavedChanges) {
+        navigateNow(target);
+        return;
+      }
+      $("navigation-message").textContent =
+        "Your latest work is auto-saved as a recoverable draft. Keep it for later, discard it, or cancel and continue editing.";
+      setModalOpen($("navigation-modal"), true, $("navigation-cancel"));
+    }
+
+    async function openVersionHistory() {
+      const list = $("versions-list");
+      list.innerHTML = '<div class="history-item">Loading saved versions…</div>';
+      setModalOpen($("versions-modal"), true, $("versions-close"));
+      try {
+        const store = globalThis.ToonVerseProjectStore;
+        const versions = store ? await store.listVersions() : [];
+        if (!versions.length) {
+          list.innerHTML = '<div class="history-item">No manual versions yet. Select Save to create one.</div>';
+          return;
+        }
+        list.innerHTML = "";
+        versions.forEach((version, index) => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = "history-item";
+          item.style.cssText = "width:100%;text-align:left;color:var(--text);cursor:pointer";
+          const date = new Date(version.savedAt);
+          item.textContent = `Version ${versions.length - index} • ${version.width || "?"} × ${version.height || "?"} • ${date.toLocaleString()}`;
+          item.addEventListener("click", async () => {
+            const confirmed = await requestConfirmation("Restore this version?", "Your current work remains protected as a draft. The selected saved version will open in the editor.", "Restore");
+            if (!confirmed) return;
+            try {
+              await store.restoreVersion(version.id);
+              const snapshot = await store.getRecoverySnapshot(version.projectId);
+              if (!snapshot) throw new Error("Restored snapshot is unavailable.");
+              await restoreRecovery(snapshot);
+              hasUnsavedChanges = false;
+              setModalOpen($("versions-modal"), false);
+              notify("Saved version restored successfully.", "success");
+            } catch (error) {
+              console.error(error);
+              notify("This version could not be restored on this device.", "error");
+            }
+          });
+          list.appendChild(item);
+        });
+      } catch (error) {
+        console.error(error);
+        list.innerHTML = '<div class="history-item">Version history is temporarily unavailable on this device.</div>';
+      }
+    }
+
     function requestConfirmation(title, message, confirmLabel) {
       $("confirm-title").textContent = title;
       $("confirm-message").textContent = message;
@@ -14754,6 +14865,34 @@ document.addEventListener(
       closeFinalPreview();
       restartFromOriginal();
     });
+    $("editor-back").addEventListener("click", () => requestNavigation("back"));
+    $("editor-home").addEventListener("click", () => requestNavigation("home"));
+    $("editor-close").addEventListener("click", () => requestNavigation("close"));
+    $("version-history-button").addEventListener("click", openVersionHistory);
+    $("versions-close").addEventListener("click", () => setModalOpen($("versions-modal"), false));
+    $("navigation-cancel").addEventListener("click", () => {
+      navigationTarget = null;
+      setModalOpen($("navigation-modal"), false);
+      notify("Continue editing. Your draft is protected.", "success");
+    });
+    $("navigation-continue").addEventListener("click", async () => {
+      const target = navigationTarget || "home";
+      try { await writeRecovery(); } catch (error) { console.warn("Draft save before navigation failed.", error); }
+      setModalOpen($("navigation-modal"), false);
+      navigateNow(target);
+    });
+    $("navigation-discard").addEventListener("click", async () => {
+      const target = navigationTarget || "home";
+      try { await deleteRecovery(); } catch (error) { console.warn("Draft discard failed.", error); }
+      setModalOpen($("navigation-modal"), false);
+      navigateNow(target);
+    });
+    window.addEventListener("beforeunload", event => {
+      if (!currentFile || !hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
+
     $("confirm-cancel").addEventListener("click", () => finishConfirmation(false));
     $("confirm-accept").addEventListener("click", () => finishConfirmation(true));
     $("preview-save").addEventListener("click", async () => {
@@ -15102,6 +15241,7 @@ document.addEventListener(
         "Project saved"
       );
 
+      hasUnsavedChanges = false;
       if (!options.quiet) {
         notify("Project saved successfully. Export, share or publish whenever you are ready.", "success");
       }
