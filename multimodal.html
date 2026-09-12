@@ -46,7 +46,7 @@ input,select,textarea{width:100%;color:var(--text);background:#081225;border:1px
 </form>
 <section class="card"><h2>Structured result</h2><p>Text, timestamps, warnings and provenance appear here. Results remain separate from the original.</p><div class="result" id="result" tabindex="0">No result yet.</div></section>
 </div></main>
-<script src="assets/js/config.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/model-router.js"></script><script src="assets/js/ai-runtime.js"></script><script src="assets/js/multimodal.js"></script>
+<script src="assets/js/config.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/model-router.js"></script><script src="assets/js/ai-runtime.js"></script><script src="assets/js/multimodal-runtime.js"></script>
 <script>
 (()=>{"use strict";let selected=[],active=null,timer=null;const $=id=>document.getElementById(id),status=$("status"),result=$("result"),drop=$("drop"),input=$("files");
 const showFiles=()=>{$("fileList").innerHTML=selected.map(f=>`<div class="file"><span>${f.name.replace(/[<>&"]/g,"")}</span><span>${(f.size/1048576).toFixed(1)} MB</span></div>`).join("")};
