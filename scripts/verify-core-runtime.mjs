@@ -24,6 +24,13 @@ const platformRuntime=await readFile(new URL("../assets/js/platform-runtime.js",
 for(const contract of ["toonverse-network-status","installNetworkStatus","Network status: online","Network status: offline","data-state=online","data-state=offline"])if(!platformRuntime.includes(contract))throw new Error("Missing global network-status contract: "+contract);
 const config=await readFile(new URL("../assets/js/config.js",import.meta.url),"utf8");
 for(const flag of ["autonomousAgents","multimodalModelRouting","cloudBackend"])if(!config.includes(flag+": false"))throw new Error(flag+" must default to safe-off.");
+const privacy=await readFile(new URL("../privacy.html",import.meta.url),"utf8");
+const terms=await readFile(new URL("../terms.html",import.meta.url),"utf8");
+const storeListing=JSON.parse(await readFile(new URL("../store-assets/store-listing.json",import.meta.url),"utf8"));
+for(const [name,source] of [["privacy.html",privacy],["terms.html",terms]])if(!source.includes("Utkarsh Prakash Verma"))throw new Error(name+" must identify the verified interim operator.");
+if(!privacy.includes("Google Firebase")||!privacy.includes("No production AI model provider"))throw new Error("Privacy provider disclosure is incomplete.");
+if(storeListing.status?.aiProvider!=="not-selected-or-connected")throw new Error("Store metadata must not claim an unselected AI provider.");
+if(!String(storeListing.status?.cloudFoundation||"").includes("Google Firebase"))throw new Error("Store metadata cloud foundation is incomplete.");
 const matrix=JSON.parse(await readFile(new URL("../docs/ecosystem-essential-capability-matrix.json",import.meta.url),"utf8"));
 for(const platform of ["web","android","ios","windows","macos","linux","tabletFoldable","tv"])if(!matrix.platforms[platform])throw new Error("Missing platform "+platform);
 console.log("Verified agent guardrails, routing, cloud, platform adaptation and durable schema.");
