@@ -25,6 +25,8 @@ if (!editorSource.includes("ToonVerseBeforeBack") || !editorSource.includes("Dis
 if (!createSource.includes("ToonVerseBeforeBack") || !createSource.includes("Continue your previous creation?")) throw new Error("create.html: protected Back draft recovery is missing.");
 const platformSource = await readFile(new URL("../dist/assets/js/platform-runtime.js", import.meta.url), "utf8");
 if (!platformSource.includes('addListener?.("backButton"') || !platformSource.includes("history.back()")) throw new Error("Native hardware Back navigation is not wired.");
+if (!platformSource.includes("hasSafePreviousRoute") || !platformSource.includes("previous.origin===location.origin")) throw new Error("Back navigation can escape to an unsafe external history entry.");
+if (!platformSource.includes("saveIfChanged") || !platformSource.includes("const baseline=JSON.stringify(captureRouteState())")) throw new Error("Route recovery must ignore untouched default forms.");
 
 for (const contract of ["saveRouteRecovery", "recoveryDialog", "Continue", "Discard", "getRecoveryVersions", "unhandledrejection"]) { if (!platformSource.includes(contract)) throw new Error(`Shared recovery contract is missing: ${contract}`); }
 
