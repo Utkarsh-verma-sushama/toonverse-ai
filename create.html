@@ -2177,6 +2177,22 @@
       let activeMode =
         "generate";
 
+      let createAutoSaveTimer = null;
+      function persistCreateDraft() {
+        try {
+          localStorage.setItem("toonverse-create-draft", JSON.stringify({
+            prompt: prompt?.value || "", mode: activeMode,
+            variation: variation?.value || "1",
+            outputType: document.getElementById("output-type")?.value,
+            aspectRatio: document.getElementById("aspect-ratio")?.value,
+            quality: document.getElementById("quality")?.value,
+            savedAt: new Date().toISOString()
+          }));
+        } catch (error) { console.warn("Create draft auto-save failed.", error); }
+      }
+      function queueCreateAutoSave() { clearTimeout(createAutoSaveTimer); createAutoSaveTimer = setTimeout(persistCreateDraft, 500); }
+      globalThis.ToonVerseBeforeBack = async () => persistCreateDraft();
+
 
       /* ===================================================
          PROMPT COUNTER
@@ -2194,7 +2210,7 @@
 
       prompt?.addEventListener(
         "input",
-        updatePromptCounter
+        () => { updatePromptCounter(); queueCreateAutoSave(); }
       );
 
       updatePromptCounter();
@@ -2283,6 +2299,7 @@
         notify(
           `${modeNames[mode] || "Creative workflow"} selected.`
         );
+        queueCreateAutoSave();
       }
 
 
@@ -2699,6 +2716,21 @@
          DRAFT RECOVERY
          =================================================== */
 
+      function applyCreateDraft(parsed) {
+        prompt.value = parsed.prompt || "";
+        if (parsed.mode && modeNames[parsed.mode]) setCreateMode(parsed.mode);
+        if (parsed.variation && variation) { variation.value = parsed.variation; if (variationValue) variationValue.textContent = parsed.variation; }
+        [["output-type", parsed.outputType], ["aspect-ratio", parsed.aspectRatio], ["quality", parsed.quality]].forEach(([id, value]) => { const field = document.getElementById(id); if (field && value) field.value = value; });
+        updatePromptCounter(); notify("Previous Create Studio draft restored.", "success");
+      }
+      function offerCreateRecovery(parsed) {
+        const overlay=document.createElement("div");overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.style.cssText="position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:18px;background:#000b";
+        const card=document.createElement("div");card.style.cssText="width:min(440px,100%);padding:20px;border:1px solid #ffffff24;border-radius:18px;background:#121b31;color:#fff;box-shadow:0 24px 80px #000a";
+        const title=document.createElement("h2");title.textContent="Continue your previous creation?";const copy=document.createElement("p");copy.style.color="#b8c1d8";copy.textContent="Your prompt and creation settings were saved automatically. Continue from the same point or discard them and start new.";
+        const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap";const discard=document.createElement("button");discard.type="button";discard.className="btn btn-secondary";discard.textContent="Discard";const resume=document.createElement("button");resume.type="button";resume.className="btn btn-primary";resume.textContent="Continue";
+        discard.onclick=()=>{localStorage.removeItem("toonverse-create-draft");overlay.remove();prompt?.focus()};resume.onclick=()=>{overlay.remove();applyCreateDraft(parsed)};actions.append(discard,resume);card.append(title,copy,actions);overlay.append(card);document.body.append(overlay);resume.focus();
+      }
+
       try {
 
         const savedDraft =
@@ -2718,24 +2750,7 @@
             !prompt.value
           ) {
 
-            prompt.value =
-              parsed.prompt;
-
-            if (parsed.mode && modeNames[parsed.mode]) {
-              setCreateMode(parsed.mode);
-            }
-
-            if (parsed.variation && variation) {
-              variation.value = parsed.variation;
-              if (variationValue) variationValue.textContent = parsed.variation;
-            }
-
-            updatePromptCounter();
-
-            notify(
-              "Previous Create Studio draft restored.",
-              "success"
-            );
+            offerCreateRecovery(parsed);
           }
         }
 
