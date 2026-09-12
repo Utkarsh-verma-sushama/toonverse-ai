@@ -2855,8 +2855,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <input
   id="editor-file-input"
   type="file"
-  accept="image/*"
-  hidden
+  accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,image/gif,image/bmp"
+  style="position:fixed;width:1px;height:1px;left:-10000px;top:0;opacity:0;pointer-events:none"
  aria-label="Editor File Input">
 
 <input
@@ -6516,33 +6516,15 @@ document.addEventListener(
 
           button.addEventListener(
             "click",
-            () => {
+            event => {
+
+              event.preventDefault();
 
               fileInput.value =
                 "";
 
-              try {
-
-                if (
-                  typeof
-                  fileInput.showPicker ===
-                  "function"
-                ) {
-
-                  fileInput.showPicker();
-
-                  return;
-                }
-
-              } catch (
-                error
-              ) {
-
-                console.warn(
-                  error
-                );
-              }
-
+              // Direct click reliably opens Capacitor Android/iOS native choosers.
+              // The input stays off-screen instead of hidden/display:none.
               fileInput.click();
             }
           );
