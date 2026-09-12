@@ -115,7 +115,7 @@
 
     support: Object.freeze({
       path: "./support.html",
-      enabled: false,
+      enabled: true,
       label: "Support"
     })
   });
