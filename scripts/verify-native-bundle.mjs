@@ -21,5 +21,9 @@ if (!/uploadZone\.addEventListener\([\s\S]*?["']click["'][\s\S]*?openCreateMedia
 if (!/id=["']editor-file-input["'][\s\S]*?type=["']file["']/i.test(editorSource)) throw new Error("editor.html: native editor file input is missing.");
 if (/id=["'](?:create|editor)-file-input["'][^>]*(?:\shidden(?:\s|>|=)|display\s*:\s*none)/i.test(createSource + editorSource)) throw new Error("Native media input must remain visually off-screen, not hidden/display:none.");
 if (!/fileInput\.click\(\)/.test(editorSource)) throw new Error("editor.html: Import action does not invoke the native file chooser.");
+if (!editorSource.includes("ToonVerseBeforeBack") || !editorSource.includes("Discard & Start New")) throw new Error("editor.html: protected Back recovery controls are missing.");
+if (!createSource.includes("ToonVerseBeforeBack") || !createSource.includes("Continue your previous creation?")) throw new Error("create.html: protected Back draft recovery is missing.");
+const platformSource = await readFile(new URL("../dist/assets/js/platform-runtime.js", import.meta.url), "utf8");
+if (!platformSource.includes('addListener?.("backButton"') || !platformSource.includes("history.back()")) throw new Error("Native hardware Back navigation is not wired.");
 
 console.log(`Verified ${htmlFiles.length} native routes and ${required.length} critical assets.`);
