@@ -1,19 +1,19 @@
 (() => {
   "use strict";
 
-  const DB_NAME = "toonverse-project-system";
+  const DB_NAME = "uvenaro-project-system";
   const DB_VERSION = 1;
   const PROJECTS = "projects";
   const VERSIONS = "versions";
   const QUEUE = "syncQueue";
   const SETTINGS = "settings";
-  const PROJECT_ID_KEY = "toonverse:project:active-id";
-  const DEVICE_ID_KEY = "toonverse:device:id";
-  const LEGACY_KEY = "toonverse:editor:last-project";
+  const PROJECT_ID_KEY = "uvenaro:project:active-id";
+  const DEVICE_ID_KEY = "uvenaro:device:id";
+  const LEGACY_KEY = "uvenaro:editor:last-project";
   const MAX_VERSIONS = 5;
   const channel =
     typeof BroadcastChannel === "function"
-      ? new BroadcastChannel("toonverse-projects")
+      ? new BroadcastChannel("uvenaro-projects")
       : null;
   let syncAdapter = null;
 
@@ -187,7 +187,7 @@
       record.syncState = "local-only";
     }
     channel?.postMessage({ type: "project-saved", projectId: id, at: now });
-    globalThis.dispatchEvent?.(new CustomEvent("toonverse:project-saved", { detail: { projectId: id } }));
+    globalThis.dispatchEvent?.(new CustomEvent("uvenaro:project-saved", { detail: { projectId: id } }));
     return record;
   }
 
@@ -239,7 +239,7 @@
   async function getRecoverySnapshot(projectId = activeProjectId()) {
     if (!("indexedDB" in globalThis)) return null;
     const recoveryDb = await new Promise((resolve, reject) => {
-      const request = indexedDB.open("toonverse-editor", 1);
+      const request = indexedDB.open("uvenaro-editor", 1);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
       request.onblocked = () => reject(new Error("Recovery storage is busy in another tab."));
@@ -270,7 +270,7 @@
     }
 
     const recoveryDb = await new Promise((resolve, reject) => {
-      const request = indexedDB.open("toonverse-editor", 1);
+      const request = indexedDB.open("uvenaro-editor", 1);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
       request.onblocked = () => reject(new Error("Close the editor tab before restoring a version."));
@@ -406,6 +406,6 @@
     migrateLegacy,
     deviceId
   });
-  globalThis.ToonVerseProjectStore = api;
+  globalThis.UvenaroProjectStore = api;
   migrateLegacy().catch(error => console.warn("Project migration deferred.", error));
 })();

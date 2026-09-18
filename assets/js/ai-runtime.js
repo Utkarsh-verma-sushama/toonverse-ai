@@ -1,12 +1,12 @@
 (() => {
 "use strict";
-const DB="toonverse-ai-jobs", VERSION=1, STORE="jobs";
+const DB="uvenaro-jobs", VERSION=1, STORE="jobs";
 const supportedModes=new Set(["generate","cartoon","wallpaper","coloring","memory","camera","image-text","video-text","batch","ai-enhance","auto-fix","background-remove","background-change","object-remove","upscale","restore","colorize","portrait","lighting","prompt-edit","image-understanding","video-understanding","audio-understanding","ocr","transcribe","translate","summarize","scene-index","accessibility-description","math","support"]);
 const listeners=new Set();
 let activeController=null;
-const base=()=>String(window.ToonVerseConfig?.services?.apiBaseUrl||"").replace(/\/$/,"");
+const base=()=>String(window.UvenaroConfig?.services?.apiBaseUrl||"").replace(/\/$/,"");
 const connected=()=>Boolean(base());
-const emit=(type,detail={})=>{const event={type,...detail,at:new Date().toISOString()};listeners.forEach(fn=>{try{fn(event)}catch(e){console.error(e)}});window.dispatchEvent(new CustomEvent("toonverse:ai-job",{detail:event}));};
+const emit=(type,detail={})=>{const event={type,...detail,at:new Date().toISOString()};listeners.forEach(fn=>{try{fn(event)}catch(e){console.error(e)}});window.dispatchEvent(new CustomEvent("uvenaro:ai-job",{detail:event}));};
 function openDb(){if(!("indexedDB" in globalThis))return Promise.reject(new Error("Offline job storage is unavailable."));return new Promise((resolve,reject)=>{const q=indexedDB.open(DB,VERSION);q.onupgradeneeded=()=>{const db=q.result;if(!db.objectStoreNames.contains(STORE)){const s=db.createObjectStore(STORE,{keyPath:"id"});s.createIndex("status","status");s.createIndex("createdAt","createdAt")}};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(new Error("Job storage is busy in another tab."))})}
 async function save(record){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}return record}
 async function remove(id){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}finally{db.close()}}
@@ -26,13 +26,13 @@ consent:Boolean(input.settings?.consent),retention:String(input.settings?.retent
 integrity:Array.isArray(input.settings?.integrity)?input.settings.integrity:[],
 contractVersion:String(input.settings?.contractVersion||"1.0")}};
 }
-async function token(){if(!window.ToonVerseAuth)return"";try{return await window.ToonVerseAuth.getAccessToken()}catch{return""}}
+async function token(){if(!window.UvenaroAuth)return"";try{return await window.UvenaroAuth.getAccessToken()}catch{return""}}
 async function request(path,options={}){
  const controller=activeController=new AbortController();const timer=setTimeout(()=>controller.abort(),120000);
  try{const headers=new Headers(options.headers||{});const t=await token();if(t)headers.set("Authorization",`Bearer ${t}`);headers.set("Accept","application/json");const response=await fetch(`${base()}${path}`,{...options,headers,credentials:"include",cache:"no-store",signal:controller.signal});const body=await response.json().catch(()=>({}));if(!response.ok){const e=new Error(body.message||"AI request failed.");e.code=body.code||`HTTP_${response.status}`;throw e}return body}finally{clearTimeout(timer);if(activeController===controller)activeController=null}
 }
 async function submit(raw){
- const input=validate(raw);const routingPolicy=window.ToonVerseModelRouter?.policy?.(input)||null;if(routingPolicy)input.settings.routingPolicy=routingPolicy;const localId=crypto.randomUUID?.()||`job-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+ const input=validate(raw);const routingPolicy=window.UvenaroModelRouter?.policy?.(input)||null;if(routingPolicy)input.settings.routingPolicy=routingPolicy;const localId=crypto.randomUUID?.()||`job-${Date.now()}-${Math.random().toString(36).slice(2)}`;
  const record={id:localId,status:connected()&&navigator.onLine?"preparing":"queued",mode:input.mode,prompt:input.prompt,settings:input.settings,fileMeta:input.files.map(f=>({name:f.name,type:f.type,size:f.size,lastModified:f.lastModified})),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),progress:0};
  await save(record).catch(()=>record);emit(record.status,{job:record});
  if(!connected()){emit("service-unavailable",{job:record});return record}
@@ -50,5 +50,5 @@ async function retry(id){const jobs=await list();const old=jobs.find(j=>j.id===i
 function subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)}
 window.addEventListener("online",()=>emit("online"));
 window.addEventListener("offline",()=>emit("offline"));
-window.ToonVerseAIJobs=Object.freeze({connected,validate,submit,status,cancel,retry,list,subscribe,supportedModes:Object.freeze([...supportedModes])});
+window.UvenaroJobs=Object.freeze({connected,validate,submit,status,cancel,retry,list,subscribe,supportedModes:Object.freeze([...supportedModes])});
 })();

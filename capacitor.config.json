@@ -1,6 +1,6 @@
 {
-  "appId": "ai.toonverse.app",
-  "appName": "ToonVerse AI",
+  "appId": "ai.uvenaro.app",
+  "appName": "UVENARO",
   "webDir": "dist",
   "backgroundColor": "#0b1020",
   "server": {

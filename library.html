@@ -6,12 +6,12 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0b1020">
-<title>My Library | ToonVerse AI</title>
+<title>My Library | UVENARO</title>
 <style>
 *{box-sizing:border-box}html{color-scheme:dark}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#fff;min-height:100vh;min-height:100dvh}
 a,button{font:inherit}.skip{position:fixed;left:12px;top:-60px;z-index:10;background:#fff;color:#111;padding:10px;border-radius:8px}.skip:focus{top:12px}
@@ -30,7 +30,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
 <body>
 <a class="skip" href="#main">Skip to main content</a>
 <header>
-<a class="logo" href="index.html">✨ ToonVerse AI</a>
+<a class="logo" href="index.html">✨ UVENARO</a>
 <nav aria-label="Primary navigation">
 <a href="index.html">Home</a><a href="create.html">Create</a><a href="editor.html">Editor</a><a href="library.html" aria-current="page">My Library</a>
 </nav>
@@ -65,7 +65,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
     const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
     return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
   };
-  const store = globalThis.ToonVerseProjectStore;
+  const store = globalThis.UvenaroProjectStore;
 
   function renderEmpty(message = "No saved project yet") {
     content.className = "panel empty";
@@ -196,9 +196,9 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
         try {
           await store.removeProject(project.id);
           if (store.activeProjectId() === project.id) {
-            localStorage.removeItem("toonverse:editor:last-project");
+            localStorage.removeItem("uvenaro:editor:last-project");
             if ("indexedDB" in window) {
-              const request = indexedDB.open("toonverse-editor", 1);
+              const request = indexedDB.open("uvenaro-editor", 1);
               request.onsuccess = () => {
                 const db = request.result;
                 if (db.objectStoreNames.contains("projects")) {
@@ -215,7 +215,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
         } catch (error) {
           console.error("Project removal failed.", error);
           remove.disabled = false;
-          announce("Project could not be removed. Close other ToonVerse AI tabs and try again.");
+          announce("Project could not be removed. Close other UVENARO tabs and try again.");
         }
       });
       actions.append(open, create);
@@ -230,7 +230,7 @@ main{width:min(1100px,100%);margin:auto;padding:clamp(28px,6vw,64px) max(16px,en
   } catch (error) {
     console.error("Library could not start.", error);
     renderEmpty("Library could not be opened");
-    syncSummary.innerHTML = "<div><strong>Storage temporarily unavailable</strong><small>Close other ToonVerse AI tabs and reload this page.</small></div><span class=\"pill\">Needs attention</span>";
+    syncSummary.innerHTML = "<div><strong>Storage temporarily unavailable</strong><small>Close other UVENARO tabs and reload this page.</small></div><span class=\"pill\">Needs attention</span>";
   }
 })();
 </script>

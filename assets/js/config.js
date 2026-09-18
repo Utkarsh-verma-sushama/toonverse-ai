@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================
-   ToonVerse AI
+   UVENARO
    Public Frontend Configuration — V1 Foundation
 
    IMPORTANT:
@@ -11,9 +11,9 @@
    credentials must never be placed in this file.
    ========================================================= */
 
-window.ToonVerseConfig = Object.freeze({
+window.UvenaroConfig = Object.freeze({
   app: Object.freeze({
-    name: "ToonVerse AI",
+    name: "UVENARO",
     version: "1.2.0",
     environment: "production"
   }),

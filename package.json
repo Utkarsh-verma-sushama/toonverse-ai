@@ -1,8 +1,8 @@
 {
-  "name": "toonverse-ai",
+  "name": "uvenaro",
   "version": "2.0.0",
   "private": true,
-  "description": "ToonVerse AI cross-platform web, Android and iOS application",
+  "description": "UVENARO cross-platform web, Android and iOS application",
   "engines": {
     "node": ">=22"
   },

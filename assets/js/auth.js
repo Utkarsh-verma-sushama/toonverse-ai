@@ -1,8 +1,8 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "toonverse:auth:session-hint";
-  const DEVICE_KEY = "toonverse:auth:device-id";
+  const STORAGE_KEY = "uvenaro:auth:session-hint";
+  const DEVICE_KEY = "uvenaro:auth:device-id";
   const listeners = new Set();
   let accessToken = "";
   let refreshPromise = null;
@@ -10,7 +10,7 @@
     status: "signed-out",
     user: null,
     expiresAt: 0,
-    backendConnected: Boolean(window.ToonVerseConfig?.services?.apiBaseUrl),
+    backendConnected: Boolean(window.UvenaroConfig?.services?.apiBaseUrl),
     lastError: ""
   });
 
@@ -19,7 +19,7 @@
     listeners.forEach(listener => {
       try { listener(snapshot); } catch (error) { console.error("Auth listener failed.", error); }
     });
-    window.dispatchEvent(new CustomEvent("toonverse:auth-change", { detail: snapshot }));
+    window.dispatchEvent(new CustomEvent("uvenaro:auth-change", { detail: snapshot }));
   };
 
   const setState = patch => {
@@ -48,19 +48,19 @@
   };
 
   const endpoint = path => {
-    const base = String(window.ToonVerseConfig?.services?.apiBaseUrl || "").replace(/\/$/, "");
+    const base = String(window.UvenaroConfig?.services?.apiBaseUrl || "").replace(/\/$/, "");
     if (!base) throw new Error("ACCOUNT_SERVICE_UNAVAILABLE");
     return `${base}${path}`;
   };
 
   async function request(path, options = {}) {
     const controller = new AbortController();
-    const timeout = Math.max(5000, Number(window.ToonVerseConfig?.services?.requestTimeoutMs) || 30000);
+    const timeout = Math.max(5000, Number(window.UvenaroConfig?.services?.requestTimeoutMs) || 30000);
     const timer = setTimeout(() => controller.abort(), timeout);
     try {
       const headers = new Headers(options.headers || {});
       headers.set("Accept", "application/json");
-      headers.set("X-ToonVerse-Device", deviceId());
+      headers.set("X-Uvenaro-Device", deviceId());
       if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
       if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
       const response = await fetch(endpoint(path), {
@@ -343,7 +343,7 @@
     return () => listeners.delete(listener);
   }
 
-  window.ToonVerseAuth = Object.freeze({
+  window.UvenaroAuth = Object.freeze({
     getState, subscribe, restore, signInWithEmail, createAccount, sendOtp, verifyOtp,
     beginProvider, beginPasskey, getAccessToken, signOut, listSessions, revokeSession,
     getSecurityOverview, requestPasswordReset, beginTotpEnrollment,

@@ -1,4 +1,4 @@
-# ToonVerse AI — Launch Campaign Baseline
+# UVENARO — Launch Campaign Baseline
 
 ## Positioning
 A privacy-first, recoverable, cross-device AI creative ecosystem for creating, editing, understanding and preserving visual stories.

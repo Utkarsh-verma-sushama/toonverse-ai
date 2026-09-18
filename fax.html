@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https:; object-src 'self' blob:; base-uri 'self'; form-action 'self'">
-<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#070b17">
-<meta name="description" content="Secure cloud fax center for ToonVerse AI">
-<title>ToonVerse AI — Fax Center</title>
+<meta name="description" content="Secure cloud fax center for UVENARO">
+<title>UVENARO — Fax Center</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#070b17;color:#fff;font-family:Arial,Helvetica,sans-serif}
 :root{--panel:#111a31;--panel2:#151f3d;--border:rgba(255,255,255,.11);--primary:#765cff;--primary2:#ff3d9a;--muted:#aeb8d6;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444}
@@ -24,7 +24,7 @@ main{width:min(1180px,calc(100% - 24px));margin:auto;padding:28px 0 48px}.hero h
 </head>
 <body>
 <div class="shell">
-<header class="topbar"><div style="display:flex;align-items:center;gap:10px"><a class="back" href="./editor.html">← Editor</a><a class="brand" href="./index.html">✨ ToonVerse AI</a></div><span class="status" id="service-status">Provider not connected</span></header>
+<header class="topbar"><div style="display:flex;align-items:center;gap:10px"><a class="back" href="./editor.html">← Editor</a><a class="brand" href="./index.html">✨ UVENARO</a></div><span class="status" id="service-status">Provider not connected</span></header>
 <main>
 <section class="hero"><h1>Secure Fax Center</h1><p>Prepare, preview, send and receive business faxes from one protected workspace. Telephone-network delivery activates only after a verified cloud-fax provider and secure backend are connected.</p></section>
 <div class="tabs" role="tablist"><button class="tab active" type="button" data-tab="send" role="tab" aria-selected="true">Send Fax</button><button class="tab" type="button" data-tab="inbox" role="tab" aria-selected="false">Fax Inbox</button></div>
@@ -54,7 +54,7 @@ main{width:min(1180px,calc(100% - 24px));margin:auto;padding:28px 0 48px}.hero h
 "use strict";
 document.addEventListener("DOMContentLoaded",()=>{
 const $=id=>document.getElementById(id);
-const cfg=window.ToonVerseConfig||{};
+const cfg=window.UvenaroConfig||{};
 const apiBase=String(cfg.services?.faxApiBaseUrl||"").replace(/\/$/,"");
 const featureEnabled=Boolean(cfg.features?.fax);
 let currentFile=null,currentUrl="",confirmResolve=null,entitlementAllowed=false;
@@ -75,7 +75,7 @@ function setFile(file){if(!file)return;if(!["application/pdf","image/png","image
 const formatBytes=bytes=>bytes<1048576?(bytes/1024).toFixed(1)+" KB":(bytes/1048576).toFixed(1)+" MB";
 $("fax-file").addEventListener("change",event=>setFile(event.target.files?.[0]));
 $("include-cover").addEventListener("change",()=>{if(currentFile&&currentFile.type!=="application/pdf")$("page-count").textContent="1 document page"+($("include-cover").checked?" + cover":"")});
-function openDraftDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open("toonverse-delivery",1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("drafts"))request.result.createObjectStore("drafts")};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
+function openDraftDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open("uvenaro-delivery",1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("drafts"))request.result.createObjectStore("drafts")};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
 async function draftRequest(mode,value){const db=await openDraftDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("drafts",mode==="read"?"readonly":"readwrite");const store=tx.objectStore("drafts");const request=mode==="read"?store.get("fax-draft"):mode==="delete"?store.delete("fax-draft"):store.put(value,"fax-draft");request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}finally{db.close()}}
 async function restoreDraft(){try{const draft=await draftRequest("read");if(draft?.blob){setFile(new File([draft.blob],draft.name||"fax-document.png",{type:draft.mimeType||draft.blob.type,lastModified:Date.now()}));notify("Editor document loaded into Fax Center.","success")}}catch(error){console.warn("Fax draft restore failed.",error)}}
 $("save-draft").addEventListener("click",async()=>{if(!currentFile)return;try{await draftRequest("write",{blob:currentFile,name:currentFile.name,mimeType:currentFile.type,createdAt:new Date().toISOString()});notify("Fax draft saved securely on this device.","success")}catch(error){notify("Fax draft could not be saved on this device.","error")}});
@@ -86,12 +86,12 @@ async function loadInbox(){if(!entitlementAllowed){$("fax-inbox").innerHTML='<di
 $("refresh-inbox").addEventListener("click",loadInbox);
 async function refreshFaxAccess(){
   if(!featureEnabled){$("service-status").textContent="Optional module • Not released";entitlementAllowed=false;return}
-  if(!window.ToonVerseAuth){$("service-status").textContent="Account service required";return}
-  try{const state=await window.ToonVerseAuth.restore();entitlementAllowed=hasFaxEntitlement(state)}
+  if(!window.UvenaroAuth){$("service-status").textContent="Account service required";return}
+  try{const state=await window.UvenaroAuth.restore();entitlementAllowed=hasFaxEntitlement(state)}
   catch(error){entitlementAllowed=false}
   $("service-status").textContent=entitlementAllowed?(apiBase?"Premium Fax active":"Premium eligible • Provider pending"):"Premium subscription required";
 }
-window.ToonVerseAuth?.subscribe?.(state=>{entitlementAllowed=featureEnabled&&hasFaxEntitlement(state);$("review-send").title=entitlementAllowed?"":"Premium, Business or Pro subscription required"});
+window.UvenaroAuth?.subscribe?.(state=>{entitlementAllowed=featureEnabled&&hasFaxEntitlement(state);$("review-send").title=entitlementAllowed?"":"Premium, Business or Pro subscription required"});
 window.addEventListener("pagehide",()=>{if(currentUrl)URL.revokeObjectURL(currentUrl)});
 refreshFaxAccess();
 restoreDraft();

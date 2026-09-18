@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: ToonVerse AI Backend API
+  title: UVENARO Backend API
   version: 1.0.0
   description: Secure, provider-independent contract for authenticated project synchronization.
 servers:
@@ -34,7 +34,7 @@ paths:
           required: true
           schema: { type: string, minLength: 8, maxLength: 200 }
         - in: header
-          name: X-ToonVerse-Schema
+          name: X-Uvenaro-Schema
           required: true
           schema: { type: string, const: "1" }
       requestBody:

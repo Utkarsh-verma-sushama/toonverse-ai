@@ -1,6 +1,6 @@
 {
-  "name": "ToonVerse AI",
-  "short_name": "ToonVerse",
+  "name": "UVENARO",
+  "short_name": "Uvenaro",
   "description": "AI creative studio and professional image editor.",
   "id": "./index.html",
   "start_url": "./index.html",
@@ -17,7 +17,7 @@
   "lang": "en",
   "icons": [
     {
-      "src": "./assets/toonverse-icon.svg",
+      "src": "./assets/uvenaro-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -30,7 +30,7 @@
       "url": "./create.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -42,7 +42,7 @@
       "url": "./editor.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -54,7 +54,7 @@
       "url": "./library.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -66,7 +66,7 @@
       "url": "./account.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -78,7 +78,7 @@
       "url": "./layout.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -90,7 +90,7 @@
       "url": "./wallpaper.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -102,7 +102,7 @@
       "url": "./multimodal.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -114,7 +114,7 @@
       "url": "./memory.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -126,7 +126,7 @@
       "url": "./coloring.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -138,7 +138,7 @@
       "url": "./camera.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -150,7 +150,7 @@
       "url": "./utilities.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -162,7 +162,7 @@
       "url": "./support.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -174,7 +174,7 @@
       "url": "./plans.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -186,7 +186,7 @@
       "url": "./qa.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -198,7 +198,7 @@
       "url": "./launch.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -210,7 +210,7 @@
       "url": "./device-test.html",
       "icons": [
         {
-          "src": "./assets/toonverse-icon.svg",
+          "src": "./assets/uvenaro-icon.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }

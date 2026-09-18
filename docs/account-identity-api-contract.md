@@ -1,4 +1,4 @@
-# ToonVerse AI Account & Identity API Contract
+# UVENARO Account & Identity API Contract
 
 Version: 1.0  
 Status: security-first backend contract  
@@ -33,7 +33,7 @@ The provider adapter registry supports:
 - Email or phone OTP
 - Passkeys (WebAuthn)
 
-Adding a provider must not change the internal ToonVerse user ID. Provider subject identifiers are stored as account links, not used as the primary project owner ID.
+Adding a provider must not change the internal Uvenaro user ID. Provider subject identifiers are stored as account links, not used as the primary project owner ID.
 
 ## Core endpoints
 
@@ -97,7 +97,7 @@ The start endpoint returns an allowlisted authorization URL after generating ser
 
 Account linking rules:
 
-1. A provider subject can belong to only one ToonVerse account.
+1. A provider subject can belong to only one Uvenaro account.
 2. Matching email alone never silently merges accounts.
 3. Linking requires an authenticated session plus recent re-verification.
 4. Unlinking cannot remove the final usable sign-in method.

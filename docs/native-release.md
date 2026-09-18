@@ -1,6 +1,6 @@
-# ToonVerse AI native release foundation
+# UVENARO native release foundation
 
-The production application identifier is `ai.toonverse.app` for Android, iOS and iPadOS. Changing it after either store's first public release creates a different app, so it must remain stable.
+The production application identifier is `ai.uvenaro.app` for Android, iOS and iPadOS. Changing it after either store's first public release creates a different app, so it must remain stable.
 
 ## Reproducible build flow
 
@@ -14,7 +14,7 @@ CI validates an Android debug APK, an unsigned release AAB, and an unsigned iOS 
 
 ## Release gates
 
-- Register the exact Android package name and Apple bundle ID `ai.toonverse.app`.
+- Register the exact Android package name and Apple bundle ID `ai.uvenaro.app`.
 - Configure organization-owned signing keys through protected CI secrets; never commit certificates, profiles, keystores, passwords or API keys.
 - Complete legal operator, privacy declarations, content rating, age rating, export compliance and review-contact metadata.
 - Validate camera, file import/export, sharing, offline recovery, accessibility, orientation, low-memory behavior and interrupted-network recovery on real Android phones/tablets and iPhone/iPad hardware.

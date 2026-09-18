@@ -1,4 +1,4 @@
-name = "toonverse-core-api"
+name = "uvenaro-core-api"
 main = "worker.mjs"
 compatibility_date = "2026-09-01"
 workers_dev = true
@@ -10,20 +10,20 @@ MODEL_CATALOG_JSON = "[]"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "toonverse-core"
+database_name = "uvenaro-core"
 database_id = "SET_D1_DATABASE_ID"
 
 [[r2_buckets]]
 binding = "MEDIA"
-bucket_name = "toonverse-media"
+bucket_name = "uvenaro-media"
 
 [[queues.producers]]
 binding = "AGENT_QUEUE"
-queue = "toonverse-agent-runs"
+queue = "uvenaro-agent-runs"
 
 [[queues.consumers]]
-queue = "toonverse-agent-runs"
+queue = "uvenaro-agent-runs"
 max_batch_size = 5
 max_batch_timeout = 5
 max_retries = 3
-dead_letter_queue = "toonverse-agent-dead-letter"
+dead_letter_queue = "uvenaro-agent-dead-letter"

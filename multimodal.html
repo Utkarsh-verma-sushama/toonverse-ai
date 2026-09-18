@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin"><meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#081225"><title>Multimodal Intelligence — ToonVerse AI</title>
-<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#081225"><title>Multimodal Intelligence — UVENARO</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <style>
 :root{color-scheme:dark;--bg:#071020;--panel:#101b34;--line:#293858;--text:#f7f9ff;--muted:#aebbd5;--accent:#7c5cff;--ok:#4ade80;--danger:#fb7185}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#18264b,var(--bg) 46%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
@@ -24,7 +24,7 @@ input,select,textarea{width:100%;color:var(--text);background:#081225;border:1px
 </style>
 </head>
 <body>
-<header><a class="brand" href="index.html">✦ ToonVerse AI</a><span class="badge">Multimodal Intelligence</span><a href="editor.html">Editor</a></header>
+<header><a class="brand" href="index.html">✦ UVENARO</a><span class="badge">Multimodal Intelligence</span><a href="editor.html">Editor</a></header>
 <main>
 <p>CHECKPOINT 35</p><h1>Understand images, video, audio and documents.</h1>
 <p>Extract text, transcripts, scenes, summaries and accessible descriptions while keeping originals unchanged.</p>
@@ -53,10 +53,10 @@ const showFiles=()=>{$("fileList").innerHTML=selected.map(f=>`<div class="file">
 const choose=files=>{selected=Array.from(files||[]);showFiles();status.textContent=selected.length?`${selected.length} item(s) ready. Nothing uploaded yet.`:"Ready. No file has been uploaded."};
 input.onchange=()=>choose(input.files);drop.onclick=()=>input.click();drop.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();input.click()}};
 ["dragenter","dragover"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.dataset.over="true"}));["dragleave","drop"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.dataset.over="false"}));drop.addEventListener("drop",e=>choose(e.dataTransfer.files));
-async function poll(){if(!active)return;try{active=await ToonVerseAIJobs.status(active.id);$("bar").style.width=`${Math.max(0,Math.min(100,active.progress||0))}%`;status.textContent=`${active.status} · ${Math.round(active.progress||0)}%`;if(active.status==="completed"){result.textContent=JSON.stringify(ToonVerseMultimodal.normalizeResult(active),null,2);finish();return}if(["failed","cancelled","expired"].includes(active.status))throw new Error(active.errorMessage||`Job ${active.status}.`);timer=setTimeout(poll,2000)}catch(e){status.textContent=e.message;finish()}}
+async function poll(){if(!active)return;try{active=await UvenaroJobs.status(active.id);$("bar").style.width=`${Math.max(0,Math.min(100,active.progress||0))}%`;status.textContent=`${active.status} · ${Math.round(active.progress||0)}%`;if(active.status==="completed"){result.textContent=JSON.stringify(UvenaroMultimodal.normalizeResult(active),null,2);finish();return}if(["failed","cancelled","expired"].includes(active.status))throw new Error(active.errorMessage||`Job ${active.status}.`);timer=setTimeout(poll,2000)}catch(e){status.textContent=e.message;finish()}}
 function finish(){clearTimeout(timer);$("start").disabled=false;$("cancel").disabled=true}
-$("form").onsubmit=async e=>{e.preventDefault();$("start").disabled=true;$("cancel").disabled=false;result.textContent="Waiting for a verified result…";try{active=await ToonVerseMultimodal.submit({mode:$("mode").value,files:selected,purpose:$("purpose").value,language:$("language").value,consent:$("consent").checked,features:{ocr:$("ocr").checked,transcript:$("transcript").checked,summary:$("summary").checked,timestamps:$("timestamps").checked,objects:$("objects").checked,accessibility:$("accessibility").checked}});if(!ToonVerseAIJobs.connected()){status.textContent="The workspace is ready. A production AI backend must be connected before media leaves this device.";finish();return}poll()}catch(e){status.textContent=e.message;finish()}};
-$("cancel").onclick=async()=>{clearTimeout(timer);await ToonVerseAIJobs.cancel(active?.id);status.textContent="Cancelled safely.";finish()};
+$("form").onsubmit=async e=>{e.preventDefault();$("start").disabled=true;$("cancel").disabled=false;result.textContent="Waiting for a verified result…";try{active=await UvenaroMultimodal.submit({mode:$("mode").value,files:selected,purpose:$("purpose").value,language:$("language").value,consent:$("consent").checked,features:{ocr:$("ocr").checked,transcript:$("transcript").checked,summary:$("summary").checked,timestamps:$("timestamps").checked,objects:$("objects").checked,accessibility:$("accessibility").checked}});if(!UvenaroJobs.connected()){status.textContent="The workspace is ready. A production AI backend must be connected before media leaves this device.";finish();return}poll()}catch(e){status.textContent=e.message;finish()}};
+$("cancel").onclick=async()=>{clearTimeout(timer);await UvenaroJobs.cancel(active?.id);status.textContent="Cancelled safely.";finish()};
 $("form").onreset=()=>setTimeout(()=>{selected=[];active=null;showFiles();result.textContent="No result yet.";status.textContent="Ready. No file has been uploaded.";$("bar").style.width="0"},0);
 })();
 </script>
