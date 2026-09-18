@@ -1,5 +1,5 @@
 /* =========================================================
-   ToonVerse AI
+   UVENARO
    Components Stylesheet — V1 Foundation
    ========================================================= */
 
@@ -1015,10 +1015,10 @@
 
   border-radius: 50%;
 
-  animation: toonverse-spin 700ms linear infinite;
+  animation: uvenaro-spin 700ms linear infinite;
 }
 
-@keyframes toonverse-spin {
+@keyframes uvenaro-spin {
   to {
     transform: rotate(360deg);
   }
@@ -1054,10 +1054,10 @@
     transparent
   );
 
-  animation: toonverse-skeleton 1.4s infinite;
+  animation: uvenaro-skeleton 1.4s infinite;
 }
 
-@keyframes toonverse-skeleton {
+@keyframes uvenaro-skeleton {
   100% {
     transform: translateX(100%);
   }

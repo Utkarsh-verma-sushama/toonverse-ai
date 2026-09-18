@@ -10,20 +10,20 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <meta
     name="description"
-    content="ToonVerse AI Create Studio — Generate, transform and build creative media with AI."
+    content="UVENARO Create Studio — Generate, transform and build creative media with AI."
   >
 
   <meta name="theme-color" content="#070b17">
   <meta name="color-scheme" content="dark">
 
-  <title>Create Studio — ToonVerse AI</title>
+  <title>Create Studio — UVENARO</title>
 
   <!-- Core styles -->
   <link
@@ -934,7 +934,7 @@
         <a
           class="icon-btn"
           href="./index.html"
-          aria-label="Back to ToonVerse AI home"
+          aria-label="Back to UVENARO home"
           title="Back to Home"
         >
           ←
@@ -943,10 +943,10 @@
         <a
           class="create-brand"
           href="./index.html"
-          aria-label="ToonVerse AI"
+          aria-label="UVENARO"
         >
           <span aria-hidden="true">✨</span>
-          <span>ToonVerse AI</span>
+          <span>UVENARO</span>
         </a>
 
         <div class="create-title-wrap">
@@ -1264,7 +1264,7 @@
             <p class="workspace-description">
               Describe your idea, optionally add reference
               media, then choose the output settings.
-              ToonVerse AI's future generation services
+              UVENARO's future generation services
               will connect directly to this workspace.
             </p>
 
@@ -1382,7 +1382,7 @@
               class="prompt-textarea"
               id="create-prompt"
               maxlength="4000"
-              placeholder="Describe what you want ToonVerse AI to create..."
+              placeholder="Describe what you want UVENARO to create..."
               aria-label="Creative prompt"
             ></textarea>
 
@@ -1749,7 +1749,7 @@
 
               <p class="result-text">
                 The interface is ready for the future
-                ToonVerse AI generation engine.
+                UVENARO generation engine.
                 Once backend AI services are connected,
                 generated media and progress states will
                 appear in this area.
@@ -1777,7 +1777,7 @@
             </span>
 
             <span>
-              Generate with ToonVerse AI
+              Generate with UVENARO
             </span>
           </button>
 
@@ -2167,7 +2167,7 @@
         const heading = document.createElement("h3"); heading.className = "result-title"; heading.textContent = title;
         const text = document.createElement("p"); text.className = "result-text"; text.textContent = message; wrap.append(icon, heading, text);
         if (Number.isFinite(options.progress)) { const progress = document.createElement("progress"); progress.max=100; progress.value=Math.max(0,Math.min(100,options.progress)); progress.setAttribute("aria-label","Generation progress"); progress.style.width="min(420px, 80vw)"; progress.style.marginTop="14px"; wrap.appendChild(progress); }
-        if (options.cancel) { const cancel=document.createElement("button"); cancel.className="btn btn-secondary btn-small"; cancel.type="button"; cancel.style.marginTop="14px"; cancel.textContent="Cancel"; cancel.addEventListener("click",()=>window.ToonVerseAIJobs?.cancel(activeJob?.id)); wrap.appendChild(cancel); }
+        if (options.cancel) { const cancel=document.createElement("button"); cancel.className="btn btn-secondary btn-small"; cancel.type="button"; cancel.style.marginTop="14px"; cancel.textContent="Cancel"; cancel.addEventListener("click",()=>window.UvenaroJobs?.cancel(activeJob?.id)); wrap.appendChild(cancel); }
         resultPanel.appendChild(wrap);
       }
 
@@ -2180,7 +2180,7 @@
       let createAutoSaveTimer = null;
       function persistCreateDraft() {
         try {
-          localStorage.setItem("toonverse-create-draft", JSON.stringify({
+          localStorage.setItem("uvenaro-create-draft", JSON.stringify({
             prompt: prompt?.value || "", mode: activeMode,
             variation: variation?.value || "1",
             outputType: document.getElementById("output-type")?.value,
@@ -2191,7 +2191,7 @@
         } catch (error) { console.warn("Create draft auto-save failed.", error); }
       }
       function queueCreateAutoSave() { clearTimeout(createAutoSaveTimer); createAutoSaveTimer = setTimeout(persistCreateDraft, 500); }
-      globalThis.ToonVerseBeforeBack = async () => persistCreateDraft();
+      globalThis.UvenaroBeforeBack = async () => persistCreateDraft();
 
 
       /* ===================================================
@@ -2223,11 +2223,11 @@
       function notify(message, type = "info") {
 
         if (
-          window.ToonVerseAI &&
-          typeof window.ToonVerseAI.showToast === "function"
+          window.Uvenaro &&
+          typeof window.Uvenaro.showToast === "function"
         ) {
 
-          window.ToonVerseAI.showToast(
+          window.Uvenaro.showToast(
             message,
             type
           );
@@ -2236,7 +2236,7 @@
         }
 
         console.info(
-          "ToonVerse AI:",
+          "UVENARO:",
           message
         );
       }
@@ -2585,7 +2585,7 @@
                 case "enhance-prompt":
 
                   if (!prompt || !prompt.value.trim()) {
-                    notify("Write a prompt first, then ToonVerse AI can enhance it.");
+                    notify("Write a prompt first, then UVENARO can enhance it.");
                     break;
                   }
 
@@ -2635,7 +2635,7 @@
                   try {
 
                     localStorage.setItem(
-                      "toonverse-create-draft",
+                      "uvenaro-create-draft",
                       JSON.stringify({
                         prompt:
                           prompt?.value || "",
@@ -2685,7 +2685,7 @@
 
 
                 case "generate": {
-                  const runtime=window.ToonVerseAIJobs;if(!runtime){notify("The AI job runtime could not load.","error");break}
+                  const runtime=window.UvenaroJobs;if(!runtime){notify("The AI job runtime could not load.","error");break}
                   const promptValue=prompt?.value.trim()||"";if(!promptValue&&!selectedMedia.length){notify("Add a prompt or reference media before generating.","warning");prompt?.focus();break}
                   generateButton.disabled=true;generateButton.setAttribute("aria-busy","true");renderJobState("Preparing your request","Validating media, settings and device capability…",{progress:2,cancel:true});
                   try{activeJob=await runtime.submit({mode:activeMode,prompt:promptValue,files:selectedMedia,settings:{outputType:document.getElementById("output-type")?.value,aspectRatio:document.getElementById("aspect-ratio")?.value,quality:document.getElementById("quality")?.value,variations:variation?.value,preserveOriginal:document.getElementById("preserve-original")?.checked}});
@@ -2705,9 +2705,9 @@
         });
 
 
-      window.ToonVerseAIJobs?.subscribe(event => {
+      window.UvenaroJobs?.subscribe(event => {
         if(!activeJob||(event.job?.id&&event.job.id!==activeJob.id))return;
-        if(event.type==="progress"){activeJob=event.job;renderJobState(event.job.status==="completed"?"Creation complete":"Creating with ToonVerse AI",event.job.status==="completed"?"Your result is ready for preview, saving or opening in the editor.":"The secure AI service is processing your job.",{progress:Number(event.job.progress)||0,cancel:event.job.status!=="completed"})}
+        if(event.type==="progress"){activeJob=event.job;renderJobState(event.job.status==="completed"?"Creation complete":"Creating with UVENARO",event.job.status==="completed"?"Your result is ready for preview, saving or opening in the editor.":"The secure AI service is processing your job.",{progress:Number(event.job.progress)||0,cancel:event.job.status!=="completed"})}
         else if(event.type==="cancelled")renderJobState("Generation cancelled","The job was stopped safely. Your original media remains unchanged.",{icon:"■"});
         else if(event.type==="offline")notify("Connection lost. The job state remains preserved.","warning");
       });
@@ -2728,14 +2728,14 @@
         const card=document.createElement("div");card.style.cssText="width:min(440px,100%);padding:20px;border:1px solid #ffffff24;border-radius:18px;background:#121b31;color:#fff;box-shadow:0 24px 80px #000a";
         const title=document.createElement("h2");title.textContent="Continue your previous creation?";const copy=document.createElement("p");copy.style.color="#b8c1d8";copy.textContent="Your prompt and creation settings were saved automatically. Continue from the same point or discard them and start new.";
         const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap";const discard=document.createElement("button");discard.type="button";discard.className="btn btn-secondary";discard.textContent="Discard";const resume=document.createElement("button");resume.type="button";resume.className="btn btn-primary";resume.textContent="Continue";
-        discard.onclick=()=>{localStorage.removeItem("toonverse-create-draft");overlay.remove();prompt?.focus()};resume.onclick=()=>{overlay.remove();applyCreateDraft(parsed)};actions.append(discard,resume);card.append(title,copy,actions);overlay.append(card);document.body.append(overlay);resume.focus();
+        discard.onclick=()=>{localStorage.removeItem("uvenaro-create-draft");overlay.remove();prompt?.focus()};resume.onclick=()=>{overlay.remove();applyCreateDraft(parsed)};actions.append(discard,resume);card.append(title,copy,actions);overlay.append(card);document.body.append(overlay);resume.focus();
       }
 
       try {
 
         const savedDraft =
           localStorage.getItem(
-            "toonverse-create-draft"
+            "uvenaro-create-draft"
           );
 
         if (savedDraft && prompt) {
@@ -2757,7 +2757,7 @@
       } catch (error) {
 
         console.warn(
-          "ToonVerse AI draft recovery:",
+          "UVENARO draft recovery:",
           error
         );
       }

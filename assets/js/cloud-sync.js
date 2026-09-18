@@ -1,8 +1,8 @@
 (() => {
   "use strict";
 
-  const config = globalThis.ToonVerseConfig || {};
-  const store = globalThis.ToonVerseProjectStore;
+  const config = globalThis.UvenaroConfig || {};
+  const store = globalThis.UvenaroProjectStore;
   const rawBaseUrl = String(config.services?.apiBaseUrl || "").trim().replace(/\/$/, "");
   const timeoutMs = Math.max(5000, Math.min(120000, Number(config.services?.requestTimeoutMs) || 30000));
   let flushTimer = null;
@@ -19,7 +19,7 @@
   }
 
   async function accessToken() {
-    const auth = globalThis.ToonVerseAuth;
+    const auth = globalThis.UvenaroAuth;
     if (!auth || typeof auth.getAccessToken !== "function") {
       throw new Error("Sign in is required before cloud synchronization.");
     }
@@ -109,7 +109,7 @@
           Authorization: `Bearer ${token}`,
           "Idempotency-Key": change.id,
           Accept: "application/json",
-          "X-ToonVerse-Schema": "1"
+          "X-Uvenaro-Schema": "1"
         },
         body: snapshotForm(project, snapshot, change),
         cache: "no-store",
@@ -124,7 +124,7 @@
       }
       if (response.status === 409) {
         const conflict = await response.json().catch(() => ({}));
-        globalThis.dispatchEvent?.(new CustomEvent("toonverse:sync-conflict", {
+        globalThis.dispatchEvent?.(new CustomEvent("uvenaro:sync-conflict", {
           detail: { projectId: change.projectId, conflict }
         }));
         throw new Error("A newer cloud version needs conflict resolution.");
@@ -144,11 +144,11 @@
     }
     try {
       const result = await store.flushSync();
-      globalThis.dispatchEvent?.(new CustomEvent("toonverse:sync-complete", { detail: result }));
+      globalThis.dispatchEvent?.(new CustomEvent("uvenaro:sync-complete", { detail: result }));
       return result;
     } catch (error) {
       console.warn("Cloud sync remains queued.", error);
-      globalThis.dispatchEvent?.(new CustomEvent("toonverse:sync-deferred", {
+      globalThis.dispatchEvent?.(new CustomEvent("uvenaro:sync-deferred", {
         detail: { message: error?.message || "Cloud sync deferred." }
       }));
       return { synced: 0, pending: (await store.syncStatus()).pending, error: error?.message };
@@ -164,7 +164,7 @@
   if (active) {
     store.registerSyncAdapter({ push });
     addEventListener("online", () => scheduleFlush(300));
-    addEventListener("toonverse:project-saved", () => scheduleFlush(1200));
+    addEventListener("uvenaro:project-saved", () => scheduleFlush(1200));
     if (document.readyState === "loading") {
       addEventListener("DOMContentLoaded", () => scheduleFlush(800), { once: true });
     } else {
@@ -172,7 +172,7 @@
     }
   }
 
-  globalThis.ToonVerseCloudSync = Object.freeze({
+  globalThis.UvenaroCloudSync = Object.freeze({
     active,
     endpoint: active ? rawBaseUrl : "",
     flush,

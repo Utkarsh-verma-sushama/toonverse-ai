@@ -27,5 +27,5 @@ function validateRoute(route){
  if(route.expiresAt&&Date.parse(route.expiresAt)<=Date.now())throw new Error("Model route expired.");
  return route;
 }
-window.ToonVerseModelRouter=Object.freeze({infer,policy,validateRoute,modalities:Object.freeze([...modalities]),tasks:Object.freeze([...tasks])});
+window.UvenaroModelRouter=Object.freeze({infer,policy,validateRoute,modalities:Object.freeze([...modalities]),tasks:Object.freeze([...tasks])});
 })();

@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const MAX=40*1024*1024, MAX_PIXELS=8_000_000, HISTORY_BYTES=96*1024*1024, DB="toonverse-coloring", STORE="drafts";
+const MAX=40*1024*1024, MAX_PIXELS=8_000_000, HISTORY_BYTES=96*1024*1024, DB="uvenaro-coloring", STORE="drafts";
 const state={tool:"brush",color:"#ff5ca8",size:18,opacity:1,zoom:1,drawing:false,last:null,history:[],future:[],projectId:"default"};
 const canvas=document.getElementById("art"),ctx=canvas.getContext("2d",{alpha:true,willReadFrequently:true}),view=document.getElementById("canvasView"),status=document.getElementById("status");
 const $=id=>document.getElementById(id);
@@ -23,13 +23,13 @@ async function loadBlob(blob){if(!blob||blob.size>MAX)throw Error("Choose an ima
 function setZoom(v){state.zoom=Math.max(.1,Math.min(4,v));canvas.style.width=canvas.width*state.zoom+"px";canvas.style.height=canvas.height*state.zoom+"px";update()}
 function fit(){const r=view.getBoundingClientRect();setZoom(Math.min(1,(r.width-32)/canvas.width,(r.height-32)/canvas.height))}
 let timer;function queueSave(){clearTimeout(timer);timer=setTimeout(()=>saveDraft().catch(()=>say("Draft changed; local storage is unavailable.")),700)}
-function download(){canvas.toBlob(blob=>{if(!blob)return say("Export failed.");const a=document.createElement("a"),u=URL.createObjectURL(blob);a.href=u;a.download="toonverse-coloring-"+Date.now()+".png";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);say("Full-resolution PNG exported.")},"image/png")}
+function download(){canvas.toBlob(blob=>{if(!blob)return say("Export failed.");const a=document.createElement("a"),u=URL.createObjectURL(blob);a.href=u;a.download="uvenaro-coloring-"+Date.now()+".png";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);say("Full-resolution PNG exported.")},"image/png")}
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{state.tool=b.dataset.tool;update();say(b.textContent.trim()+" selected.")});
 $("color").oninput=e=>state.color=e.target.value;$("size").oninput=e=>state.size=+e.target.value;$("opacity").oninput=e=>state.opacity=+e.target.value/100;
 $("file").onchange=e=>loadBlob(e.target.files[0]).catch(x=>say(x.message));$("undo").onclick=undo;$("redo").onclick=redo;$("zin").onclick=()=>setZoom(state.zoom*1.2);$("zout").onclick=()=>setZoom(state.zoom/1.2);$("fit").onclick=fit;$("export").onclick=download;
 $("new").onclick=()=>{if(confirm("Start a new blank artwork? Your current draft remains recoverable.")){blank();queueSave();say("New artwork ready.")}};
-$("ai").onclick=async()=>{try{if(!window.ToonVerseAIJobs)throw Error("Secure AI runtime is unavailable.");const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));const job=await ToonVerseAIJobs.submit({mode:"coloring",prompt:$("prompt").value.trim()||"Color this line art naturally",files:[new File([blob],"line-art.png",{type:"image/png"})],settings:{preserveOriginal:true,editableResult:true,contractVersion:"1.0"}});say(ToonVerseAIJobs.connected()?"AI Color Assist queued: "+job.id:"Artwork is ready. Connect the production AI backend to generate assisted colors.")}catch(x){say(x.message)}};
+$("ai").onclick=async()=>{try{if(!window.UvenaroJobs)throw Error("Secure AI runtime is unavailable.");const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));const job=await UvenaroJobs.submit({mode:"coloring",prompt:$("prompt").value.trim()||"Color this line art naturally",files:[new File([blob],"line-art.png",{type:"image/png"})],settings:{preserveOriginal:true,editableResult:true,contractVersion:"1.0"}});say(UvenaroJobs.connected()?"AI Color Assist queued: "+job.id:"Artwork is ready. Connect the production AI backend to generate assisted colors.")}catch(x){say(x.message)}};
 canvas.addEventListener("pointerdown",start);canvas.addEventListener("pointermove",move);canvas.addEventListener("pointerup",end);canvas.addEventListener("pointercancel",end);window.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?redo():undo()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();redo()}});
 blank();restore().catch(()=>say("Ready. Your artwork stays on this device until you request AI processing."));
-window.ToonVerseColoring=Object.freeze({saveDraft,restore,exportPNG:download});
+window.UvenaroColoring=Object.freeze({saveDraft,restore,exportPNG:download});
 })();

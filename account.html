@@ -6,10 +6,10 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b1020">
-<meta name="description" content="Secure ToonVerse AI account and device management.">
-<title>Account & Security — ToonVerse AI</title>
+<meta name="description" content="Secure UVENARO account and device management.">
+<title>Account & Security — UVENARO</title>
 <style>
 *{box-sizing:border-box}html{color-scheme:dark}body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#f8f9ff;background:radial-gradient(circle at 15% 0,#25205c 0,transparent 32%),linear-gradient(145deg,#070b17,#0e1732)}
 button,input{font:inherit}button{cursor:pointer}.shell{width:min(1120px,100%);margin:auto;padding:calc(16px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
@@ -25,8 +25,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
 </head>
 <body>
 <main class="shell">
-<header class="top"><a class="brand" href="./index.html">✨ ToonVerse AI</a><a class="back" href="./index.html" aria-label="Return home">← Home</a></header>
-<section class="hero"><div class="eyebrow">Unified identity foundation</div><h1>One secure account. Every creative device.</h1><p>Your projects, versions and preferences are designed to move safely between phone, tablet, computer and future ToonVerse AI apps.</p></section>
+<header class="top"><a class="brand" href="./index.html">✨ UVENARO</a><a class="back" href="./index.html" aria-label="Return home">← Home</a></header>
+<section class="hero"><div class="eyebrow">Unified identity foundation</div><h1>One secure account. Every creative device.</h1><p>Your projects, versions and preferences are designed to move safely between phone, tablet, computer and future UVENARO apps.</p></section>
 <div class="grid">
 <section class="card" aria-labelledby="account-title">
 <h2 id="account-title">Account access</h2><p class="muted">Use a secure sign-in method. Passwords and provider tokens are never stored in this page.</p>
@@ -70,7 +70,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
 </main>
 <section class="dashboard" id="account-dashboard" aria-labelledby="dashboard-title" hidden>
 <div class="card"><div class="dashboard-head"><div><div class="eyebrow">Protected account center</div><h2 id="dashboard-title">Profile, devices and security</h2></div><div><button class="security-action" id="refresh-dashboard" type="button">Refresh</button> <button class="security-action" id="sign-out" type="button">Sign out</button></div></div>
-<div class="profile-line" style="margin-top:14px"><div class="avatar" id="profile-avatar" aria-hidden="true">TV</div><div><strong id="profile-name">ToonVerse user</strong><span class="data-meta" id="profile-email"></span><span class="data-meta" id="profile-security"></span></div></div>
+<div class="profile-line" style="margin-top:14px"><div class="avatar" id="profile-avatar" aria-hidden="true">UV</div><div><strong id="profile-name">Uvenaro user</strong><span class="data-meta" id="profile-email"></span><span class="data-meta" id="profile-security"></span></div></div>
 <div class="dashboard-grid">
 <section class="card" aria-labelledby="devices-title"><h2 id="devices-title">Active devices</h2><p class="muted">Review and revoke sessions you do not recognize.</p><div class="data-list" id="session-list"></div></section>
 <section class="card" aria-labelledby="activity-title"><h2 id="activity-title">Security activity</h2><p class="muted">Recent protected account events.</p><div class="data-list" id="activity-list"></div></section>
@@ -91,14 +91,14 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
 <script>
 (() => {
   "use strict";
-  const auth = window.ToonVerseAuth;
+  const auth = window.UvenaroAuth;
   const dashboard = document.getElementById("account-dashboard");
   const deleteDialog = document.getElementById("delete-dialog");
   const formatTime = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Time unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date); };
   const setList = (element, items, renderer, emptyMessage) => { element.replaceChildren(); if (!items.length) { const empty = document.createElement("div"); empty.className = "empty"; empty.textContent = emptyMessage; element.appendChild(empty); return; } items.forEach(item => element.appendChild(renderer(item))); };
   const row = (title, meta, actionLabel, onAction) => { const item = document.createElement("div"); item.className = "data-row"; const main = document.createElement("div"); main.className = "data-row-main"; const strong = document.createElement("strong"); strong.textContent = String(title ?? ""); const detail = document.createElement("span"); detail.className = "data-meta"; detail.textContent = String(meta ?? ""); main.append(strong, detail); item.appendChild(main); if (actionLabel) { const button = document.createElement("button"); button.className = "security-action"; button.type = "button"; button.textContent = actionLabel; button.addEventListener("click", async () => { button.disabled = true; try { await onAction(); await loadDashboard(); } catch (error) { status.textContent = error.message || "The action could not finish."; status.className = "status warning"; } finally { button.disabled = false; } }); item.appendChild(button); } return item; };
 
-  const connected = Boolean(window.ToonVerseConfig?.services?.apiBaseUrl && auth);
+  const connected = Boolean(window.UvenaroConfig?.services?.apiBaseUrl && auth);
   const status = document.getElementById("service-status");
   const form = document.getElementById("account-form");
   const submit = document.getElementById("submit");
@@ -114,10 +114,10 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1
     if (session.status !== "signed-in") { dashboard.hidden = true; return; }
     dashboard.hidden = false;
     const user = session.user || {};
-    document.getElementById("profile-name").textContent = user.name || "ToonVerse user";
+    document.getElementById("profile-name").textContent = user.name || "Uvenaro user";
     document.getElementById("profile-email").textContent = user.email || "Verified account";
     document.getElementById("profile-security").textContent = user.mfaEnabled ? "MFA enabled" : "MFA setup recommended";
-    document.getElementById("profile-avatar").textContent = (user.name || user.email || "TV").slice(0, 2).toUpperCase();
+    document.getElementById("profile-avatar").textContent = (user.name || user.email || "UV").slice(0, 2).toUpperCase();
     const sessionList = document.getElementById("session-list"), activityList = document.getElementById("activity-list"), connectionList = document.getElementById("connection-list");
     [sessionList, activityList, connectionList].forEach(element => element.replaceChildren(Object.assign(document.createElement("div"), { className: "skeleton" })));
     try {

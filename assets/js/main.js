@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================
-   ToonVerse AI
+   UVENARO
    Global Frontend Controller — V1.1 Stable Foundation
 
    Core responsibilities:
@@ -32,11 +32,11 @@
      ======================================================= */
 
   const APP = Object.freeze({
-    name: "ToonVerse AI",
+    name: "UVENARO",
     version: "1.1.0",
-    namespace: "toonverse",
+    namespace: "uvenaro",
     environment:
-      window.ToonVerseConfig?.app?.environment ||
+      window.UvenaroConfig?.app?.environment ||
       "development"
   });
 
@@ -207,7 +207,7 @@
     } catch (error) {
 
       console.error(
-        "ToonVerse AI initialization error:",
+        "UVENARO initialization error:",
         error
       );
 
@@ -507,12 +507,12 @@
       default:
 
         showToast(
-          "This ToonVerse AI action is not connected yet.",
+          "This UVENARO action is not connected yet.",
           "info"
         );
 
         console.warn(
-          "Unknown ToonVerse AI action:",
+          "Unknown UVENARO action:",
           action
         );
 
@@ -925,7 +925,7 @@
 
     let container =
       document.getElementById(
-        "toonverse-toast-container"
+        "uvenaro-toast-container"
       );
 
 
@@ -938,7 +938,7 @@
 
 
       container.id =
-        "toonverse-toast-container";
+        "uvenaro-toast-container";
 
 
       container.className =
@@ -1522,7 +1522,7 @@
     } catch (error) {
 
       console.warn(
-        "ToonVerse AI local save failed:",
+        "UVENARO local save failed:",
         error
       );
 
@@ -1555,7 +1555,7 @@
     } catch (error) {
 
       console.warn(
-        "ToonVerse AI local read failed:",
+        "UVENARO local read failed:",
         error
       );
 
@@ -1651,7 +1651,7 @@
         module.init({
           app: publicAPI,
           config:
-            window.ToonVerseConfig ||
+            window.UvenaroConfig ||
             null
         });
 
@@ -1705,7 +1705,7 @@
 
     window.dispatchEvent(
       new CustomEvent(
-        `toonverse:${name}`,
+        `uvenaro:${name}`,
         {
           detail
         }
@@ -1730,7 +1730,7 @@
 
 
     const eventName =
-      `toonverse:${name}`;
+      `uvenaro:${name}`;
 
 
     window.addEventListener(
@@ -1762,7 +1762,7 @@
       (event) => {
 
         console.error(
-          "ToonVerse AI runtime error:",
+          "UVENARO runtime error:",
           event.error ||
           event.message
         );
@@ -1787,7 +1787,7 @@
       (event) => {
 
         console.error(
-          "ToonVerse AI promise rejection:",
+          "UVENARO promise rejection:",
           event.reason
         );
 
@@ -1995,7 +1995,7 @@
     });
 
 
-  window.ToonVerseAI =
+  window.Uvenaro =
     publicAPI;
 
 })();

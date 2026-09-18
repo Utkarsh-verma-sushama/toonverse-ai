@@ -1,10 +1,10 @@
-# ToonVerse AI Store Asset Pack
+# UVENARO Store Asset Pack
 
 Prepared: 8 September 2026
 
 Included now:
 - Versioned store listing copy: store-listing.json
-- Scalable brand source: ../assets/toonverse-icon.svg
+- Scalable brand source: ../assets/uvenaro-icon.svg
 - Active Privacy Policy, Terms and Support URLs
 - Review and compliance readiness contract
 

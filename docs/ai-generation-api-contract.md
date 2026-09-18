@@ -1,4 +1,4 @@
-# ToonVerse AI Generation API Contract
+# UVENARO Generation API Contract
 
 Version 1.0 — Checkpoint 31
 

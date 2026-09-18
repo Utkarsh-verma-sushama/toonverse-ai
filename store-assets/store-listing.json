@@ -1,9 +1,9 @@
 {
   "schemaVersion": "1.0",
-  "productName": "ToonVerse AI",
+  "productName": "UVENARO",
   "category": "Photo & Video / Graphics & Design",
   "shortDescription": "Create, edit, understand and preserve visual stories with privacy-first AI tools.",
-  "fullDescription": "ToonVerse AI brings creation, professional editing, visual intelligence, coloring, wallpapers, memory films, project recovery and cross-device workflows into one accessible ecosystem. AI and cloud actions are explicit; originals remain protected.",
+  "fullDescription": "UVENARO brings creation, professional editing, visual intelligence, coloring, wallpapers, memory films, project recovery and cross-device workflows into one accessible ecosystem. AI and cloud actions are explicit; originals remain protected.",
   "keywords": [
     "AI creative studio",
     "photo editor",
@@ -13,10 +13,10 @@
     "memory video",
     "visual intelligence"
   ],
-  "privacyPolicyUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/privacy.html",
-  "termsUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/terms.html",
-  "supportUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/support.html",
-  "marketingUrl": "https://utkarsh-verma-sushama.github.io/toonverse-ai/",
+  "privacyPolicyUrl": "https://uvenaro.com/privacy.html",
+  "termsUrl": "https://uvenaro.com/terms.html",
+  "supportUrl": "https://uvenaro.com/support.html",
+  "marketingUrl": "https://uvenaro.com/",
   "status": {
     "androidBundle": "ci-validated-unsigned-release-aab",
     "iosArchive": "ci-validated-unsigned-simulator-build",

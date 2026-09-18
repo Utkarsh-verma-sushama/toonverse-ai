@@ -6,13 +6,13 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./assets/toonverse-icon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="ToonVerse AI Unified Creative Editor">
+<meta name="description" content="UVENARO Unified Creative Editor">
 <meta name="theme-color" content="#070b17">
-<title>ToonVerse AI — Unified Creative Editor</title>
+<title>UVENARO — Unified Creative Editor</title>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -781,7 +781,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <body>
 
 <div class="editor-app">
-<h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">ToonVerse AI Unified Creative Editor</h1>
+<h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">UVENARO Unified Creative Editor</h1>
 
 <header class="editor-topbar">
 
@@ -800,7 +800,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       class="brand"
     >
       <span>✨</span>
-      <span>ToonVerse AI</span>
+      <span>UVENARO</span>
     </a>
 
     <div class="document-info">
@@ -1109,7 +1109,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
 
     <div class="panel-subtitle">
-      Future-ready ToonVerse AI editing foundation
+      Future-ready UVENARO editing foundation
     </div>
 
   </div>
@@ -1914,7 +1914,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
         <p>
           Import an image to begin editing.
-          ToonVerse AI keeps the original source
+          UVENARO keeps the original source
           separate from the working project.
         </p>
 
@@ -2376,7 +2376,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
       <div class="property-row">
         <span class="property-label">Content</span>
-        <input id="text-content" class="editor-input" type="text" value="ToonVerse AI" maxlength="120" aria-label="Text Content">
+        <input id="text-content" class="editor-input" type="text" value="UVENARO" maxlength="120" aria-label="Text Content">
       </div>
 
       <div class="property-row">
@@ -2924,7 +2924,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       id="recovery-meta"
       style="color:var(--muted);font-size:12px;line-height:1.55"
     >
-      ToonVerse AI found an automatically saved project.
+      UVENARO found an automatically saved project.
     </p>
 
     <div class="modal-actions">
@@ -3543,13 +3543,13 @@ document.addEventListener(
       );
 
       if (
-        window.ToonVerseAI &&
+        window.Uvenaro &&
         typeof
-        window.ToonVerseAI.showToast ===
+        window.Uvenaro.showToast ===
         "function"
       ) {
 
-        window.ToonVerseAI.showToast(
+        window.Uvenaro.showToast(
           message,
           type
         );
@@ -3768,7 +3768,7 @@ document.addEventListener(
     }
 
     const RECOVERY_DATABASE =
-      "toonverse-editor";
+      "uvenaro-editor";
 
     const RECOVERY_STORE =
       "projects";
@@ -3777,7 +3777,7 @@ document.addEventListener(
       "last-project";
 
     const recoveryKey = () =>
-      globalThis.ToonVerseProjectStore?.activeProjectId?.() ||
+      globalThis.UvenaroProjectStore?.activeProjectId?.() ||
       LEGACY_RECOVERY_KEY;
 
     function openRecoveryDatabase() {
@@ -7522,7 +7522,7 @@ document.addEventListener(
 
           text:
             textContent.value.trim() ||
-            "ToonVerse AI",
+            "UVENARO",
 
           font:
             textFont.value,
@@ -10554,7 +10554,7 @@ document.addEventListener(
 
                 window.dispatchEvent(
                   new CustomEvent(
-                    "toonverse:editor-operation",
+                    "uvenaro:editor-operation",
                     {
 
                       detail: {
@@ -10562,7 +10562,7 @@ document.addEventListener(
                         operation,
 
                         editor:
-                          window.ToonVerseEditor
+                          window.UvenaroEditor
                       }
 
                     }
@@ -10586,12 +10586,12 @@ document.addEventListener(
 
                 const detail = {
                   operation,
-                  editor: window.ToonVerseEditor,
+                  editor: window.UvenaroEditor,
                   handled: false
                 };
                 window.dispatchEvent(
                   new CustomEvent(
-                    "toonverse:ai-operation",
+                    "uvenaro:ai-operation",
                     {
                       detail,
                       cancelable: true
@@ -10602,7 +10602,7 @@ document.addEventListener(
                 notify(
                   detail.handled
                   ? `${formatOperation(operation)} started.`
-                  : `${formatOperation(operation)} requires the secure ToonVerse AI processing service, which is not connected in this browser build.`,
+                  : `${formatOperation(operation)} requires the secure UVENARO processing service, which is not connected in this browser build.`,
                   detail.handled ? "success" : "warning"
                 );
 
@@ -11015,7 +11015,7 @@ document.addEventListener(
       const percent = (value, pct) => round(div(mul(normalise(BigInt(value)), parse(pct)), normalise(100n)));
       return Object.freeze({ parse, add, sub, mul, div, round, toNumber, toPixels, fromPixels, percent });
     })();
-    globalThis.ToonVerseCalculationEngine = ExactCalc;
+    globalThis.UvenaroCalculationEngine = ExactCalc;
 
     let creativeBaseWidth = 1;
     let creativeBaseHeight = 1;
@@ -14773,7 +14773,7 @@ document.addEventListener(
         const blob = await canvasToExportBlob(render, "image/png", 1);
         if (!blob) throw new Error("Fax document encoding failed.");
         const database = await new Promise((resolve, reject) => {
-          const request = indexedDB.open("toonverse-delivery", 1);
+          const request = indexedDB.open("uvenaro-delivery", 1);
           request.onupgradeneeded = () => {
             if (!request.result.objectStoreNames.contains("drafts")) {
               request.result.createObjectStore("drafts");
@@ -15064,7 +15064,7 @@ document.addEventListener(
       try {
 
         localStorage.setItem(
-          "toonverse:editor:last-project",
+          "uvenaro:editor:last-project",
           JSON.stringify(
             project
           )
@@ -15081,8 +15081,8 @@ document.addEventListener(
       }
 
       try {
-        if (globalThis.ToonVerseProjectStore) {
-          await globalThis.ToonVerseProjectStore.saveProject(
+        if (globalThis.UvenaroProjectStore) {
+          await globalThis.UvenaroProjectStore.saveProject(
             project,
             {
               createVersion: true,
@@ -15207,7 +15207,7 @@ document.addEventListener(
         ])
       ];
 
-      const parts = [encoder.encode("%PDF-1.7\n%TVAI\n")];
+      const parts = [encoder.encode("%PDF-1.7\n%UVENARO\n")];
       const offsets = [0];
       let byteOffset = parts[0].length;
       for (let number = 1; number < objects.length; number++) {
@@ -15242,13 +15242,13 @@ document.addEventListener(
     }
 
     function safeExportName(name) {
-      const cleaned = String(name || "toonverse-edit")
+      const cleaned = String(name || "uvenaro-edit")
         .replace(/\.[^.]+$/, "")
         .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-")
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 80);
-      return cleaned || "toonverse-edit";
+      return cleaned || "uvenaro-edit";
     }
 
     let exportBusy = false;
@@ -15286,7 +15286,7 @@ document.addEventListener(
           try {
             await navigator.share({
               title: safeExportName(documentName.textContent),
-              text: "Created with ToonVerse AI",
+              text: "Created with UVENARO",
               files: [file]
             });
             return delivery === "publish" ? "publish-ready" : "shared";
@@ -15546,7 +15546,7 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
             )
         );
 
-      globalThis.ToonVerseProjectStore?.createProjectId?.();
+      globalThis.UvenaroProjectStore?.createProjectId?.();
 
       currentFile =
         null;
@@ -16225,7 +16225,7 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
         }
       );
 
-    window.ToonVerseEditor = {
+    window.UvenaroEditor = {
 
       version:
         "2.0.0-foundation",
@@ -16428,7 +16428,7 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
       }
     });
 
-    globalThis.ToonVerseBeforeBack = async () => {
+    globalThis.UvenaroBeforeBack = async () => {
       if (currentFile) await writeRecovery();
     };
 
@@ -16440,11 +16440,11 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
     });
 
     const faxAllowedPlans = new Set(
-      (window.ToonVerseConfig?.features?.faxAllowedPlans || ["premium", "business", "pro"])
+      (window.UvenaroConfig?.features?.faxAllowedPlans || ["premium", "business", "pro"])
         .map(value => String(value).toLowerCase())
     );
     const updateFaxButtonAccess = authState => {
-      const faxEnabled = Boolean(window.ToonVerseConfig?.features?.fax);
+      const faxEnabled = Boolean(window.UvenaroConfig?.features?.fax);
       const plan = String(authState?.user?.plan || "free").toLowerCase();
       const entitlements = Array.isArray(authState?.user?.entitlements)
         ? authState.user.entitlements.map(value => String(value).toLowerCase())
@@ -16452,8 +16452,8 @@ img{display:block;width:100%;height:100vh;object-fit:${placement};filter:${filte
       const entitled = faxAllowedPlans.has(plan) || entitlements.includes("fax") || entitlements.includes("fax.send");
       $("preview-fax").hidden = !(faxEnabled && entitled);
     };
-    updateFaxButtonAccess(window.ToonVerseAuth?.getState?.());
-    window.ToonVerseAuth?.subscribe?.(updateFaxButtonAccess);
+    updateFaxButtonAccess(window.UvenaroAuth?.getState?.());
+    window.UvenaroAuth?.subscribe?.(updateFaxButtonAccess);
 
     resetVisualState();
 

@@ -8,7 +8,7 @@ const ACCEPT=Object.freeze({
  ocr:["image/jpeg","image/png","image/webp","image/avif","application/pdf"]
 });
 const MAX_FILE=2*1024*1024*1024, MAX_ITEMS=100, listeners=new Set();
-const emit=(type,detail={})=>{const payload={type,...detail,at:new Date().toISOString()};listeners.forEach(fn=>{try{fn(payload)}catch{}});window.dispatchEvent(new CustomEvent("toonverse:multimodal",{detail:payload}))};
+const emit=(type,detail={})=>{const payload={type,...detail,at:new Date().toISOString()};listeners.forEach(fn=>{try{fn(payload)}catch{}});window.dispatchEvent(new CustomEvent("uvenaro:multimodal",{detail:payload}))};
 function normalizeLanguage(value){const v=String(value||"auto").trim();return /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(v)||v==="auto"?v:"auto"}
 function validate(raw={}){
  const mode=String(raw.mode||"image-understanding");
@@ -31,10 +31,10 @@ async function sha256(file){if(!crypto.subtle||file.size>64*1024*1024)return nul
 async function submit(raw){
  const input=validate(raw);
  if(input.files.some(f=>/^(image|video)\//.test(f.type))&&!input.consent)throw new Error("Confirm rights and consent before processing personal media.");
- if(!window.ToonVerseAIJobs)throw new Error("The secure AI job runtime is unavailable.");
+ if(!window.UvenaroJobs)throw new Error("The secure AI job runtime is unavailable.");
  const integrity=await Promise.all(input.files.map(async f=>({name:f.name,size:f.size,type:f.type,sha256:await sha256(f)})));
  emit("validated",{mode:input.mode,integrity});
- const job=await window.ToonVerseAIJobs.submit({mode:input.mode,prompt:input.purpose,files:input.files,settings:{
+ const job=await window.UvenaroJobs.submit({mode:input.mode,prompt:input.purpose,files:input.files,settings:{
   outputType:"json",preserveOriginal:true,language:input.language,outputLanguage:input.outputLanguage,features:input.features,
   consent:input.consent,retention:input.retention,integrity,contractVersion:"1.0"
  }});
@@ -48,5 +48,5 @@ function normalizeResult(job={}){
  warnings:Array.isArray(job.warnings)?job.warnings:[],provenance:job.provenance||null,confidence:Number.isFinite(result.confidence)?result.confidence:null});
 }
 function subscribe(fn){if(typeof fn!=="function")throw new TypeError("Listener must be a function.");listeners.add(fn);return()=>listeners.delete(fn)}
-window.ToonVerseMultimodal=Object.freeze({modes:MODES,accept:ACCEPT,validate,submit,normalizeResult,subscribe});
+window.UvenaroMultimodal=Object.freeze({modes:MODES,accept:ACCEPT,validate,submit,normalizeResult,subscribe});
 })();
