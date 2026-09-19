@@ -46,6 +46,7 @@ window.UvenaroConfig = Object.freeze({
   features: Object.freeze({
     createStudio: true,
     aiEditor: true,
+    chatCore: false,
     library: true,
     sharing: true,
     printing: true,

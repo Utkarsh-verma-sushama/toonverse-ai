@@ -1,8 +1,10 @@
 # UVENARO — Checkpoint Resume Record
 
-Last updated: 2026-09-12  
-Current locked checkpoint: 43  
-Exact next checkpoint: 44  
+Last updated: 2026-09-19
+
+Current locked checkpoint: 43
+
+Exact next checkpoint: 44
 Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
 
 ## Permanent execution rule
@@ -63,8 +65,12 @@ Locked with final QA/polish gates, active Privacy Policy and Terms pages, versio
 
 Android and iOS native foundations use the stable application identifier \`ai.uvenaro.app\`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. The 12 September 2026 pre-launch audit also passed cloud runtime, native bundle, Pages deployment, complete internal route/asset integrity, safe Back navigation, draft recovery and offline-shell asset validation.
 
-Assistant-controlled release foundation is complete. Checkpoint 44 cannot be truthfully locked until owner-controlled gates pass: company/legal operator identity, final product name and domain, protected Android/iOS signing credentials, production backend/provider activation, physical Android/iPhone/iPad validation, accurate screenshots from the signed release candidate, store privacy/content declarations, Google Play and Apple review approval, staged rollout, and independent public reachability.
+Assistant-controlled release foundation is complete. Product name **UVENARO**, domain **uvenaro.com**, domain registration/protection, custom-domain configuration, and the operational support mailbox **support@uvenaro.com** (MX, SPF, DKIM, DMARC, MFA and send/receive validation) are complete.
+
+The 19 September 2026 hardening audit added a deterministic npm lockfile, `npm ci` builds, Node 24-compatible GitHub Actions, a high-severity dependency audit gate and weekly Dependabot monitoring. Web/native/core verification and JavaScript syntax checks pass.
+
+Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled gates pass: registered company/legal operator identity, organization store accounts, protected Android/iOS signing credentials, production backend/provider activation, physical Android/iPhone/iPad validation, accurate screenshots from the signed release candidate, store privacy/content declarations, Google Play and Apple review approval, staged rollout, monitoring and independent public reachability validation.
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. No part of Checkpoint 43 remains. The next work item is Checkpoint 44, whose exact non-duplicate scope must be selected from the agreed roadmap and current repository state, then completed fully before the next report.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The exact next owner action is legal entity registration, followed by organization developer accounts. In parallel, assistant-controlled engineering may continue only on truthful pre-production hardening; production AI/cloud/payment flags stay disabled until their documented release gates pass.

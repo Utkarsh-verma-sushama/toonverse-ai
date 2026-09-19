@@ -2,7 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const dist = new URL("../dist/", import.meta.url);
 const routes = [
-  "index.html", "create.html", "editor.html", "library.html", "account.html",
+  "index.html", "chat.html", "create.html", "editor.html", "library.html", "account.html",
   "layout.html", "wallpaper.html", "multimodal.html", "memory.html",
   "coloring.html", "camera.html", "utilities.html", "support.html",
   "plans.html", "privacy.html", "terms.html", "launch.html", "qa.html", "device-test.html", "fax.html", "404.html"

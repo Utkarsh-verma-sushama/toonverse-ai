@@ -25,6 +25,12 @@
   ],
   "shortcuts": [
     {
+      "name": "UVENARO Chat",
+      "short_name": "Chat",
+      "url": "./chat.html",
+      "icons": [{"src":"./assets/uvenaro-icon.svg","sizes":"any","type":"image/svg+xml"}]
+    },
+    {
       "name": "Create Studio",
       "short_name": "Create",
       "url": "./create.html",
