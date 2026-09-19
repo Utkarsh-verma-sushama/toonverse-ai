@@ -28,3 +28,11 @@ Fair-use and safety controls apply throughout, including prepaid usage. Subscrip
 - Load, outage, concurrency, double-spend, security and billing tests
 
 Prices and included credits remain unset until verified provider costs, taxes, payment fees, refund reserve, infrastructure cost and target margin are approved.
+
+## Activation invariants
+
+- Production must keep `CHAT_EXECUTION_ENABLED=false` until verified edge authentication, D1 migrations, a current provider-price snapshot, funded plans, global budget alerts and an encrypted provider secret are all present.
+- The public client never receives provider credentials and never calls a paid provider directly.
+- Every accepted request requires a unique idempotency key and a server-side verified subject.
+- Provider failure or timeout releases the reservation; successful execution settles actual usage and emits a ledger receipt.
+- Pricing changes create a new immutable snapshot. Historical usage is never recalculated against a later price.

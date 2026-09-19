@@ -4,7 +4,17 @@ compatibility_date = "2026-09-01"
 workers_dev = true
 
 [vars]
+ENVIRONMENT = "production"
 AUTH_REQUIRED = "true"
+CHAT_EXECUTION_ENABLED = "false"
+CHAT_PROVIDER = ""
+CHAT_MODEL = ""
+CHAT_PROVIDER_URL = ""
+CHAT_MAX_INPUT_TOKENS = "4000"
+CHAT_MAX_OUTPUT_TOKENS = "1000"
+CHAT_TIMEOUT_MS = "30000"
+CHAT_GLOBAL_DAILY_COST_MICROUSD = "0"
+# CHAT_PROVIDER_API_KEY must be stored as an encrypted secret, never in this file.
 ALLOWED_ORIGINS = "https://YOUR_DOMAIN"
 MODEL_CATALOG_JSON = "[]"
 

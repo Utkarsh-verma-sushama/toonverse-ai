@@ -12,7 +12,7 @@
     "native:sync": "npm run build:web && cap sync",
     "native:android": "npm run native:sync && cap open android",
     "native:ios": "npm run native:sync && cap open ios",
-    "verify:core": "node scripts/verify-core-runtime.mjs",
+    "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs",
     "verify:all": "npm run build:web && npm run verify:web && npm run verify:core"
   },
   "dependencies": {

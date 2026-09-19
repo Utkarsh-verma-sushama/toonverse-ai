@@ -19,7 +19,9 @@ for(const route of htmlRoutes){
  }
 }
 const schema=await readFile(new URL("../backend/schema.sql",import.meta.url),"utf8");
-for(const table of ["agent_runs","agent_steps","agent_approvals","route_decisions","audit_events","billing_accounts","usage_reservations","usage_limits"])if(!schema.includes("CREATE TABLE IF NOT EXISTS "+table))throw new Error("Missing table "+table);
+for(const table of ["agent_runs","agent_steps","agent_approvals","route_decisions","audit_events","billing_accounts","usage_reservations","usage_limits","usage_ledger","provider_price_snapshots"])if(!schema.includes("CREATE TABLE IF NOT EXISTS "+table))throw new Error("Missing table "+table);
+const worker=await readFile(new URL("../backend/worker.mjs",import.meta.url),"utf8");
+for(const guard of ["CHAT_EXECUTION_ENABLED","VERIFIED_IDENTITY_REQUIRED","PRICE_SNAPSHOT_REQUIRED","INSUFFICIENT_CREDITS","RATE_LIMIT_REACHED","FAIR_USE_LIMIT_REACHED","GLOBAL_SPEND_CEILING_REACHED","releaseChat","settleChat"])if(!worker.includes(guard))throw new Error("Missing chat execution guard: "+guard);
 const platformRuntime=await readFile(new URL("../assets/js/platform-runtime.js",import.meta.url),"utf8");
 for(const contract of ["uvenaro-network-status","installNetworkStatus","Network status: online","Network status: offline","data-state=online","data-state=offline"])if(!platformRuntime.includes(contract))throw new Error("Missing global network-status contract: "+contract);
 const config=await readFile(new URL("../assets/js/config.js",import.meta.url),"utf8");

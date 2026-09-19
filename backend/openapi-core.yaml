@@ -3,6 +3,27 @@ info: {title: Uvenaro Core Intelligence API, version: 2.0.0}
 servers: [{url: https://api.example.invalid}]
 security: [{bearerAuth: []}]
 paths:
+  /v1/chat/responses:
+    post:
+      operationId: createChatResponse
+      summary: Execute a metered chat request after identity, entitlement, fair-use, cost and credit reservation gates.
+      parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string, maxLength: 128}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: {type: string, minLength: 1, maxLength: 12000}
+      responses:
+        "200": {description: Settled response with credit receipt.}
+        "401": {description: Verified identity required.}
+        "402": {description: Subscription, credits or per-request cost ceiling insufficient.}
+        "409": {description: Duplicate or concurrent idempotency key.}
+        "429": {description: Fair-use or risk limit reached.}
+        "503": {description: Execution disabled, price/provider unavailable, or upstream failure.}
   /v1/ai/routes:
     post:
       operationId: selectModelRoute
