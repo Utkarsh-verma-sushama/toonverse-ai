@@ -101,7 +101,7 @@ For a started/unknown request, obtain authoritative provider evidence using its 
 
 ## Remaining work
 
-Actual sign-in/account backend, audited model-provider gateway, provider reconciliation integration, encrypted reply recovery (if offered), priced/funded plans, payment webhooks, monitoring/alerts, staging D1 deployment and device end-to-end tests remain unfinished. Full chatbot streaming and cancellation UX are separate from this billing safety checkpoint.
+The email sign-in/account core is now implemented in the [account checkpoint](account-backend-checkpoint.md). Account activation and extensions, audited model-provider gateway, provider reconciliation integration, encrypted reply recovery (if offered), priced/funded plans, payment webhooks, monitoring/alerts, staging D1 deployment and device end-to-end tests remain unfinished. Full chatbot streaming and cancellation UX are separate from this billing safety checkpoint.
 
 ## References
 

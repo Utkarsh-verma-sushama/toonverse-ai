@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./assets/uvenaro-icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b1020">
 <meta name="description" content="Secure UVENARO account and device management.">
 <title>Account & Security — UVENARO</title>
 <style>
-*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#f8f9ff;background:radial-gradient(circle at 15% 0,#25205c 0,transparent 32%),linear-gradient(145deg,#070b17,#0e1732)}
+*{box-sizing:border-box}[hidden]{display:none!important}html{color-scheme:dark}body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#f8f9ff;background:radial-gradient(circle at 15% 0,#25205c 0,transparent 32%),linear-gradient(145deg,#070b17,#0e1732)}
 button,input{font:inherit}button{cursor:pointer}.shell{width:min(1120px,100%);margin:auto;padding:calc(16px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}.brand{color:#fff;text-decoration:none;font-weight:900;font-size:20px}.back{min-height:44px;padding:10px 14px;border:1px solid #ffffff22;border-radius:12px;color:#fff;background:#ffffff0a;text-decoration:none}
 .hero{max-width:760px;margin-bottom:22px}.eyebrow{color:#b9aaff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}.hero h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:10px 0}.hero p{color:#b9c2dd;line-height:1.65}
@@ -23,275 +23,62 @@ button,input{font:inherit}button{cursor:pointer}.shell{width:min(1120px,100%);ma
 button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c9c1ff;outline-offset:3px}button:disabled{cursor:not-allowed;opacity:.5}@media(max-width:760px){.grid{grid-template-columns:1fr}.providers{grid-template-columns:1fr}.shell{padding-inline:12px}}@media(pointer:coarse){button,a,input{min-height:48px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
-<body>
+<body data-no-autosave>
 <main class="shell">
 <header class="top"><a class="brand" href="./index.html">✨ UVENARO</a><a class="back" href="./index.html" aria-label="Return home">← Home</a></header>
-<section class="hero"><div class="eyebrow">Unified identity foundation</div><h1>One secure account. Every creative device.</h1><p>Your projects, versions and preferences are designed to move safely between phone, tablet, computer and future UVENARO apps.</p></section>
+<section class="hero"><div class="eyebrow">Your Uvenaro account</div><h1>One secure account. Every creative device.</h1><p>Your projects, versions and preferences are designed to move safely between phone, tablet, computer and future UVENARO apps.</p></section>
 <div class="grid">
 <section class="card" aria-labelledby="account-title">
 <h2 id="account-title">Account access</h2><p class="muted">Use a secure sign-in method. Passwords and provider tokens are never stored in this page.</p>
 <div id="service-status" class="status warning" role="status" aria-live="polite">Secure account service is not connected yet. Your existing local projects remain available.</div>
-<div class="tabs" role="tablist" aria-label="Account mode"><button class="tab active" id="sign-in-tab" role="tab" aria-selected="true">Sign in</button><button class="tab" id="register-tab" role="tab" aria-selected="false">Create account</button></div>
+<div id="signin-controls"><div class="tabs" role="tablist" aria-label="Account mode"><button class="tab active" id="sign-in-tab" role="tab" aria-selected="true">Sign in</button><button class="tab" id="register-tab" role="tab" aria-selected="false">Create account</button></div>
 <form id="account-form" class="form" novalidate>
 <label class="field" id="name-field" hidden><span>Name</span><input id="name" name="name" autocomplete="name" maxlength="80"></label>
 <label class="field"><span>Email address</span><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254"></label>
-<label class="field"><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" required minlength="10" maxlength="128"></label>
+<label class="field"><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" required minlength="1" maxlength="128"></label>
 <button class="primary" id="submit" type="submit" disabled>Sign in securely</button>
 <button class="security-action" id="forgot-password" type="button" disabled>Forgot password</button>
 </form>
-<div class="divider">or use a trusted provider</div>
-<div class="providers" id="providers">
+<div class="divider" hidden>or use a trusted provider</div>
+<div class="providers" id="providers" hidden>
 <button class="provider" data-provider="google" disabled>Google</button><button class="provider" data-provider="apple" disabled>Apple</button><button class="provider" data-provider="microsoft" disabled>Microsoft</button><button class="provider" data-provider="facebook" disabled>Facebook</button><button class="provider" data-provider="linkedin" disabled>LinkedIn</button><button class="provider" data-provider="x" disabled>X / Twitter</button><button class="provider" data-provider="github" disabled>GitHub</button>
 </div>
-<button class="security-action" id="passkey" style="width:100%;margin-top:8px" disabled>Use a passkey</button>
-<div class="notice">Account controls remain deliberately unavailable until the authenticated backend and provider credentials are configured. This prevents misleading or insecure “fake sign-in.”</div>
+<button class="security-action" id="passkey" hidden style="width:100%;margin-top:8px" disabled>Use a passkey</button>
+<div class="notice">Email sign-in becomes available when the account service is ready. Additional sign-in methods will appear when available.</div></div>
 </section>
 <aside class="card" aria-labelledby="security-title">
-<h2 id="security-title">Security designed in</h2><p class="muted">The foundation supports modern protections without tying the interface to one provider.</p>
+<h2 id="security-title">Security designed in</h2><p class="muted">Review your sessions, verify your email and keep your account details up to date.</p>
 <div class="security-list">
-<div class="security-item"><span class="icon">🔑</span><div><strong>Passkeys and MFA-ready</strong><p>WebAuthn/passkeys, authenticator apps and recovery methods can attach to the same account.</p></div></div>
-<div class="security-item"><span class="icon">📱</span><div><strong>Device verification</strong><p>New-device checks, active-session visibility, remote logout and logout-all endpoints are defined.</p></div></div>
-<div class="security-item"><span class="icon">🛡️</span><div><strong>Short-lived credentials</strong><p>Access tokens remain in memory; secure refresh sessions belong in HttpOnly, Secure cookies.</p></div></div>
+<div class="security-item"><span class="icon">🔑</span><div><strong>Authenticator protection</strong><p>Set up an authenticator app when this option is available for your account.</p></div></div>
+<div class="security-item"><span class="icon">📱</span><div><strong>Device sessions</strong><p>See active sessions and sign out devices you do not recognize.</p></div></div>
+<div class="security-item"><span class="icon">🛡️</span><div><strong>Short-lived credentials</strong><p>Your session stays protected. Sign out a lost or shared device from your account.</p></div></div>
 <div class="security-item"><span class="icon">☁️</span><div><strong>Safe project continuity</strong><p>Local editing continues offline while authenticated sync waits safely in the project queue.</p></div></div>
 </div>
-<div class="notice"><strong>Protected controls</strong><br>After secure sign-in, this workspace will show verified devices, recent security activity, MFA methods, passkeys and recovery controls.</div>
+<div class="notice"><strong>Protected controls</strong><br>After sign-in, review your active sessions, email verification and recent security activity.</div>
 <div class="security-list" aria-label="Account security actions">
-<button class="security-action account-protected" data-security-action="verify-device" disabled>Verify this device</button>
+<button class="security-action account-protected" data-security-action="verify-device" hidden disabled>Verify this device</button>
 <button class="security-action account-protected" data-security-action="sessions" disabled>View active devices</button>
 <button class="security-action account-protected" data-security-action="activity" disabled>View security activity</button>
 <button class="security-action account-protected" data-security-action="connections" disabled>Manage connected platforms</button>
 <button class="security-action account-protected" data-security-action="mfa" disabled>Set up authenticator MFA</button>
-<button class="security-action account-protected" data-security-action="recovery" disabled>Generate recovery codes</button>
+<button class="security-action account-protected" data-security-action="recovery" hidden disabled>Generate recovery codes</button>
 <button class="security-action account-protected" data-security-action="export-data" disabled>Request my data export</button>
 <button class="security-action account-protected" data-security-action="signout-others" disabled>Sign out other devices</button>
 </div>
 </aside>
 </div>
-</main>
 <section class="dashboard" id="account-dashboard" aria-labelledby="dashboard-title" hidden>
 <div class="card"><div class="dashboard-head"><div><div class="eyebrow">Protected account center</div><h2 id="dashboard-title">Profile, devices and security</h2></div><div><button class="security-action" id="refresh-dashboard" type="button">Refresh</button> <button class="security-action" id="sign-out" type="button">Sign out</button></div></div>
 <div class="profile-line" style="margin-top:14px"><div class="avatar" id="profile-avatar" aria-hidden="true">UV</div><div><strong id="profile-name">Uvenaro user</strong><span class="data-meta" id="profile-email"></span><span class="data-meta" id="profile-security"></span></div></div>
 <div class="dashboard-grid">
 <section class="card" aria-labelledby="devices-title"><h2 id="devices-title">Active devices</h2><p class="muted">Review and revoke sessions you do not recognize.</p><div class="data-list" id="session-list"></div></section>
 <section class="card" aria-labelledby="activity-title"><h2 id="activity-title">Security activity</h2><p class="muted">Recent protected account events.</p><div class="data-list" id="activity-list"></div></section>
-<section class="card" aria-labelledby="connections-title"><h2 id="connections-title">Connected accounts</h2><p class="muted">Sign-in providers and separately consented platform connections.</p><div class="data-list" id="connection-list"></div><div class="providers" id="link-providers"><button class="provider" data-link-provider="google">Link Google</button><button class="provider" data-link-provider="apple">Link Apple</button><button class="provider" data-link-provider="microsoft">Link Microsoft</button><button class="provider" data-link-provider="facebook">Link Facebook</button><button class="provider" data-link-provider="linkedin">Link LinkedIn</button><button class="provider" data-link-provider="x">Link X</button><button class="provider" data-link-provider="github">Link GitHub</button></div></section>
-<section class="card" aria-labelledby="privacy-title"><h2 id="privacy-title">Privacy and account data</h2><p class="muted">Export your data or begin a protected deletion request.</p><div class="security-list"><button class="security-action" id="dashboard-export" type="button">Request data export</button><button class="security-action danger" id="delete-account" type="button">Delete account…</button></div></section>
-</div></div></section>
-<div class="dialog" id="delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" hidden><div class="dialog-card"><h2 id="delete-dialog-title">Request account deletion</h2><p class="muted">Type <strong>DELETE</strong> to continue. Recent authentication and a cooling period are still required by the backend.</p><label class="field"><span>Confirmation</span><input id="delete-confirmation" autocomplete="off" spellcheck="false"></label><div class="dialog-actions"><button class="security-action" id="delete-cancel" type="button">Cancel</button><button class="security-action danger" id="delete-confirm" type="button" disabled>Request deletion</button></div></div></div>
-<div class="dialog" id="recovery-dialog" role="dialog" aria-modal="true" aria-labelledby="recovery-dialog-title" hidden>
-<div class="dialog-card">
-<h2 id="recovery-dialog-title">Secure account recovery</h2>
-<p class="muted">Enter the verified email address or phone number connected to your account. The response will not reveal whether an account exists.</p>
-<label class="field"><span>Email or phone</span><input id="recovery-identifier" autocomplete="username" maxlength="254"></label>
-<div class="dialog-actions"><button class="security-action" id="recovery-cancel" type="button">Cancel</button><button class="primary" id="recovery-start" type="button">Continue securely</button></div>
-</div>
-</div>
-<div id="announce" role="status" aria-live="polite" aria-atomic="true" style="position:fixed;left:-10000px;width:1px;height:1px;overflow:hidden"></div>
+<section class="card" aria-labelledby="connections-title"><h2 id="connections-title">Connected accounts</h2><p class="muted">Sign-in methods connected to this account.</p><div class="data-list" id="connection-list"></div><div class="providers" id="link-providers" hidden><button class="provider" data-link-provider="google">Link Google</button><button class="provider" data-link-provider="apple">Link Apple</button><button class="provider" data-link-provider="microsoft">Link Microsoft</button><button class="provider" data-link-provider="facebook">Link Facebook</button><button class="provider" data-link-provider="linkedin">Link LinkedIn</button><button class="provider" data-link-provider="x">Link X</button><button class="provider" data-link-provider="github">Link GitHub</button></div></section>
+<section class="card" aria-labelledby="profile-edit-title"><h2 id="profile-edit-title">Your details</h2><form id="profile-form" class="form"><label class="field"><span>Display name</span><input id="edit-name" required maxlength="80" autocomplete="name"></label><label class="field"><span>Language code</span><input id="edit-locale" maxlength="35" value="en"></label><label class="field"><span>Time zone</span><input id="edit-timezone" maxlength="64" value="UTC"></label><button class="primary" type="submit">Save details</button></form><div class="security-list"><button id="verify-email" class="security-action" type="button">Send email verification</button><button id="change-email" class="security-action" type="button">Change email address</button><button id="change-password" class="security-action" type="button">Change password</button><button id="signout-all" class="security-action" type="button">Sign out all devices</button></div><div id="mfa-methods" class="data-list"></div></section><section class="card" aria-labelledby="privacy-title"><h2 id="privacy-title">Privacy and account data</h2><p class="muted">Export your data or begin a protected deletion request.</p><div class="security-list"><button class="security-action" id="dashboard-export" type="button">Request data export</button><p id="deletion-status" class="muted"></p><button class="security-action" id="cancel-deletion" type="button" hidden>Cancel deletion request</button><button class="security-action danger" id="delete-account" type="button">Delete account…</button></div></section>
+</div></div></section></main>
+<dialog id="account-step" aria-labelledby="step-title" style="background:#10182c;color:white;border:1px solid #405070;border-radius:18px;max-width:440px;width:calc(100% - 32px)"><form id="step-form" class="form"><h2 id="step-title"></h2><p id="step-description" class="muted"></p><div id="step-fields" class="form"></div><p id="step-error" role="alert"></p><div class="dialog-actions"><button id="step-cancel" type="button" class="security-action">Cancel</button><button id="step-submit" class="primary" type="submit">Continue</button></div></form></dialog><div id="announce" role="status" aria-live="polite" aria-atomic="true" style="position:fixed;left:-10000px;width:1px;height:1px;overflow:hidden"></div>
 <script src="./assets/js/config.js"></script><script src="./assets/js/auth.js"></script>
-<script>
-(() => {
-  "use strict";
-  const auth = window.UvenaroAuth;
-  const dashboard = document.getElementById("account-dashboard");
-  const deleteDialog = document.getElementById("delete-dialog");
-  const formatTime = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Time unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date); };
-  const setList = (element, items, renderer, emptyMessage) => { element.replaceChildren(); if (!items.length) { const empty = document.createElement("div"); empty.className = "empty"; empty.textContent = emptyMessage; element.appendChild(empty); return; } items.forEach(item => element.appendChild(renderer(item))); };
-  const row = (title, meta, actionLabel, onAction) => { const item = document.createElement("div"); item.className = "data-row"; const main = document.createElement("div"); main.className = "data-row-main"; const strong = document.createElement("strong"); strong.textContent = String(title ?? ""); const detail = document.createElement("span"); detail.className = "data-meta"; detail.textContent = String(meta ?? ""); main.append(strong, detail); item.appendChild(main); if (actionLabel) { const button = document.createElement("button"); button.className = "security-action"; button.type = "button"; button.textContent = actionLabel; button.addEventListener("click", async () => { button.disabled = true; try { await onAction(); await loadDashboard(); } catch (error) { status.textContent = error.message || "The action could not finish."; status.className = "status warning"; } finally { button.disabled = false; } }); item.appendChild(button); } return item; };
-
-  const connected = Boolean(window.UvenaroConfig?.services?.apiBaseUrl && auth);
-  const status = document.getElementById("service-status");
-  const form = document.getElementById("account-form");
-  const submit = document.getElementById("submit");
-  const signInTab = document.getElementById("sign-in-tab");
-  const registerTab = document.getElementById("register-tab");
-  const nameField = document.getElementById("name-field");
-  const password = document.getElementById("password");
-  const announce = message => { document.getElementById("announce").textContent = message; };
-  let mode = "sign-in";
-
-  async function loadDashboard() {
-    const session = auth.getState();
-    if (session.status !== "signed-in") { dashboard.hidden = true; return; }
-    dashboard.hidden = false;
-    const user = session.user || {};
-    document.getElementById("profile-name").textContent = user.name || "Uvenaro user";
-    document.getElementById("profile-email").textContent = user.email || "Verified account";
-    document.getElementById("profile-security").textContent = user.mfaEnabled ? "MFA enabled" : "MFA setup recommended";
-    document.getElementById("profile-avatar").textContent = (user.name || user.email || "UV").slice(0, 2).toUpperCase();
-    const sessionList = document.getElementById("session-list"), activityList = document.getElementById("activity-list"), connectionList = document.getElementById("connection-list");
-    [sessionList, activityList, connectionList].forEach(element => element.replaceChildren(Object.assign(document.createElement("div"), { className: "skeleton" })));
-    try {
-      const [sessions, events, connections] = await Promise.all([auth.listSessions(), auth.listSecurityEvents({ limit: 25 }), auth.listConnections()]);
-      setList(sessionList, sessions, item => row(item.current ? `${item.deviceName || "Current device"} (current)` : item.deviceName || item.platform || "Device", `${item.approximateRegion || "Region unavailable"} · Last active ${formatTime(item.lastActiveAt)}`, item.current ? "" : "Revoke", () => auth.revokeSession(item.id)), "No active sessions were returned.");
-      setList(activityList, events, item => row(item.label || item.type || "Security event", `${formatTime(item.createdAt)} · ${item.approximateRegion || "Region unavailable"}`), "No recent security activity.");
-      setList(connectionList, connections, item => row(item.label || item.provider || "Connected account", item.status || "Connected", item.requiredForSignIn ? "" : "Disconnect", () => auth.disconnectProvider(item.provider)), "No external accounts are connected.");
-    } catch (error) {
-      [sessionList, activityList, connectionList].forEach(element => setList(element, [], row, "Protected data could not be loaded."));
-      status.textContent = error.message || "Account dashboard could not be refreshed."; status.className = "status warning";
-    }
-  }
-
-  function setMode(next) {
-    mode = next;
-    const registering = mode === "register";
-    signInTab.classList.toggle("active", !registering);
-    registerTab.classList.toggle("active", registering);
-    signInTab.setAttribute("aria-selected", String(!registering));
-    registerTab.setAttribute("aria-selected", String(registering));
-    nameField.hidden = !registering;
-    document.getElementById("name").required = registering;
-    password.autocomplete = registering ? "new-password" : "current-password";
-    submit.textContent = registering ? "Create secure account" : "Sign in securely";
-  }
-  signInTab.addEventListener("click", () => setMode("sign-in"));
-  registerTab.addEventListener("click", () => setMode("register"));
-
-  const recoveryDialog = document.getElementById("recovery-dialog");
-  const recoveryIdentifier = document.getElementById("recovery-identifier");
-  document.getElementById("forgot-password").addEventListener("click", () => {
-    recoveryIdentifier.value = document.getElementById("email").value;
-    recoveryDialog.hidden = false;
-    recoveryIdentifier.focus();
-  });
-  document.getElementById("recovery-cancel").addEventListener("click", () => {
-    recoveryDialog.hidden = true;
-    document.getElementById("forgot-password").focus();
-  });
-  document.getElementById("recovery-start").addEventListener("click", async () => {
-    const button = document.getElementById("recovery-start");
-    if (!recoveryIdentifier.value.trim()) {
-      recoveryIdentifier.focus();
-      return;
-    }
-    button.disabled = true;
-    button.setAttribute("aria-busy", "true");
-    try {
-      await auth.beginRecovery(recoveryIdentifier.value);
-      recoveryDialog.hidden = true;
-      status.textContent = "If the account is eligible, secure recovery instructions will be sent through a verified channel.";
-      status.className = "status success";
-      announce(status.textContent);
-    } catch (error) {
-      status.textContent = error.message || "Account recovery could not start.";
-      status.className = "status warning";
-      announce(status.textContent);
-    } finally {
-      button.disabled = false;
-      button.removeAttribute("aria-busy");
-    }
-  });
-  recoveryDialog.addEventListener("click", event => {
-    if (event.target === recoveryDialog) document.getElementById("recovery-cancel").click();
-  });
-
-  document.addEventListener("keydown", event => {
-    if (event.key !== "Escape") return;
-    if (!deleteDialog.hidden) document.getElementById("delete-cancel").click();
-    else if (!recoveryDialog.hidden) document.getElementById("recovery-cancel").click();
-  });
-
-  document.querySelectorAll("[data-provider]").forEach(button => button.addEventListener("click", async () => {
-    try { await auth.beginProvider(button.dataset.provider); }
-    catch (error) { status.textContent = error.message; status.className = "status warning"; announce(error.message); }
-  }));
-  document.querySelectorAll("[data-security-action]").forEach(button => {
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      button.setAttribute("aria-busy", "true");
-      try {
-        const action = button.dataset.securityAction;
-        if (action === "verify-device") {
-          await auth.requestDeviceVerification();
-          status.textContent = "A device-verification challenge has been requested through your verified recovery channel.";
-        } else if (action === "sessions") {
-          const sessions = await auth.listSessions();
-          status.textContent = sessions.length
-            ? `${sessions.length} active device session${sessions.length === 1 ? "" : "s"} found.`
-            : "No additional active device sessions were found.";
-        } else if (action === "activity") {
-          const events = await auth.listSecurityEvents({ limit: 25 });
-          status.textContent = events.length
-            ? `${events.length} recent security event${events.length === 1 ? "" : "s"} available.`
-            : "No recent security events were returned.";
-        } else if (action === "connections") {
-          const connections = await auth.listConnections();
-          status.textContent = connections.length
-            ? `${connections.length} connected platform${connections.length === 1 ? "" : "s"} found.`
-            : "No external platforms are connected.";
-        } else if (action === "mfa") {
-          await auth.beginTotpEnrollment();
-          status.textContent = "Authenticator setup started. Complete verification in the protected enrollment flow.";
-        } else if (action === "recovery") {
-          await auth.rotateRecoveryCodes();
-          status.textContent = "New recovery codes generated. Store them somewhere private.";
-        } else if (action === "export-data") {
-          await auth.requestDataExport();
-          status.textContent = "Your protected account-data export has been requested.";
-        } else if (action === "signout-others") {
-          await auth.signOutOtherDevices();
-          status.textContent = "Other device sessions have been revoked.";
-        }
-        status.className = "status success";
-        announce(status.textContent);
-      } catch (error) {
-        status.textContent = error.message || "The security action could not finish.";
-        status.className = "status warning";
-        announce(status.textContent);
-      } finally {
-        button.disabled = !connected;
-        button.removeAttribute("aria-busy");
-      }
-    });
-  });
-
-  document.getElementById("refresh-dashboard").addEventListener("click", loadDashboard);
-  document.getElementById("sign-out").addEventListener("click", async () => { await auth.signOut(); dashboard.hidden = true; status.textContent = "Signed out securely."; status.className = "status success"; });
-  document.getElementById("dashboard-export").addEventListener("click", async () => { try { await auth.requestDataExport(); status.textContent = "Your protected data export has been requested."; status.className = "status success"; } catch (error) { status.textContent = error.message || "Data export could not be requested."; status.className = "status warning"; } });
-  document.querySelectorAll("[data-link-provider]").forEach(button => button.addEventListener("click", async () => { try { const result = await auth.beginAccountLink(button.dataset.linkProvider); if (result.authorizationUrl) location.assign(result.authorizationUrl); else throw new Error("Secure provider linking could not start."); } catch (error) { status.textContent = error.message; status.className = "status warning"; } }));
-  const deleteConfirmation = document.getElementById("delete-confirmation"), deleteConfirm = document.getElementById("delete-confirm");
-  document.getElementById("delete-account").addEventListener("click", () => { deleteConfirmation.value = ""; deleteConfirm.disabled = true; deleteDialog.hidden = false; deleteConfirmation.focus(); });
-  deleteConfirmation.addEventListener("input", () => { deleteConfirm.disabled = deleteConfirmation.value !== "DELETE"; });
-  document.getElementById("delete-cancel").addEventListener("click", () => { deleteDialog.hidden = true; document.getElementById("delete-account").focus(); });
-  deleteConfirm.addEventListener("click", async () => { deleteConfirm.disabled = true; try { await auth.requestAccountDeletion(deleteConfirmation.value); deleteDialog.hidden = true; status.textContent = "Protected account deletion request submitted."; status.className = "status success"; } catch (error) { status.textContent = error.message || "Account deletion could not be requested."; status.className = "status warning"; deleteConfirm.disabled = false; } });
-
-  document.getElementById("passkey").addEventListener("click", async () => {
-    try { await auth.beginPasskey(); await loadDashboard(); }
-    catch (error) { status.textContent = error.message; status.className = "status warning"; announce(error.message); }
-  });
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    if (!connected || !form.reportValidity()) return;
-    submit.disabled = true;
-    submit.setAttribute("aria-busy", "true");
-    try {
-      const email = document.getElementById("email").value;
-      const pwd = password.value;
-      if (mode === "register") await auth.createAccount({ name: document.getElementById("name").value, email, password: pwd });
-      else await auth.signInWithEmail(email, pwd);
-      await loadDashboard();
-    } catch (error) {
-      status.textContent = error.message || "Account access failed.";
-      status.className = "status warning";
-      announce(status.textContent);
-    } finally {
-      submit.disabled = !connected;
-      submit.removeAttribute("aria-busy");
-    }
-  });
-
-  if (connected) {
-    status.textContent = "Secure account service connected.";
-    status.className = "status success";
-    submit.disabled = false;
-    document.getElementById("forgot-password").disabled = false;
-    document.querySelectorAll("#providers button, #passkey, .account-protected").forEach(button => button.disabled = false);
-    auth.restore().then(async session => {
-      if (session.status === "signed-in") await loadDashboard();
-    });
-  }
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn), { once: true });
-})();
-</script>
+<script src="./assets/js/account-ui.js" defer></script>
 <script src="./assets/js/platform-runtime.js" defer></script>
 </body>
 </html>

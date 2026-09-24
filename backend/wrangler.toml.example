@@ -6,6 +6,12 @@ workers_dev = true
 [vars]
 ENVIRONMENT = "production"
 AUTH_REQUIRED = "true"
+ACCOUNT_AUTH_ENABLED = "false"
+ACCOUNT_TOTP_ENABLED = "false"
+# ACCOUNT_SESSION_KEY: encrypted secret containing 32 random bytes, base64url.
+# Retain the key for existing sessions; rotating it requires signing users out.
+# Serve web and API on the same HTTPS site (e.g. uvenaro.com/api).
+# Native WebViews need verified secure cookie transport before activation.
 AGENT_EXECUTION_ENABLED = "false"
 MODEL_ROUTING_ENABLED = "false"
 CHAT_EXECUTION_ENABLED = "false"

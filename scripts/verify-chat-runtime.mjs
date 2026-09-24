@@ -2,7 +2,7 @@ import worker from "../backend/worker.mjs";
 import {env, token, mockIdentity} from "./security-fixtures.mjs";
 const originalFetch=globalThis.fetch;
 globalThis.fetch=mockIdentity().fetch;
-const validToken=await token();
+const validToken='uv1.'+'a'.repeat(43);
 
 const disabled = await worker.fetch(new Request("https://api.uvenaro.invalid/v1/chat/responses", {
   method: "POST",

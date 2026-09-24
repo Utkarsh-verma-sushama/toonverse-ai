@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import worker from '../backend/worker.mjs';
 import {env as identityEnv,token,mockIdentity,claims} from './security-fixtures.mjs';
 import {fixture,balance,invariant,d1} from './billing-fixtures.mjs';
+import {accountEnv,seedManaged} from './account-fixtures.mjs';
 const originalFetch=globalThis.fetch;const validToken=await token();let db,calls,gateway;
-const base={...identityEnv,ENVIRONMENT:'production',CHAT_EXECUTION_ENABLED:'true',CHAT_PROVIDER:'test-gateway',CHAT_MODEL:'test-text',
+const base={...identityEnv,...accountEnv,ENVIRONMENT:'production',CHAT_EXECUTION_ENABLED:'true',CHAT_PROVIDER:'test-gateway',CHAT_MODEL:'test-text',
  CHAT_PROVIDER_URL:'https://metered.example.invalid/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://metered.example.invalid',CHAT_PROVIDER_PROTOCOL:'metered-v1',
  CHAT_PROVIDER_API_KEY:'server-test-secret',CHAT_MAX_INPUT_TOKENS:'100',CHAT_MAX_OUTPUT_TOKENS:'50',CHAT_GLOBAL_DAILY_COST_MICROUSD:'100000'};
 const completed=(request,changes={})=>({id:'provider-'+request.request_id,request_id:request.request_id,model:request.model,status:'completed',output:'Verified answer',usage:{input_tokens:10,output_tokens:5},...changes});
-beforeEach(()=>{
- db=fixture();calls=0;gateway=async request=>Response.json(completed(request));const identity=mockIdentity();
+beforeEach(async()=>{
+ db=fixture();await seedManaged(db.sql,validToken);calls=0;gateway=async request=>Response.json(completed(request));const identity=mockIdentity();
  globalThis.fetch=async(url,options)=>{
   if(String(url).startsWith('https://metered.example.invalid/')){calls++;assert.equal(options.redirect,'error');assert.equal(options.headers.authorization,'Bearer server-test-secret');return gateway(JSON.parse(options.body),options);}
   return identity.fetch(url,options);
@@ -17,10 +18,11 @@ beforeEach(()=>{
 });
 afterEach(()=>{globalThis.fetch=originalFetch;invariant(db);db.sql.close();});
 async function send({key='one',input={message:'Hello'},bindings={},signal,value=validToken}={}){
+ value=await seedManaged(db.sql,value,JSON.parse(Buffer.from(value.split('.')[1],'base64url')).sub);
  const request=new Request('https://api.example.invalid/v1/chat/responses',{method:'POST',headers:{authorization:`Bearer ${value}`,'content-type':'application/json','idempotency-key':key},body:JSON.stringify(input),signal});
  return worker.fetch(request,{...base,...db,...bindings});
 }
-async function status(key='one',value=validToken){return worker.fetch(new Request('https://api.example.invalid/v1/chat/requests/'+key,{headers:{authorization:`Bearer ${value}`}}),{...base,...db});}
+async function status(key='one',value=validToken){value=await seedManaged(db.sql,value,JSON.parse(Buffer.from(value.split('.')[1],'base64url')).sub);return worker.fetch(new Request('https://api.example.invalid/v1/chat/requests/'+key,{headers:{authorization:`Bearer ${value}`}}),{...base,...db});}
 test('complete Worker request reserves before upstream and returns actual receipt',async()=>{
  gateway=async(request,options)=>{
   assert.equal(balance(db).reserved,15);assert.equal(request.max_input_tokens,100);assert.equal(request.max_output_tokens,50);

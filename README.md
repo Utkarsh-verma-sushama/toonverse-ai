@@ -28,3 +28,7 @@ npm audit --omit=dev --audit-level=high
 ## Release principle
 
 No feature is described as active unless the corresponding production service, entitlement, safety controls and recovery path are verified. See `docs/checkpoint-status.md` and `docs/cloud-release-gates.md` for the authoritative gates.
+
+## Account backend
+
+Email/password and managed account sessions are implemented with default-off activation. See [account backend scope and verification](docs/account-backend-checkpoint.md) and [implemented API](backend/openapi-account.yaml). Additional providers, native cookie transport, completed erasure and production activation remain explicit gates.

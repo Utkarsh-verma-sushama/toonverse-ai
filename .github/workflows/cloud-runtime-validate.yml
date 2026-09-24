@@ -24,5 +24,7 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run verify:all
       - run: npm run verify:rules
+      - run: npm run verify:account-emulator
+      - run: npm run verify:account-ui
       - run: node --check backend/worker.mjs
       - run: node --check backend/firebase-auth.mjs

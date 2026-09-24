@@ -1,8 +1,14 @@
 # UVENARO Account & Identity API Contract
 
-Version: 1.0  
-Status: security-first backend contract  
+Version: 2.0
+Status: implemented email account/session core plus explicitly planned extensions
 Frontend consumer: `assets/js/auth.js`
+
+## Implementation status (2026-09-24)
+
+The [account backend checkpoint](account-backend-checkpoint.md) is the source of truth for implemented features, tests and activation gates. Email/password, verification/change, reset, managed sessions, profile, audit, owner export and deletion request/cancel now have Worker implementations. Firebase-managed TOTP is separately gated. OAuth/linking, passkeys, phone/email OTP, recovery codes, alert delivery and completed data erasure remain planned. The endpoint catalogue below includes these future contracts; their presence is not an implementation claim. Unsupported methods are unavailable in the UI and capabilities API. Production flags remain disabled.
+
+[Implemented API schemas](../backend/openapi-account.yaml) document actual routes. Protected application APIs accept opaque `uv1.` tokens; encrypted Firebase credentials and signature/revocation verification stay on the server.
 
 ## Security invariants
 
@@ -10,7 +16,7 @@ Frontend consumer: `assets/js/auth.js`
 - Never expose provider client secrets, signing keys, refresh tokens, or service credentials to frontend code.
 - Keep access tokens short-lived and in memory only.
 - Store refresh sessions in rotated `HttpOnly; Secure; SameSite=Lax` cookies, with CSRF protection.
-- Hash passwords with Argon2id using parameters reviewed against current OWASP guidance.
+- Firebase manages password hashing and credentials; Uvenaro stores no password hashes. Any future independent credential store requires a separate reviewed password-hashing design.
 - Encrypt sensitive identity data at rest and use TLS in transit.
 - Rate-limit by account, device, network risk, and endpoint; do not rely on IP alone.
 - Return generic authentication errors to prevent account enumeration.
@@ -20,7 +26,7 @@ Frontend consumer: `assets/js/auth.js`
 
 ## Identity providers
 
-The provider adapter registry supports:
+The planned provider catalogue includes:
 
 - Google
 - Apple
@@ -72,7 +78,7 @@ Successful session responses:
 - `POST /v1/auth/password/reset/confirm`
 - `POST /v1/auth/password/change`
 
-Registration must verify normalized email ownership and check account-link candidates before creating a second user.
+Registration delegates email uniqueness to Firebase and requires email verification before online creative execution. Future cross-provider linking must not merge accounts on email match alone.
 
 ### OTP
 
