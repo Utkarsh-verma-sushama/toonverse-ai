@@ -1,0 +1,18 @@
+{
+  "name": "uvenaro-account-staging",
+  "main": "../../backend/staging-worker.mjs",
+  "compatibility_date": "2026-08-06",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {"directory": "../../.account-staging/public", "binding": "ASSETS", "run_worker_first": true, "html_handling": "none"},
+  "vars": {
+    "ENVIRONMENT": "staging",
+    "ACCOUNT_AUTH_ENABLED": "false",
+    "STAGING_ORIGIN": "https://uvenaro-account-staging.YOUR_SUBDOMAIN.workers.dev",
+    "STAGING_ALLOWED_EMAILS": "",
+    "FIREBASE_PROJECT_ID": "toonverse-ai"
+  },
+  "d1_databases": [{"binding": "DB", "database_name": "uvenaro-account-staging", "database_id": "SET_STAGING_D1_DATABASE_ID", "migrations_dir": "../../.account-staging/migrations"}],
+  "observability": {"enabled": false},
+  "triggers": {"crons": ["*/5 * * * *"]}
+}

@@ -1,5 +1,5 @@
 import {authenticateFirebaseRequest} from './firebase-auth.mjs';
-import {AccountError,configured,context,hash,random,encrypt,decrypt,json,cookie,readCookie,event,now} from './account-common.mjs';
+import {AccountError,configured,context,hash,random,encrypt,decrypt,json,cookie,readCookie,event,now,requireAllowedAccount} from './account-common.mjs';
 import {firebaseCall,credentials} from './firebase-accounts.mjs';
 const ACCESS_MS=5*60000,IDLE_MS=7*86400000,ABSOLUTE_MS=30*86400000;
 export async function verifyCredentials(env,creds){
@@ -30,6 +30,7 @@ function label(request){
 }
 export async function issueSession(request,env,creds,{displayName='',verifiedIdentity}={}){
  const ctx=await context(request,env),identity=verifiedIdentity||await verifyCredentials(env,creds),at=now(),id=crypto.randomUUID();
+ requireAllowedAccount(env,identity.email);
  if(!identity.email||identity.tokenExpiresAt<=at+1000)throw new AccountError('IDENTITY_UNAVAILABLE',503);
  const refreshToken=random(),accessToken='uv1.'+random(),expiresAt=Math.min(at+ACCESS_MS,identity.tokenExpiresAt);
  const encrypted=await encrypt(env,creds,`session:${id}:${identity.sub}`);
@@ -60,6 +61,7 @@ export async function authenticateAccountRequest(request,env){
  if(identity.sub!==row.owner_id){await revoke(env,row,'identity_mismatch');throw new AccountError('UNAUTHORIZED',401);}
  const active=await env.DB.prepare('SELECT id FROM account_sessions WHERE id=? AND revoked_at IS NULL AND expires_at>? AND idle_expires_at>?').bind(row.id,now(),now()).first();
  if(!active)throw new AccountError('SESSION_EXPIRED',401);
+ requireAllowedAccount(env,identity.email);
  return {...identity,session:row,credentials:creds};
 }
 export async function refreshSession(request,env){
@@ -82,6 +84,7 @@ export async function refreshSession(request,env){
   const previous=await decrypt(env,row.credentials_cipher,`session:${row.id}:${row.owner_id}`);
   const creds=credentials(await firebaseCall(env,'',{grant_type:'refresh_token',refresh_token:previous.refreshToken},{refresh:true}),{refresh:true});
   const identity=await verifyCredentials(env,creds);if(identity.sub!==row.owner_id)throw new AccountError('UNAUTHORIZED',401);
+  requireAllowedAccount(env,identity.email);
   const next=random(),access='uv1.'+random(),expiresAt=Math.min(now()+ACCESS_MS,identity.tokenExpiresAt);
   const encrypted=await encrypt(env,creds,`session:${row.id}:${row.owner_id}`);
   await env.DB.batch([

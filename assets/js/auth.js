@@ -7,6 +7,7 @@
  const connected=()=>Boolean(window.UvenaroConfig?.features?.authentication&&window.UvenaroConfig?.services?.apiBaseUrl);
  let state={status:'signed-out',user:null,expiresAt:0,backendConnected:connected(),lastError:''};
  const errors={
+  ACCOUNT_NOT_IN_PILOT:'This account test is limited to invited email addresses.',
   ACCOUNT_SERVICE_DISABLED:'Account service is not enabled yet.',ACCOUNT_NOT_CONFIGURED:'Account service is not ready yet.',
   ACCOUNT_SERVICE_UNAVAILABLE:'Account service is temporarily unavailable.',IDENTITY_UNAVAILABLE:'Sign-in service is temporarily unavailable.',
   INVALID_CREDENTIALS:'Email or password could not be verified.',ACCOUNT_REGISTRATION_FAILED:'Account could not be created. Try signing in or resetting your password.',

@@ -13,3 +13,12 @@ ios/
 .firebase/
 *-debug.log
 *-debug.*.log
+
+# Account staging build, local state and secrets
+.account-staging/
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env.*
+!.env.example

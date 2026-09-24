@@ -76,3 +76,9 @@ export async function rateLimit(env,request,scope,identifier='',maximum=10,windo
   if(!row)throw new AccountError('TOO_MANY_ATTEMPTS',429,{retryAfter:Math.ceil(((period+1)*windowMs-at)/1000)});
  }
 }
+
+export function accountAllowed(env,address){
+ if(env.ACCOUNT_ALLOWED_EMAILS===undefined)return true;
+ return String(env.ACCOUNT_ALLOWED_EMAILS).split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(String(address).toLowerCase());
+}
+export function requireAllowedAccount(env,address){if(!accountAllowed(env,address))throw new AccountError('ACCOUNT_NOT_IN_PILOT',403);}

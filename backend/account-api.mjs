@@ -1,7 +1,8 @@
-import {AccountError,configured,context,email,password,name,json,cookie,readCookie,hash,event,now,rateLimit} from './account-common.mjs';
+import {AccountError,configured,context,email,password,name,json,cookie,readCookie,hash,event,now,rateLimit,accountAllowed,requireAllowedAccount} from './account-common.mjs';
 import {firebaseCall,credentials,FirebaseAccountError} from './firebase-accounts.mjs';
 import {authenticateAccountRequest,issueSession,refreshSession,profile,verifyCredentials,revoke,revokeAll,requireRecent} from './account-sessions.mjs';
 import {mfaRequired,finishMfa,updateReauth,beginEnrollment,finishEnrollment} from './account-mfa.mjs';
+const emailContinuation=env=>env.ACCOUNT_ACTION_CONTINUE_URL?{continueUrl:env.ACCOUNT_ACTION_CONTINUE_URL,canHandleCodeInApp:false}:{};
 const genericRecovery={ok:true,message:'If the account is eligible, recovery instructions will be sent.'};
 const actionCode=value=>{if(typeof value!=='string'||value.length<10||value.length>2048)throw new AccountError('INVALID_ACTION_CODE');return value;};
 const all=async statement=>(await statement.all()).results;
@@ -18,6 +19,7 @@ function providerFailure(error){
 async function signIn(request,env,input,register){
  const address=email(input.email),pwd=password(input.password,{newPassword:register}),displayName=register?name(input.name):'';
  await rateLimit(env,request,register?'register':'signin',address,register?4:10);
+ requireAllowedAccount(env,address);
  let result;
  try{result=await firebaseCall(env,register?'accounts:signUp':'accounts:signInWithPassword',{email:address,password:pwd,returnSecureToken:true,...(register?{displayName}: {})});}
  catch(error){if(register&&error instanceof FirebaseAccountError&&['EMAIL_EXISTS','INVALID_LOGIN_CREDENTIALS'].includes(error.providerCode))throw new AccountError('ACCOUNT_REGISTRATION_FAILED',400);throw error;}
@@ -78,7 +80,8 @@ export async function accountRoute(request,env,readBody){
   if(path==='/v1/auth/mfa/challenge'&&method==='POST')return await finishMfa(request,env,input);
   if(['/v1/auth/password/reset/request','/v1/auth/recovery/start'].includes(path)&&method==='POST'){
    const address=email(input.email||input.identifier);await rateLimit(env,request,'password-reset',address,3,3600000);
-   try{await firebaseCall(env,'accounts:sendOobCode',{requestType:'PASSWORD_RESET',email:address});}
+   if(!accountAllowed(env,address))return json(genericRecovery);
+   try{await firebaseCall(env,'accounts:sendOobCode',{requestType:'PASSWORD_RESET',email:address,...emailContinuation(env)});}
    catch(error){if(!(error instanceof FirebaseAccountError)||!['EMAIL_NOT_FOUND','USER_DISABLED'].includes(error.providerCode))throw error;}
    return json(genericRecovery);
   }
@@ -87,13 +90,14 @@ export async function accountRoute(request,env,readBody){
    await rateLimit(env,request,'reset-confirm',code,5);
    const checked=await firebaseCall(env,'accounts:resetPassword',{oobCode:code});
    if(checked.requestType!=='PASSWORD_RESET')throw new AccountError('INVALID_ACTION_CODE');
-   const address=email(checked.email);const owners=await all(env.DB.prepare('SELECT owner_id FROM account_profiles WHERE email=?').bind(address));
+   const address=email(checked.email);requireAllowedAccount(env,address);const owners=await all(env.DB.prepare('SELECT owner_id FROM account_profiles WHERE email=?').bind(address));
    for(const item of owners)await revokeAll(env,item.owner_id,'password_reset_started');
    await firebaseCall(env,'accounts:resetPassword',{oobCode:code,newPassword});
    return json({ok:true,signInRequired:true},200,{'set-cookie':cookie('')});
   }
   if(path==='/v1/auth/email/verify/confirm'&&method==='POST'){
    const code=actionCode(input.oobCode);await rateLimit(env,request,'email-confirm',code,5);
+   if(env.ACCOUNT_ALLOWED_EMAILS!==undefined){const checked=await firebaseCall(env,'accounts:resetPassword',{oobCode:code});if(!['VERIFY_EMAIL','VERIFY_AND_CHANGE_EMAIL','RECOVER_EMAIL'].includes(checked.requestType))throw new AccountError('INVALID_ACTION_CODE');const addresses=[checked.email,checked.newEmail].filter(Boolean);if(!addresses.length)throw new AccountError('INVALID_ACTION_CODE');for(const address of addresses)requireAllowedAccount(env,address);}
    await firebaseCall(env,'accounts:update',{oobCode:code});return json({ok:true});
   }
   const user=await authenticateAccountRequest(request,env);
@@ -115,7 +119,7 @@ export async function accountRoute(request,env,readBody){
   if(path==='/v1/auth/email/verify/request'&&method==='POST'){
    if(user.emailVerified)return json({ok:true,alreadyVerified:true});
    await rateLimit(env,request,'verification-mail',user.sub,3,3600000);
-   await firebaseCall(env,'accounts:sendOobCode',{requestType:'VERIFY_EMAIL',idToken:user.credentials.idToken});return json({ok:true});
+   await firebaseCall(env,'accounts:sendOobCode',{requestType:'VERIFY_EMAIL',idToken:user.credentials.idToken,...emailContinuation(env)});return json({ok:true});
   }
   if(path==='/v1/auth/password/change'&&method==='POST'){
    requireRecent(user);await rateLimit(env,request,'password-change',user.sub,5,3600000);
@@ -125,8 +129,8 @@ export async function accountRoute(request,env,readBody){
    return json({ok:true,signInRequired:true},200,{'set-cookie':cookie('')});
   }
   if(path==='/v1/auth/email/change/request'&&method==='POST'){
-   requireRecent(user);const newEmail=email(input.email);await rateLimit(env,request,'email-change',user.sub,3,3600000);
-   await firebaseCall(env,'accounts:sendOobCode',{requestType:'VERIFY_AND_CHANGE_EMAIL',idToken:user.credentials.idToken,newEmail});
+   requireRecent(user);const newEmail=email(input.email);requireAllowedAccount(env,newEmail);await rateLimit(env,request,'email-change',user.sub,3,3600000);
+   await firebaseCall(env,'accounts:sendOobCode',{requestType:'VERIFY_AND_CHANGE_EMAIL',idToken:user.credentials.idToken,newEmail,...emailContinuation(env)});
    await event(env,user.sub,user.session.id,'email_change_requested').run();return json({ok:true});
   }
   if(path==='/v1/auth/sessions'&&method==='GET'){

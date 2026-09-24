@@ -13,13 +13,19 @@
     "native:android": "npm run native:sync && cap open android",
     "native:ios": "npm run native:sync && cap open ios",
     "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs",
-    "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing && npm run verify:accounts",
+    "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing && npm run verify:accounts && npm run verify:account-staging",
     "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs",
     "verify:rules": "firebase emulators:exec --only firestore,storage --project demo-uvenaro-security \"node --test scripts/verify-rules.test.mjs\"",
     "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-d1-billing.test.mjs",
     "verify:accounts": "node --test scripts/verify-accounts.test.mjs scripts/verify-account-client.test.mjs",
     "verify:account-ui": "node --test scripts/verify-account-ui.test.mjs",
-    "verify:account-emulator": "firebase emulators:exec --only auth --project demo-uvenaro-security \"node --test scripts/verify-account-emulator.test.mjs\""
+    "verify:account-emulator": "firebase emulators:exec --only auth --project demo-uvenaro-security \"node --test scripts/verify-account-emulator.test.mjs\"",
+    "build:account-staging": "node scripts/prepare-account-staging.mjs",
+    "deploy:account-staging": "node scripts/deploy-account-staging.mjs --remote",
+    "check:account-staging": "node scripts/check-account-staging.mjs",
+    "verify:account-staging": "node --test scripts/verify-account-staging.test.mjs",
+    "verify:account-staging-ui": "UVENARO_UI_STAGING=true node --test scripts/verify-account-ui.test.mjs",
+    "verify:account-staging-build": "npm run build:account-staging && wrangler deploy --dry-run --config deploy/account-staging/wrangler.json --outdir .account-staging/bundle"
   },
   "dependencies": {
     "@capacitor/android": "8.5.1",
@@ -34,6 +40,7 @@
     "firebase": "12.19.0",
     "firebase-tools": "15.31.0",
     "miniflare": "4.20260730.0",
-    "playwright": "1.62.1"
+    "playwright": "1.62.1",
+    "wrangler": "4.137.0"
   }
 }

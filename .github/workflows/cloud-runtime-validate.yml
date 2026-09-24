@@ -26,5 +26,7 @@ jobs:
       - run: npm run verify:rules
       - run: npm run verify:account-emulator
       - run: npm run verify:account-ui
+      - run: npm run verify:account-staging-ui
+      - run: npm run verify:account-staging-build
       - run: node --check backend/worker.mjs
       - run: node --check backend/firebase-auth.mjs
