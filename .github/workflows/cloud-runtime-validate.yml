@@ -30,3 +30,6 @@ jobs:
       - run: npm run verify:account-staging-build
       - run: node --check backend/worker.mjs
       - run: node --check backend/firebase-auth.mjs
+      - run: node --check backend/app-check.mjs
+      - run: node --check backend/replay-guard.mjs
+      - run: node --check backend/chat-billing.mjs
