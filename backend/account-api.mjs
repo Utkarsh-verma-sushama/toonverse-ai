@@ -2,6 +2,7 @@ import {AccountError,configured,context,email,password,name,json,cookie,readCook
 import {firebaseCall,credentials,FirebaseAccountError} from './firebase-accounts.mjs';
 import {authenticateAccountRequest,issueSession,refreshSession,profile,verifyCredentials,revoke,revokeAll,requireRecent} from './account-sessions.mjs';
 import {mfaRequired,finishMfa,updateReauth,beginEnrollment,finishEnrollment} from './account-mfa.mjs';
+import {verifyAppCheckRequest} from './app-check.mjs';
 const emailContinuation=env=>env.ACCOUNT_ACTION_CONTINUE_URL?{continueUrl:env.ACCOUNT_ACTION_CONTINUE_URL,canHandleCodeInApp:false}:{};
 const genericRecovery={ok:true,message:'If the account is eligible, recovery instructions will be sent.'};
 const actionCode=value=>{if(typeof value!=='string'||value.length<10||value.length>2048)throw new AccountError('INVALID_ACTION_CODE');return value;};
@@ -72,6 +73,10 @@ export async function accountRoute(request,env,readBody){
   // Every account request, including login and cookie restore, requires an
   // exact trusted origin and a custom header (therefore a CORS preflight).
   await context(request,env);
+  // Protect account/bootstrap endpoints with App Check when production
+  // enforcement is enabled. Staged environments remain compatible while the
+  // flag is false, but production can fail closed before Firebase/provider work.
+  await verifyAppCheckRequest(request,env);
   if(path==='/v1/auth/capabilities'&&method==='GET')return json(capabilities(env));
   const input=method==='POST'?await readBody(request):{};
   if(['/v1/auth/sign-in','/v1/auth/register'].includes(path)&&method==='POST')return await signIn(request,env,input,path.endsWith('/register'));
