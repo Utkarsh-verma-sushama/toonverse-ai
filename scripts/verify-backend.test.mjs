@@ -11,7 +11,7 @@ after(()=>{globalThis.fetch=originalFetch;});
 const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
 const alice=await token(),bob=await token(claims({sub:'bob'}));
 function database(){
- const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));
+ const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));
  const DB={prepare(query){let values=[];return {bind(...args){values=args;return this;},async first(){return sql.prepare(query).get(...values)||null;},async run(){const out=sql.prepare(query).run(...values);return {meta:{changes:Number(out.changes)}};}};}};
  const now=new Date().toISOString(),future=new Date(Date.now()+60000).toISOString();
  sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice','alice','awaiting_approval','private objective','{}',now,now,'key-alice');
