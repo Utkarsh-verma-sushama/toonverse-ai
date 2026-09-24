@@ -1,4 +1,5 @@
 import { IdentityError } from "./firebase-auth.mjs";
+import { AttestationError, verifyAppCheckRequest } from "./app-check.mjs";
 import { BillingError, getChatReceipt, expireUndispatched } from "./chat-billing.mjs";
 import { executeChat } from "./chat-execution.mjs";
 import { accountRoute } from "./account-api.mjs";
@@ -10,7 +11,7 @@ const allowedTasks=new Set(["generate","edit","understand","ocr","transcribe","t
 function cors(request,env){
  const origin=request.headers.get("origin"),headers={vary:"Origin"};
  const allowed=String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(x=>x&&x!=="null"&&x!=="*");
- if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device,x-uvenaro-csrf","access-control-allow-methods":"GET,POST,DELETE,OPTIONS","access-control-max-age":"600"});
+ if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device,x-uvenaro-csrf,x-firebase-appcheck","access-control-allow-methods":"GET,POST,DELETE,OPTIONS","access-control-max-age":"600"});
  return headers;
 }
 async function body(request) {
@@ -75,6 +76,9 @@ export default {async fetch(request,env={}){
   if(url.pathname.startsWith('/v1/agents/')&&env.AGENT_EXECUTION_ENABLED!=='true')return finish(json({code:'AGENT_EXECUTION_DISABLED'},503));
   if(url.pathname==='/v1/ai/routes'&&env.MODEL_ROUTING_ENABLED!=='true')return finish(json({code:'MODEL_ROUTING_DISABLED'},503));
   const user=await authenticateAccountRequest(request,env);
+  // Authenticate the account first, then require a cryptographically attested
+  // Uvenaro client before any protected routing, AI, agent or billing work.
+  await verifyAppCheckRequest(request,env);
   const profile=await env.DB.prepare('SELECT status FROM account_profiles WHERE owner_id=?').bind(user.sub).first();
   if(profile?.status!=='active')return finish(json({code:'ACCOUNT_RESTRICTED'},403));
   if(!user.emailVerified&&!url.pathname.startsWith('/v1/chat/requests/'))return finish(json({code:'EMAIL_VERIFICATION_REQUIRED'},403));
@@ -94,7 +98,7 @@ export default {async fetch(request,env={}){
  }catch(error){
   if(error instanceof BillingError)return finish(json({code:error.code,...(error.receipt?{reservation:error.receipt}:{})},error.status));
   if(error instanceof AccountError)return finish(json({code:error.code},error.status));
-  if(error instanceof IdentityError||error instanceof RequestError)return finish(json({code:error.code},error.status));
+  if(error instanceof IdentityError||error instanceof AttestationError||error instanceof RequestError)return finish(json({code:error.code},error.status));
   if(error instanceof URIError)return finish(json({code:"INVALID_PATH"},400));
   if(error.message==="NO_ROUTE")return finish(json({code:"NO_ROUTE",message:"No policy-compliant model is currently available."},503));
   return finish(json({code:"INTERNAL_ERROR",message:"Request could not be completed."},500));
