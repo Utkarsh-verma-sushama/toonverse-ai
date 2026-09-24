@@ -2,9 +2,9 @@ import {AccountError,context,random,encrypt,decrypt,now,event,rateLimit} from '.
 import {firebaseCall,credentials} from './firebase-accounts.mjs';
 import {issueSession,verifyCredentials,requireRecent,revokeAll} from './account-sessions.mjs';
 export async function saveChallenge(request,env,kind,payload,user){
- const ctx=await context(request,env),id=random();
+ const ctx=await context(request,env),id=random(),at=now();
  await env.DB.prepare(`INSERT INTO account_challenges (id,kind,owner_id,session_id,device_hash,origin,payload_cipher,expires_at)
-  VALUES (?,?,?,?,?,?,?,?)`).bind(id,kind,user?.sub||null,user?.session.id||null,ctx.deviceHash,ctx.origin,await encrypt(env,payload,'challenge:'+id),now()+300000).run();
+  VALUES (?,?,?,?,?,?,?,?)`).bind(id,kind,user?.sub||null,user?.session.id||null,ctx.deviceHash,ctx.origin,await encrypt(env,payload,'challenge:'+id),at+300000).run();
  return id;
 }
 export async function challenge(request,env,id,kind,user){
