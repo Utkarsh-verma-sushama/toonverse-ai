@@ -1,4 +1,4 @@
-import {reserveChat,beginDispatch,releaseChat} from './chat-billing.mjs';
+import {reserveChat,releaseChat} from './chat-billing.mjs';
 
 const fail=(code,status=503)=>Object.assign(new Error(code),{code,status});
 const integer=(env,name,fallback,min,max)=>{
@@ -34,9 +34,9 @@ export async function prepareAgentExecution(env,runId,owner){
  let reservation;
  try{
   reservation=await reserveAgentBudget(env,run,cfg);
-  await beginDispatch(env,{sub:owner},reservation);
-  // Provider/tool execution is intentionally not entered until the metered runtime
-  // implements settlement, per-step tool policy and approval boundaries.
+  // No provider/tool dispatch has happened yet. Keep provider_state=not_started so
+  // the reservation can be safely released without creating a reconciliation hold.
+  // beginDispatch belongs immediately before a real provider request.
   await releaseChat(env,{sub:owner},reservation);
   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_EXECUTION_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
    .bind(new Date().toISOString(),runId,owner).run();
