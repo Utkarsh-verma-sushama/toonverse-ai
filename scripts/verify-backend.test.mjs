@@ -28,7 +28,7 @@ function queueMessage(body){let acked=0,retried=0;return {body,ack(){acked++;},r
 test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
-  const first=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[first]},{...defaults,DB:db.DB});
+  const first=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[first]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
   assert.equal(first.acked,1);assert.equal(first.retried,0);
   let row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'failed');assert.equal(row.error_code,'AGENT_RUNTIME_NOT_CONNECTED');
   const duplicate=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[duplicate]},{...defaults,DB:db.DB});
