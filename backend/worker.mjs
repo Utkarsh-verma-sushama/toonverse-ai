@@ -104,4 +104,4 @@ export default {async fetch(request,env={}){
   if(error.message==="NO_ROUTE")return finish(json({code:"NO_ROUTE",message:"No policy-compliant model is currently available."},503));
   return finish(json({code:"INTERNAL_ERROR",message:"Request could not be completed."},500));
  }
-},async scheduled(event,env,context){context.waitUntil(Promise.all([expireUndispatched(env),cleanupAccounts(env)]));}};
+},async scheduled(event,env,context){context.waitUntil(Promise.all([expireUndispatched(env),cleanupAccounts(env),cleanupReplayNonces(env)]));}};
