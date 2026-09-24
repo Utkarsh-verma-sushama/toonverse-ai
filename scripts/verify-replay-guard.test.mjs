@@ -57,10 +57,14 @@ test("simultaneous duplicate nonce permits exactly one request",async()=>{
 });
 test("scheduled cleanup removes only expired replay nonces",async()=>{
  const e=env();try{
-  const created=new Date(Date.now()-11*60*1000).toISOString(),expired=new Date(Date.now()-10*60*1000).toISOString();
-  const liveCreated=new Date().toISOString(),future=new Date(Date.now()+5*60*1000).toISOString();
-  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","a".repeat(64),"chat",created,expired);
-  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","b".repeat(64),"chat",liveCreated,future);
+  const created=new Date().toISOString(),expired=new Date(Date.now()-1000).toISOString();
+  const future=new Date(Date.now()+5*60*1000).toISOString();
+  // The production insert guard correctly rejects already-expired nonces, so
+  // seed one valid row then age it only for the cleanup test fixture.
+  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","a".repeat(64),"chat",created,future);
+  e.sql.exec("DROP TRIGGER request_nonce_immutable");
+  e.sql.prepare("UPDATE request_nonces SET expires_at=? WHERE nonce_hash=?").run(expired,"a".repeat(64));
+  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","b".repeat(64),"chat",created,future);
   await cleanupReplayNonces(e);
   const rows=e.sql.prepare("SELECT nonce_hash FROM request_nonces ORDER BY nonce_hash").all();
   assert.deepEqual(rows.map(x=>x.nonce_hash),["b".repeat(64)]);
