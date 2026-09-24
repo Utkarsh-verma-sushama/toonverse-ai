@@ -14,6 +14,11 @@ async function call(path,{method='POST',body={},headers={},value=access,cookie=j
  return {response,body:await response.json()};
 }
 async function login(uid='alice',options={}){const out=await call('/v1/auth/sign-in',{body:{email:uid+'@example.com',password:'test-password-123'},value:'',...options});assert.equal(out.response.status,200,JSON.stringify(out.body));access=out.body.accessToken;return out;}
+test('account bootstrap App Check fails closed before identity provider work',async()=>{
+ const before=provider.providerCalls;
+ const out=await call('/v1/auth/sign-in',{body:{email:'alice@example.com',password:'test-password-123'},bindings:{APP_CHECK_ENFORCEMENT_ENABLED:'true',FIREBASE_PROJECT_ID:'toonverse-ai',APP_CHECK_ALLOWED_APP_IDS:'1:123:web:allowed'}});
+ assert.equal(out.response.status,401);assert.equal(out.body.code,'APP_ATTESTATION_REQUIRED');assert.equal(provider.providerCalls,before);
+});
 test('registration issues only an opaque access token and secure host-only refresh cookie',async()=>{
  const {response,body}=await call('/v1/auth/register',{body:{name:'Alice',email:' Alice@example.com ',password:'correct horse battery staple'}});
  assert.equal(response.status,200,JSON.stringify(body));assert.match(body.accessToken,/^uv1\./);assert.equal(body.user.id,'alice');assert.equal(body.user.name,'Alice');
