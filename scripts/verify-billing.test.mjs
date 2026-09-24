@@ -37,7 +37,7 @@ test('concurrent duplicate keys reserve once, while different payloads conflict'
  }finally{done(db);}
 });
 test('concurrent distinct requests cannot overdraw available credits',async()=>{
- const db=fixture();try{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
  const results=await Promise.allSettled(Array.from({length:20},(_,i)=>reserved(db,'key-'+i)));
  assert.equal(results.filter(x=>x.status==='fulfilled').length,6);assert.equal(balance(db).reserved,90);
  assert.ok(results.filter(x=>x.status==='rejected').every(x=>x.reason.code==='INSUFFICIENT_CREDITS'));
@@ -112,7 +112,7 @@ test('repeated and concurrent settlement charges only once',async()=>{
  }finally{done(db);}
 });
 test('multiple concurrent settlements consume included then prepaid without dropping a debit',async()=>{
- const db=fixture();try{const rows=await Promise.all(Array.from({length:6},(_,i)=>reserved(db,'k'+i)));
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');const rows=await Promise.all(Array.from({length:6},(_,i)=>reserved(db,'k'+i)));
  await Promise.all(rows.map(row=>beginDispatch(db,alice,row)));
  await Promise.all(rows.map(row=>settleChat(db,alice,row,{inputTokens:100,outputTokens:50},'p'+row.id)));
  assert.deepEqual({...balance(db)},{included:0,prepaid:10,reserved:0});
@@ -212,6 +212,7 @@ test('separate concurrent database connections obey credits and idempotency atom
  const {Worker}=await import('node:worker_threads');const {mkdtemp,rm}=await import('node:fs/promises');const {tmpdir}=await import('node:os');const {join}=await import('node:path');
  for(const duplicate of [false,true]){
   const dir=await mkdtemp(join(tmpdir(),'uvenaro-billing-')),file=join(dir,'test.db'),db=fixture(file),barrier=new SharedArrayBuffer(4);
+  db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
   const workers=[],ready=[],finished=[];
   try{
    for(let index=0;index<4;index++){
@@ -228,7 +229,7 @@ test('separate concurrent database connections obey credits and idempotency atom
 });
 
 test('expiry sweep releases only never-dispatched holds, preserving started and unknown work',async()=>{
- const db=fixture();try{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
   const row=await reserved(db,'original');
   const copy=db.sql.prepare(`INSERT INTO usage_reservations
    (id,owner_id,idempotency_key,feature,estimated_credits,estimated_cost_microusd,status,created_at,request_hash,price_snapshot_id,input_token_limit,output_token_limit,global_cost_ceiling,expires_at)
