@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {setTimeout as delay} from 'node:timers/promises';
 import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,getChatReceipt,expireUndispatched,usageCost} from '../backend/chat-billing.mjs';
-import {fixture,balance,invariant,d1,seedUser,schema,migration,alice,cfg,messages} from './billing-fixtures.mjs';
+import {fixture,balance,invariant,d1,seedUser,schema,migration,abuseMigration,alice,cfg,messages} from './billing-fixtures.mjs';
 const fails=code=>error=>error.code===code;
 async function reserved(db,key='key-1',user=alice,options=cfg){return reserveChat(db,user,key,messages,options);}
 async function billed(db,key='key-1',usage={inputTokens:100,outputTokens:50}){const row=await reserved(db,key);await beginDispatch(db,alice,row);return settleChat(db,alice,row,usage,'provider-'+key);}
@@ -51,6 +51,19 @@ for(const [name,query,code] of [
 ])test(`${name} includes concurrent in-flight reservations`,async()=>{
  const db=fixture();try{db.sql.exec(query);const results=await Promise.allSettled([reserved(db,'one'),reserved(db,'two')]);
  assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal(results.find(x=>x.status==='rejected').reason.code,code);
+ }finally{done(db);}
+});
+test('concurrency guard blocks parallel expensive work before another hold is created',async()=>{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=1');await reserved(db,'one');
+ await assert.rejects(reserved(db,'two'),fails('CONCURRENCY_LIMIT_REACHED'));
+ assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE status='reserved'").get().n,1);assert.equal(balance(db).reserved,15);
+ }finally{done(db);}
+});
+test('hourly spend velocity includes settled usage and open reservations',async()=>{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET hourly_cost_limit_microusd=160');
+ await billed(db,'first',{inputTokens:10,outputTokens:5});
+ await assert.rejects(reserved(db,'second'),fails('HOURLY_SPEND_LIMIT_REACHED'));
+ assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations").get().n,1);
  }finally{done(db);}
 });
 test('global budget applies across users',async()=>{
@@ -188,7 +201,7 @@ test('missing migration fails closed',async()=>{
 test('legacy holds survive migration and count against available credits',async()=>{
  const sql=new DatabaseSync(':memory:');sql.exec(schema);seedUser(sql);const date=new Date(Date.now()-3*86400000).toISOString();
  sql.prepare('INSERT INTO usage_reservations (id,owner_id,idempotency_key,feature,estimated_credits,estimated_cost_microusd,status,created_at) VALUES (?,?,?,?,?,?,?,?)').run('legacy','alice','old-key','chat',90,900,'reserved',date);
- sql.exec('UPDATE billing_accounts SET reserved_credits=90');sql.exec('BEGIN;'+migration+'COMMIT;');
+ sql.exec('UPDATE billing_accounts SET reserved_credits=90');sql.exec('BEGIN;'+migration+abuseMigration+'COMMIT;');
  const db={sql,DB:d1(sql)};try{sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,100000,date);
  sql.prepare('INSERT INTO provider_price_snapshots VALUES (?,?,?,?,?,?,?,?,?)').run('price',cfg.provider,cfg.model,1000000,1000000,10,date,null,'2099-01-01');
  await assert.rejects(reserved(db),fails('INSUFFICIENT_CREDITS'));assert.equal(balance(db).reserved,90);
