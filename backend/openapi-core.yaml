@@ -21,9 +21,20 @@ paths:
         "200": {description: Settled response with credit receipt.}
         "401": {description: Verified identity required.}
         "402": {description: Subscription, credits or per-request cost ceiling insufficient.}
-        "409": {description: Duplicate or concurrent idempotency key.}
+        "409": {description: Existing request or changed payload for the same idempotency key. No second provider execution.}
         "429": {description: Fair-use or risk limit reached.}
         "503": {description: Execution disabled, price/provider unavailable, or upstream failure.}
+  /v1/chat/requests/{requestKey}:
+    get:
+      operationId: getChatCreditReceipt
+      summary: Read the caller's original request status and credit receipt without starting another model request.
+      parameters:
+        - {in: path, name: requestKey, required: true, schema: {type: string, pattern: "^[A-Za-z0-9_-]{1,128}$"}}
+      responses:
+        "200": {description: Reserved, settled or released state; no prompt or output content is returned.}
+        "401": {description: Verified identity required.}
+        "404": {description: Not found or belongs to another user.}
+        "503": {description: Billing database unavailable.}
   /v1/ai/routes:
     post:
       operationId: selectModelRoute

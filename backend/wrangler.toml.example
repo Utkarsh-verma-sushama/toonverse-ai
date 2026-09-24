@@ -12,6 +12,9 @@ CHAT_EXECUTION_ENABLED = "false"
 CHAT_PROVIDER = ""
 CHAT_MODEL = ""
 CHAT_PROVIDER_URL = ""
+CHAT_PROVIDER_ALLOWED_ORIGIN = ""
+# Requires an audited metered gateway; not a raw model API endpoint.
+CHAT_PROVIDER_PROTOCOL = "metered-v1"
 CHAT_MAX_INPUT_TOKENS = "4000"
 CHAT_MAX_OUTPUT_TOKENS = "1000"
 CHAT_TIMEOUT_MS = "30000"
@@ -28,6 +31,7 @@ MODEL_CATALOG_JSON = "[]"
 binding = "DB"
 database_name = "uvenaro-core"
 database_id = "SET_D1_DATABASE_ID"
+migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "MEDIA"
@@ -43,3 +47,7 @@ max_batch_size = 5
 max_batch_timeout = 5
 max_retries = 3
 dead_letter_queue = "uvenaro-agent-dead-letter"
+
+# Only never-dispatched expired holds are released by this sweep.
+[triggers]
+crons = ["*/5 * * * *"]

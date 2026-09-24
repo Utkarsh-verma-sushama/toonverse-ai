@@ -9,7 +9,7 @@ Resume instruction: When Utkarsh Prakash Verma says “आगे काम श�
 
 ## Latest engineering checkpoint — 24 September 2026
 
-Backend source has been recovered and identity/API ownership/Firebase-rule hardening has passed 100 local behavioral/emulator tests on `codex/uvenaro-backend-security-20260924`. See [backend security checkpoint](backend-security-checkpoint.md) for verified work, activation requirements and the remaining implementation order. No production backend, AI provider, cloud sync, payment or launch activation is claimed. Next engineering work is atomic credit/quota enforcement followed by actual account backend and V1 chatbot integration.
+Backend source has been recovered and identity/API ownership/Firebase-rule hardening has passed 100 local behavioral/emulator tests on `codex/uvenaro-backend-security-20260924`. See [backend security checkpoint](backend-security-checkpoint.md) for verified work, activation requirements and the remaining implementation order. No production backend, AI provider, cloud sync, payment or launch activation is claimed. Atomic credit/quota enforcement and persisted client retries have now been implemented; see [Atomic Chat Billing](atomic-chat-billing.md) for verification and remaining gates. Next engineering work is the actual account backend, followed by the audited V1 model gateway and provider reconciliation.
 
 ## Permanent execution rule
 

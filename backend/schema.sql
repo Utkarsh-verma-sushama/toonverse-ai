@@ -1,3 +1,4 @@
+-- Baseline schema. Apply backend/migrations in order before metered chat activation.
 PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS agent_runs (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('queued','planning','running','awaiting_approval','completed','failed','cancelled','expired')), objective TEXT NOT NULL, payload_json TEXT NOT NULL, error_code TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, idempotency_key TEXT NOT NULL, UNIQUE(owner_id,idempotency_key));
 CREATE INDEX IF NOT EXISTS idx_agent_runs_owner_updated ON agent_runs(owner_id,updated_at DESC);
