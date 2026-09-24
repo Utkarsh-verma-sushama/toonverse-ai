@@ -13,7 +13,13 @@ export function d1(sql,{beforeRun,afterRun}={}) {
 export function seedUser(sql,uid='alice',included=20,prepaid=80){
  const start=new Date(Date.now()-86400000).toISOString(),end=new Date(Date.now()+29*86400000).toISOString();
  sql.prepare('INSERT INTO billing_accounts VALUES (?,?,?,?,?,?,?,?,?)').run(uid,'free','active',included,prepaid,0,start,end,start);
- sql.prepare('INSERT INTO usage_limits (owner_id,daily_credit_limit,monthly_credit_limit,max_request_cost_microusd,requests_per_minute,blocked_until,updated_at,max_concurrent_requests,hourly_cost_limit_microusd) VALUES (?,?,?,?,?,?,?,?,?)').run(uid,1000,10000,100000,1000,null,start,2,100000);
+ const columns=sql.prepare("PRAGMA table_info(usage_limits)").all().map(row=>row.name);
+ if(columns.includes('max_concurrent_requests')){
+  sql.prepare('INSERT INTO usage_limits (owner_id,daily_credit_limit,monthly_credit_limit,max_request_cost_microusd,requests_per_minute,blocked_until,updated_at,max_concurrent_requests,hourly_cost_limit_microusd) VALUES (?,?,?,?,?,?,?,?,?)').run(uid,1000,10000,100000,1000,null,start,2,100000);
+ }else{
+  // Legacy-schema fixture: seed only columns that existed before abuse/spend hardening.
+  sql.prepare('INSERT INTO usage_limits (owner_id,daily_credit_limit,monthly_credit_limit,max_request_cost_microusd,requests_per_minute,blocked_until,updated_at) VALUES (?,?,?,?,?,?,?)').run(uid,1000,10000,100000,1000,null,start);
+ }
 }
 export function fixture(path=':memory:') {
  const sql=new DatabaseSync(path);sql.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;');sql.exec(schema);
