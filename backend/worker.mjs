@@ -41,6 +41,10 @@ async function createAgent(request,env,user){
  const input=await body(request);if(typeof input?.objective!=="string"||!input.objective.trim()||input.objective.length>4000)return json({code:"INVALID_OBJECTIVE",message:"Objective is required."},400);
  const key=request.headers.get("idempotency-key");if(!key||!/^[A-Za-z0-9_-]{1,128}$/.test(key))return json({code:"IDEMPOTENCY_REQUIRED"},400);
  if(input.limits!==undefined||input.policy!==undefined)return json({code:"SERVER_POLICY_REQUIRED"},400);
+ const existing=await env.DB.prepare("SELECT id,status,objective,created_at AS createdAt,updated_at AS updatedAt FROM agent_runs WHERE owner_id=? AND idempotency_key=?").bind(user.sub,key).first();
+ if(existing)return json(existing,200);
+ const active=await env.DB.prepare("SELECT COUNT(*) AS n FROM agent_runs WHERE owner_id=? AND status IN ('queued','planning','running','awaiting_approval')").bind(user.sub).first();
+ if(Number(active?.n||0)>=2)return json({code:"AGENT_CONCURRENCY_LIMIT_REACHED"},429);
  const runId=id(),now=new Date().toISOString(),run={id:runId,owner:user.sub,status:"queued",objective:String(input.objective).slice(0,4000),createdAt:now,updatedAt:now};
  const payload={objective:run.objective};
  if(env.DB)await env.DB.prepare("INSERT INTO agent_runs (id, owner_id, status, objective, payload_json, created_at, updated_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(runId,user.sub,"queued",run.objective,JSON.stringify(payload),now,now,key).run();
