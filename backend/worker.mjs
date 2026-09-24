@@ -47,8 +47,15 @@ async function createAgent(request,env,user){
  if(Number(active?.n||0)>=2)return json({code:"AGENT_CONCURRENCY_LIMIT_REACHED"},429);
  const runId=id(),now=new Date().toISOString(),run={id:runId,owner:user.sub,status:"queued",objective:String(input.objective).slice(0,4000),createdAt:now,updatedAt:now};
  const payload={objective:run.objective};
- if(env.DB)await env.DB.prepare("INSERT INTO agent_runs (id, owner_id, status, objective, payload_json, created_at, updated_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(runId,user.sub,"queued",run.objective,JSON.stringify(payload),now,now,key).run();
- if(env.AGENT_QUEUE)await env.AGENT_QUEUE.send({runId,owner:user.sub});
+ try{await env.DB.prepare("INSERT INTO agent_runs (id, owner_id, status, objective, payload_json, created_at, updated_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(runId,user.sub,"queued",run.objective,JSON.stringify(payload),now,now,key).run();}
+ catch(error){
+  if(String(error?.message||"").includes("AGENT_CONCURRENCY_LIMIT_REACHED"))return json({code:"AGENT_CONCURRENCY_LIMIT_REACHED"},429);
+  const raced=await env.DB.prepare("SELECT id,status,objective,created_at AS createdAt,updated_at AS updatedAt FROM agent_runs WHERE owner_id=? AND idempotency_key=?").bind(user.sub,key).first();
+  if(raced)return json(raced,200);
+  throw error;
+ }
+ try{await env.AGENT_QUEUE.send({runId,owner:user.sub});}
+ catch{await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='QUEUE_DISPATCH_FAILED',updated_at=? WHERE id=? AND owner_id=? AND status='queued'").bind(new Date().toISOString(),runId,user.sub).run();return json({code:"AGENT_QUEUE_UNAVAILABLE"},503);}
  return json(run,202);
 }
 async function getRun(runId,env,user){if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);const row=await env.DB.prepare("SELECT id,status,objective,created_at AS createdAt,updated_at AS updatedAt,error_code AS errorCode FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();return row?json(row):json({code:"NOT_FOUND"},404)}
