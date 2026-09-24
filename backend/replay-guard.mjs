@@ -9,7 +9,6 @@ export async function consumeReplayNonce(env,user,request,purpose){
  if(!user?.sub||!["chat","agent","media"].includes(purpose))throw new ReplayError("INVALID_REQUEST_NONCE",400);
  const digest=await hash(nonce),now=new Date().toISOString(),expires=new Date(Date.now()+5*60*1000).toISOString();
  try{
-  await env.DB.prepare("DELETE FROM request_nonces WHERE julianday(expires_at)<=julianday('now')").run();
   await env.DB.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)")
     .bind(user.sub,digest,purpose,now,expires).run();
   return {enforced:true};
@@ -20,4 +19,10 @@ export async function consumeReplayNonce(env,user,request,purpose){
   if(/INVALID_REQUEST_NONCE/i.test(m))throw new ReplayError("INVALID_REQUEST_NONCE",400);
   throw new ReplayError("REPLAY_PROTECTION_UNAVAILABLE",503);
  }
+}
+
+export async function cleanupReplayNonces(env){
+ if(!env.DB)return;
+ try{await env.DB.prepare("DELETE FROM request_nonces WHERE julianday(expires_at)<=julianday('now')").run();}
+ catch(error){if(!/no such table/i.test(String(error?.message||"")))throw error;}
 }
