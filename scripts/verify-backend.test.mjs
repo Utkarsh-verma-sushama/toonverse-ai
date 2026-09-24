@@ -17,7 +17,7 @@ function database(){
  seedUser(sql);
  sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,1000000,new Date().toISOString());
  sql.prepare('INSERT INTO provider_price_snapshots (id,provider,model,input_microusd_per_million,output_microusd_per_million,credit_value_microusd,effective_at,retired_at,valid_until) VALUES (?,?,?,?,?,?,?,?,?)')
-  .run('agent-price','test-provider','test-model',1000,1000,1000,new Date(Date.now()-86400000).toISOString(),null,new Date(Date.now()+86400000).toISOString());
+  .run('agent-price','test-provider','test-model',100,100,1000,new Date(Date.now()-86400000).toISOString(),null,new Date(Date.now()+86400000).toISOString());
  const now=new Date().toISOString(),future=new Date(Date.now()+60000).toISOString();
  sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice','alice','awaiting_approval','private objective','{}',now,now,'key-alice');
  sql.prepare('INSERT INTO agent_approvals (id,run_id,owner_id,action_type,summary,expires_at) VALUES (?,?,?,?,?,?)').run('approval-alice','run-alice','alice','share','private',future);
