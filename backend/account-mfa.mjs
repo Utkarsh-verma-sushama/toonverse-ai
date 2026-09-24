@@ -3,6 +3,8 @@ import {firebaseCall,credentials} from './firebase-accounts.mjs';
 import {issueSession,verifyCredentials,requireRecent,revokeAll} from './account-sessions.mjs';
 export async function saveChallenge(request,env,kind,payload,user){
  const ctx=await context(request,env),id=random(),at=now();
+ // Supersede older live challenges for the same authenticated account and operation.
+ if(user?.sub)await env.DB.prepare("UPDATE account_challenges SET consumed_at=? WHERE owner_id=? AND kind=? AND consumed_at IS NULL AND expires_at>?").bind(at,user.sub,kind,at).run();
  await env.DB.prepare(`INSERT INTO account_challenges (id,kind,owner_id,session_id,device_hash,origin,payload_cipher,expires_at)
   VALUES (?,?,?,?,?,?,?,?)`).bind(id,kind,user?.sub||null,user?.session.id||null,ctx.deviceHash,ctx.origin,await encrypt(env,payload,'challenge:'+id),at+300000).run();
  return id;
