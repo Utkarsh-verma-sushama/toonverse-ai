@@ -83,6 +83,17 @@ test('inactive run cannot be reactivated past the active-agent cap',()=>{
   assert.throws(()=>db.sql.prepare("UPDATE agent_runs SET status='running' WHERE id='run-alice-3'").run(),/AGENT_CONCURRENCY_LIMIT_REACHED/);
  }finally{db.sql.close();}
 });
+test('agent idempotency key cannot be reused for a different objective',async()=>{
+ const db=database();let sends=0;const bindings={...db,AGENT_QUEUE:{async send(){sends++;}}};const key='same-agent-key',nonce=()=>crypto.randomUUID().replaceAll('-','');
+ try{
+  const first=await call('/v1/agents/runs',{method:'POST',body:{objective:'  create safe report  '},headers:{'idempotency-key':key,'x-uvenaro-nonce':nonce()},bindings});
+  assert.equal(first.status,202);assert.equal((await first.json()).objective,'create safe report');assert.equal(sends,1);
+  const retry=await call('/v1/agents/runs',{method:'POST',body:{objective:'create safe report'},headers:{'idempotency-key':key,'x-uvenaro-nonce':nonce()},bindings});
+  assert.equal(retry.status,200);assert.equal(sends,1);
+  const conflict=await call('/v1/agents/runs',{method:'POST',body:{objective:'different objective'},headers:{'idempotency-key':key,'x-uvenaro-nonce':nonce()},bindings});
+  assert.equal(conflict.status,409);assert.equal((await conflict.json()).code,'IDEMPOTENCY_CONFLICT');assert.equal(sends,1);
+ }finally{db.sql.close();}
+});
 test('agent create rejects client policy and limits before queueing',async()=>{
  const db=database();let sends=0;const bindings={...db,AGENT_QUEUE:{async send(){sends++;}}};
  try{
