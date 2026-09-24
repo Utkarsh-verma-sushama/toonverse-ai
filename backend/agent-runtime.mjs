@@ -9,9 +9,11 @@ const integer=(env,name,fallback,min,max)=>{
 };
 export function agentConfig(env){
  if(env.AGENT_EXECUTION_ENABLED!=='true')return {enabled:false};
+ const provider=String(env.AGENT_PROVIDER||''),model=String(env.AGENT_MODEL||'');
+ if(!/^[A-Za-z0-9._-]{1,64}$/.test(provider)||!/^[A-Za-z0-9._:-]{1,128}$/.test(model))throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
  return {enabled:true,maxSteps:integer(env,'AGENT_MAX_STEPS',8,1,32),maxRuntimeMs:integer(env,'AGENT_MAX_RUNTIME_MS',60000,1000,300000),
   maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),
-  globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider:String(env.AGENT_PROVIDER||''),model:String(env.AGENT_MODEL||'')};
+  globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model};
 }
 export async function claimAgentRun(env,runId,owner){
  if(!env.DB)throw fail('DATABASE_NOT_CONNECTED');
