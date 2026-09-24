@@ -152,10 +152,10 @@ test('MFA challenge is device bound and stops after five wrong codes',async()=>{
 test('new authenticated MFA challenge supersedes the previous live challenge',async()=>{
  await login();provider.mfa=true;
  const first=await call('/v1/auth/reauthenticate',{body:{password:'correct'}});
- assert.equal(first.body.code,'MFA_REQUIRED');assert.ok(first.body.challengeId);
- const firstId=first.body.challengeId;
+ assert.equal(first.body.code,'MFA_REQUIRED');assert.ok(first.body.details?.challengeId);
+ const firstId=first.body.details.challengeId;
  const second=await call('/v1/auth/reauthenticate',{body:{password:'correct'}});
- assert.equal(second.body.code,'MFA_REQUIRED');assert.ok(second.body.challengeId);assert.notEqual(firstId,second.body.challengeId);
+ assert.equal(second.body.code,'MFA_REQUIRED');assert.ok(second.body.details?.challengeId);assert.notEqual(firstId,second.body.details.challengeId);
  const stale=await call('/v1/auth/reauthenticate/mfa',{body:{challengeId:firstId,methodId:'totp-1',code:'123456'}});
  assert.equal(stale.body.code,'INVALID_CHALLENGE');
 });
