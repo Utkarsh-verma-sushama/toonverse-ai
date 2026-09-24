@@ -1,3 +1,4 @@
+import {prepareAgentExecution} from './agent-runtime.mjs';
 import { IdentityError } from "./firebase-auth.mjs";
 import { AttestationError, verifyAppCheckRequest } from "./app-check.mjs";
 import { ReplayError, consumeReplayNonce } from "./replay-guard.mjs";
@@ -125,10 +126,10 @@ export default {async fetch(request,env={}){
   try{
    const run=await env.DB.prepare("SELECT status,owner_id AS owner FROM agent_runs WHERE id=?").bind(runId).first();
    if(!run||run.owner!==owner||["completed","failed","cancelled","expired"].includes(run.status)){message.ack();continue;}
-   const claim=await env.DB.prepare("UPDATE agent_runs SET status='planning',updated_at=? WHERE id=? AND owner_id=? AND status='queued'").bind(new Date().toISOString(),runId,owner).run();
-   if(!claim.meta?.changes){message.ack();continue;}
-   // Execution remains deliberately fail-closed until the metered agent runtime is connected.
-   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'").bind(new Date().toISOString(),runId,owner).run();
+   const prepared=await prepareAgentExecution(env,runId,owner);
+   // A duplicate delivery, terminal run or already-claimed run performs no work.
+   // The metered runtime owns the atomic queued->planning claim and budget boundary.
+   if(!prepared){message.ack();continue;}
    message.ack();
   }catch{message.retry();}
  }
