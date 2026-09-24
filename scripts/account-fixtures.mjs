@@ -20,7 +20,7 @@ export async function seedManaged(sql,idToken,uid='alice'){
  return access;
 }
 export async function identityService(){
- const records=new Map(),calls=[];let fail='',mfa=false,providerCalls=0;
+ const records=new Map(),calls=[];let fail='',outage=false,mfa=false,providerCalls=0;
  async function make(uid='alice',authTime=Math.floor(Date.now()/1000)){
   const value=await token(claims({sub:uid,auth_time:authTime,iat:Math.floor(Date.now()/1000)}));records.set(value,uid);return {idToken:value,refreshToken:'refresh-'+uid,localId:uid,email:uid+'@example.com',expiresIn:'3600'};
  }
@@ -33,6 +33,7 @@ export async function identityService(){
    return Response.json({users:[{localId:uid,email:uid+'@example.com',displayName:uid,emailVerified:true,validSince:'0',providerUserInfo:[{providerId:'password'}],...(mfa?{mfaInfo:[{mfaEnrollmentId:'totp-1',totpInfo:{}}]}:{})}]});
   }
   providerCalls++;calls.push({url,input});
+  if(outage)return Response.json({error:{message:'UNAVAILABLE'}},{status:503});
   if(fail)return Response.json({error:{message:fail}},{status:400});
   if(url.includes('accounts:signInWithPassword')||url.includes('accounts:signUp')){
    if(mfa)return Response.json({mfaPendingCredential:'private-mfa-proof',mfaInfo:[{mfaEnrollmentId:'totp-1',displayName:'Test authenticator',totpInfo:{}}]});
@@ -47,5 +48,5 @@ export async function identityService(){
   if(url.includes('accounts:sendOobCode')||url.includes('accounts:update'))return Response.json({email:'alice@example.com'});
   throw new Error('Unexpected identity test endpoint');
  };
- return {fetch,calls,make,get providerCalls(){return providerCalls;},set failure(value){fail=value;},set mfa(value){mfa=value;}};
+ return {fetch,calls,make,get providerCalls(){return providerCalls;},set failure(value){fail=value;},set outage(value){outage=Boolean(value);},set mfa(value){mfa=value;}};
 }
