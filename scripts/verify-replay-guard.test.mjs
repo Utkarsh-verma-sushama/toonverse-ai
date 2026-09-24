@@ -57,9 +57,10 @@ test("simultaneous duplicate nonce permits exactly one request",async()=>{
 });
 test("scheduled cleanup removes only expired replay nonces",async()=>{
  const e=env();try{
-  const expired="2000-01-01T00:00:00.000Z",future="2999-01-01T00:00:00.000Z";
-  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","a".repeat(64),"chat",expired,expired);
-  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","b".repeat(64),"chat",new Date().toISOString(),future);
+  const created=new Date(Date.now()-11*60*1000).toISOString(),expired=new Date(Date.now()-10*60*1000).toISOString();
+  const liveCreated=new Date().toISOString(),future=new Date(Date.now()+5*60*1000).toISOString();
+  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","a".repeat(64),"chat",created,expired);
+  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","b".repeat(64),"chat",liveCreated,future);
   await cleanupReplayNonces(e);
   const rows=e.sql.prepare("SELECT nonce_hash FROM request_nonces ORDER BY nonce_hash").all();
   assert.deepEqual(rows.map(x=>x.nonce_hash),["b".repeat(64)]);
