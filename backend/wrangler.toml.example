@@ -28,6 +28,10 @@ CHAT_GLOBAL_DAILY_COST_MICROUSD = "0"
 # CHAT_PROVIDER_API_KEY must be stored as an encrypted secret, never in this file.
 ALLOWED_ORIGINS = "https://YOUR_DOMAIN"
 FIREBASE_PROJECT_ID = "toonverse-ai"
+# Keep false until valid app IDs are registered and staging tests pass. Production
+# release gate requires true. Comma-separated Firebase App IDs only.
+APP_CHECK_ENFORCEMENT_ENABLED = "false"
+APP_CHECK_ALLOWED_APP_IDS = ""
 # Firebase Web API key restricted to Identity Toolkit, never a service-account key.
 # Missing key fails closed; required for disabled/deleted/revoked-session checks.
 FIREBASE_WEB_API_KEY = ""
