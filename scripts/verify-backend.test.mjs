@@ -28,10 +28,10 @@ function queueMessage(body){let acked=0,retried=0;return {body,ack(){acked++;},r
 test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
-  const first=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[first]},defaults);
+  const first=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[first]},{...defaults,DB:db.DB});
   assert.equal(first.acked,1);assert.equal(first.retried,0);
   let row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'failed');assert.equal(row.error_code,'AGENT_RUNTIME_NOT_CONNECTED');
-  const duplicate=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[duplicate]},defaults);
+  const duplicate=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[duplicate]},{...defaults,DB:db.DB});
   assert.equal(duplicate.acked,1);assert.equal(duplicate.retried,0);
   row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'failed');assert.equal(row.error_code,'AGENT_RUNTIME_NOT_CONNECTED');
  }finally{db.sql.close();}
@@ -40,7 +40,7 @@ test('agent queue consumer drops malformed, foreign-owner and terminal messages'
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='completed' WHERE id='run-alice'").run();
   for(const message of [queueMessage({runId:'bad/id',owner:'alice'}),queueMessage({runId:'run-alice',owner:'bob'}),queueMessage({runId:'run-alice',owner:'alice'})]){
-   await worker.queue({messages:[message]},defaults);assert.equal(message.acked,1);assert.equal(message.retried,0);
+   await worker.queue({messages:[message]},{...defaults,DB:db.DB});assert.equal(message.acked,1);assert.equal(message.retried,0);
   }
   assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'completed');
  }finally{db.sql.close();}
