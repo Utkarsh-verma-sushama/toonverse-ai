@@ -42,7 +42,7 @@ export async function identityService(){
   if(url.includes('securetoken.googleapis.com')){const r=await make(input.refresh_token.replace('refresh-',''));return Response.json({id_token:r.idToken,refresh_token:r.refreshToken,user_id:r.localId});}
   if(url.includes('mfaSignIn:finalize')){if(input.totpVerificationInfo.verificationCode!=='123456')return Response.json({error:{message:'INVALID_CODE'}},{status:400});return Response.json(await make());}
   if(url.includes('mfaEnrollment:start'))return Response.json({totpSessionInfo:{sharedSecretKey:'JBSWY3DPEHPK3PXP',verificationCodeLength:6,hashingAlgorithm:'SHA1',periodSec:30,sessionInfo:'enroll-secret'}});
-  if(url.includes('mfaEnrollment:finalize')){mfa=true;return Response.json(await make());}
+  if(url.includes('mfaEnrollment:finalize')){if(input.totpVerificationInfo.verificationCode!=='123456')return Response.json({error:{message:'INVALID_CODE'}},{status:400});mfa=true;return Response.json(await make());}
   if(url.includes('mfaEnrollment:withdraw')){mfa=false;return Response.json(await make());}
   if(url.includes('accounts:resetPassword'))return Response.json({email:'alice@example.com',requestType:'PASSWORD_RESET'});
   if(url.includes('accounts:sendOobCode')||url.includes('accounts:update'))return Response.json({email:'alice@example.com'});
