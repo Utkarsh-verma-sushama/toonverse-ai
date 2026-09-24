@@ -136,4 +136,4 @@ components:
         updatedAt: {type: string, format: date-time}
         errorCode: {type: string}
   securitySchemes:
-    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: UvenaroOpaqueSession}

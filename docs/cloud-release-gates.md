@@ -1,8 +1,8 @@
 # Cloud release gates
 
-All three public flags remain disabled until every gate passes.
+Account authentication, cloud and AI execution flags remain disabled until their applicable gates pass. See [Account Backend](account-backend-checkpoint.md) for account-specific migrations, cookie transport and provider validation.
 
-- Identity: production JWT verification, tenant derivation and role/entitlement checks.
+- Identity: managed account sessions, server-held Firebase JWT verification, live provider/revocation/recovery tests, tenant derivation and role/entitlement checks.
 - Data: D1 migrations, backup/restore drill, retention deletion and tenant-isolation tests.
 - Media: private R2 buckets, signed URLs, malware/MIME validation and lifecycle rules.
 - Agents: queue consumer, dead-letter queue, step/time/cost quotas, approval expiry and emergency kill switch.

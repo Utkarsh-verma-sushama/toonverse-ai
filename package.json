@@ -13,10 +13,13 @@
     "native:android": "npm run native:sync && cap open android",
     "native:ios": "npm run native:sync && cap open ios",
     "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs",
-    "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing",
+    "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing && npm run verify:accounts",
     "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs",
     "verify:rules": "firebase emulators:exec --only firestore,storage --project demo-uvenaro-security \"node --test scripts/verify-rules.test.mjs\"",
-    "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-d1-billing.test.mjs"
+    "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-d1-billing.test.mjs",
+    "verify:accounts": "node --test scripts/verify-accounts.test.mjs scripts/verify-account-client.test.mjs",
+    "verify:account-ui": "node --test scripts/verify-account-ui.test.mjs",
+    "verify:account-emulator": "firebase emulators:exec --only auth --project demo-uvenaro-security \"node --test scripts/verify-account-emulator.test.mjs\""
   },
   "dependencies": {
     "@capacitor/android": "8.5.1",
@@ -27,8 +30,10 @@
   "devDependencies": {
     "@capacitor/cli": "8.5.1",
     "@firebase/rules-unit-testing": "5.0.2",
+    "@sparticuz/chromium": "153.0.0",
     "firebase": "12.19.0",
     "firebase-tools": "15.31.0",
-    "miniflare": "4.20260730.0"
+    "miniflare": "4.20260730.0",
+    "playwright": "1.62.1"
   }
 }

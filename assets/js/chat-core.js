@@ -76,6 +76,7 @@
   }
   async function send(content){
     if(busy)throw error('A request is already in progress.','REQUEST_IN_PROGRESS');
+    if(connected()&&window.UvenaroAuth?.restore){await window.UvenaroAuth.restore();if(busy)throw error('A request is already in progress.','REQUEST_IN_PROGRESS');}
     const text=String(content||'').trim();if(!text||text.length>12000)throw error('Message must contain 1 to 12,000 characters.');
     const state=store();
     if(state.pending){

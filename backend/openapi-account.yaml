@@ -1,0 +1,1266 @@
+openapi: 3.1.0
+info:
+  title: Uvenaro Account API
+  version: 1.0.0
+  description: Implemented email/session core. Default-off; exact trusted HTTPS Origin,
+    device and CSRF headers required. Cookie mutations require browser Origin. Unsupported
+    providers/passkeys/OTP/recovery-code methods are not implemented. No production
+    activation or completed erasure is implied.
+servers:
+- url: https://uvenaro.com/api
+  description: Example same-origin reverse proxy; strip /api before Worker
+paths:
+  /v1/auth/capabilities:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: Read enabled account methods
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capabilities'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/register:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: register
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+  /v1/auth/sign-in:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: sign-in
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+  /v1/auth/session:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Rotate secure cookie and issue a managed access token
+      security:
+      - refreshCookie: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: &id001 {}
+  /v1/auth/refresh:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Rotate secure cookie and issue a managed access token
+      security:
+      - refreshCookie: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: *id001
+  /v1/auth/sign-out:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Revoke current session; allDevices requires recent bearer authentication
+      security:
+      - bearerAuth: []
+      - refreshCookie: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                allDevices:
+                  type: boolean
+  /v1/auth/mfa/challenge:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Finish the password plus authenticator sign-in challenge
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mfa'
+  /v1/auth/password/reset/request:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Request recovery; generic public result
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: &id002
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+              - email
+  /v1/auth/recovery/start:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Request recovery; generic public result
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id002
+  /v1/auth/password/reset/confirm:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Verify reset code, revoke sessions, then change password
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oobCode:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 12
+                  maxLength: 128
+              required:
+              - oobCode
+              - newPassword
+  /v1/auth/email/verify/confirm:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Apply Firebase email verification/change/recovery action code
+      security: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oobCode:
+                  type: string
+                  minLength: 10
+                  maxLength: 2048
+              required:
+              - oobCode
+  /v1/account/profile:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: Read current profile
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Update display preferences only
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                locale:
+                  type: string
+                  maxLength: 35
+                timezone:
+                  type: string
+                  maxLength: 64
+              required:
+              - name
+  /v1/auth/reauthenticate:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Confirm current password; may require MFA
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+              - password
+  /v1/auth/reauthenticate/mfa:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Complete recent authentication with MFA
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mfa'
+  /v1/auth/email/verify/request:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Request verification for current email
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: *id001
+  /v1/auth/email/change/request:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Request verified change to a new email; recent authentication required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id002
+  /v1/auth/password/change:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Revoke sessions and change password; recent authentication required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  minLength: 12
+                  maxLength: 128
+              required:
+              - newPassword
+  /v1/auth/sessions:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: List up to twenty current owner sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/sessions/{sessionId}:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    - name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Revoke one owner session
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/sessions/revoke-others:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Revoke all other owner sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: *id001
+  /v1/auth/security:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: Read email/MFA/recent-auth state and capabilities
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/security/events:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: Read recent owner security events
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+  /v1/auth/connections:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: List actual linked identity provider names
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/mfa/totp/enroll:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Begin enabled Firebase TOTP enrollment; recent authentication and verified
+        email required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: *id001
+  /v1/auth/mfa/totp/confirm:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Confirm code and revoke sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                challengeId:
+                  type: string
+                code:
+                  type: string
+                  pattern: ^\d{6,8}$
+              required:
+              - challengeId
+              - code
+  /v1/auth/mfa/{methodId}:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    - name: methodId
+      in: path
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Remove owned MFA factor and revoke sessions; recent authentication
+        required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/account/export:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Export one owner page (maximum 100 records); recent authentication
+        required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resource:
+                  type: string
+                  enum:
+                  - security
+                  - sessions
+                  - billing
+                  - billingAccount
+                  - limits
+                  - requests
+                  - agents
+                  - steps
+                  - approvals
+                  - routing
+                  - audit
+                  - deletion
+                cursor:
+                  type: string
+                  maxLength: 200
+  /v1/account/deletion:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    get:
+      summary: Read pending deletion request; does not report erased data
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/account/deletion/request:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Request reviewed deletion; recent authentication and verified email
+        required
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirmation:
+                  const: DELETE
+              required:
+              - confirmation
+  /v1/account/deletion/cancel:
+    parameters:
+    - $ref: '#/components/parameters/Csrf'
+    - $ref: '#/components/parameters/Device'
+    post:
+      summary: Cancel pending deletion; recent authentication required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Cache-Control:
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: *id001
+        default:
+          description: Validation, authentication, recent-auth, throttling, unsupported
+            method or service error. MFA_REQUIRED is HTTP 401 with challengeId/methods.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: *id001
+components:
+  parameters:
+    Csrf:
+      name: X-Uvenaro-CSRF
+      in: header
+      required: true
+      schema:
+        const: '1'
+    Device:
+      name: X-Uvenaro-Device
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{16,128}$
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: UvenaroOpaqueSession
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-uvenaro-session
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        challengeId:
+          type: string
+        methods:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+        retryAfter:
+          type: integer
+      required:
+      - code
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+        mfaEnabled:
+          type: boolean
+        plan:
+          type: string
+        entitlements:
+          type: array
+          items:
+            type: string
+        locale:
+          type: string
+        timezone:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - deletion_requested
+      required:
+      - id
+      - email
+      - emailVerified
+    Session:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          pattern: ^uv1\.[A-Za-z0-9_-]{43}$
+        expiresAt:
+          type: integer
+          description: Unix epoch milliseconds
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - accessToken
+      - expiresAt
+      - user
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - email
+      - password
+    Register:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+      required:
+      - name
+      - email
+      - password
+    Mfa:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        methodId:
+          type: string
+        code:
+          type: string
+          pattern: ^\d{6,8}$
+      required:
+      - challengeId
+      - methodId
+      - code
+    Capabilities:
+      type: object
+      properties:
+        emailPassword:
+          type: boolean
+        emailVerification:
+          type: boolean
+        passwordRecovery:
+          type: boolean
+        totpEnrollment:
+          type: boolean
+        providers:
+          type: array
+          items:
+            type: string
+        passkeys:
+          const: false
+        phoneOtp:
+          const: false
+        recoveryCodes:
+          const: false
+    Export:
+      type: object
+      properties:
+        version:
+          const: 1
+        user:
+          $ref: '#/components/schemas/User'
+        scope:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        resource:
+          type: string
+        resources:
+          type: array
+          items:
+            type: string
+        records:
+          type: array
+          items:
+            type: object
+        nextCursor:
+          type:
+          - string
+          - 'null'

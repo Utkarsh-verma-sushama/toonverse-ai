@@ -64,7 +64,7 @@ export function createFirebaseAuthenticator({ fetch: fetcher = (...args) => fetc
     return key;
   }
 
-  return async function authenticate(request, env) {
+  return async function authenticate(request, env, { details = false } = {}) {
     const authorization = request.headers.get("authorization") || "";
     const match = authorization.match(/^Bearer ([A-Za-z0-9_.-]+)$/i);
     if (!match || match[1].length > 16384) throw invalid();
@@ -106,7 +106,13 @@ export function createFirebaseAuthenticator({ fetch: fetcher = (...args) => fetc
     const account = payload.users[0];
     const validSince = typeof account.validSince === "string" && /^\d+$/.test(account.validSince) ? Number(account.validSince) : NaN;
     if (account.localId !== claims.sub || account.disabled === true || !timestamp(validSince) || claims.auth_time < validSince) throw invalid();
-    return Object.freeze({ sub: claims.sub, verified: true, emailVerified: account.emailVerified === true });
+    const identity={sub:claims.sub,verified:true,emailVerified:account.emailVerified===true};
+    if(details)Object.assign(identity,{authTime:claims.auth_time*1000,tokenExpiresAt:claims.exp*1000,
+      email:typeof account.email==='string'?account.email:'',name:typeof account.displayName==='string'?account.displayName:'',
+      providers:(account.providerUserInfo||[]).map(p=>p.providerId).filter(p=>typeof p==='string'),
+      mfaEnabled:Array.isArray(account.mfaInfo)&&account.mfaInfo.length>0,
+      mfaMethods:(account.mfaInfo||[]).map(m=>({id:m.mfaEnrollmentId,name:m.displayName||'Authenticator',totp:Boolean(m.totpInfo)}))});
+    return Object.freeze(identity);
   };
 }
 

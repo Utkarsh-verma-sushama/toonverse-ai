@@ -4,10 +4,11 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import worker from '../backend/worker.mjs';
 import {env, claims, token, mockIdentity} from './security-fixtures.mjs';
+import {accountEnv,accountDatabase,seedManaged} from './account-fixtures.mjs';
 const originalFetch=globalThis.fetch;
 before(()=>{globalThis.fetch=mockIdentity().fetch;});
 after(()=>{globalThis.fetch=originalFetch;});
-const defaults={...env,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
+const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
 const alice=await token(),bob=await token(claims({sub:'bob'}));
 function database(){
  const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));
@@ -18,7 +19,10 @@ function database(){
  return {sql,DB};
 }
 async function call(path,{method='GET',value=alice,body,headers={},bindings={}}={}){
- return worker.fetch(new Request(`https://api.uvenaro.invalid${path}`,{method,headers:{...(value?{authorization:`Bearer ${value}`} : {}),...(body!==undefined?{'content-type':'application/json'}:{}),...headers},...(body!==undefined?{body:typeof body==='string'?body:JSON.stringify(body)}:{})}),{...defaults,...bindings});
+ const db=bindings.sql?bindings:accountDatabase();
+ try{if(value===alice||value===bob)value=await seedManaged(db.sql,value,value===bob?'bob':'alice');
+ return await worker.fetch(new Request(`https://api.uvenaro.invalid${path}`,{method,headers:{...(value?{authorization:`Bearer ${value}`} : {}),...(body!==undefined?{'content-type':'application/json'}:{}),...headers},...(body!==undefined?{body:typeof body==='string'?body:JSON.stringify(body)}:{})}),{...defaults,...db,...bindings});
+ }finally{if(!bindings.sql)db.sql.close();}
 }
 test('health is public, but protected routes reject absent identity regardless of flags',async()=>{
  assert.equal((await call('/v1/health',{value:null})).status,200);
@@ -64,7 +68,7 @@ for(const [name,mutation] of Object.entries({'expired approval':"UPDATE agent_ap
 });
 test('missing database or queue cannot produce false successful writes',async()=>{
  assert.equal((await call('/v1/agents/runs',{method:'POST',body:{objective:'test'}})).status,503);
- assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'}})).status,503);
+ assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:{DB:undefined}})).status,503);
 });
 test('allowed-origin success and errors consistently include CORS; other origins rejected',async()=>{
  for(const value of [alice,null]){

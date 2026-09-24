@@ -1,13 +1,16 @@
-import { authenticateFirebaseRequest, IdentityError } from "./firebase-auth.mjs";
+import { IdentityError } from "./firebase-auth.mjs";
 import { BillingError, getChatReceipt, expireUndispatched } from "./chat-billing.mjs";
 import { executeChat } from "./chat-execution.mjs";
+import { accountRoute } from "./account-api.mjs";
+import { authenticateAccountRequest, cleanupAccounts } from "./account-sessions.mjs";
+import { AccountError } from "./account-common.mjs";
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...headers}});
 const id=()=>crypto.randomUUID();
 const allowedTasks=new Set(["generate","edit","understand","ocr","transcribe","translate","summarize","math","safety"]);
 function cors(request,env){
  const origin=request.headers.get("origin"),headers={vary:"Origin"};
  const allowed=String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(x=>x&&x!=="null"&&x!=="*");
- if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device","access-control-allow-methods":"GET,POST,OPTIONS","access-control-max-age":"600"});
+ if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device,x-uvenaro-csrf","access-control-allow-methods":"GET,POST,DELETE,OPTIONS","access-control-max-age":"600"});
  return headers;
 }
 async function body(request) {
@@ -65,8 +68,16 @@ export default {async fetch(request,env={}){
   if(request.headers.has("origin")&&!headers["access-control-allow-origin"])return finish(json({code:"ORIGIN_NOT_ALLOWED"},403));
   if(request.method==="OPTIONS")return finish(new Response(null,{status:204}));
   if(url.pathname==="/v1/health"&&request.method==="GET")return finish(json({ok:true,version:"2.0.0"}));
-  // Defaults fail closed. AUTH_REQUIRED=false never bypasses authentication.
-  const user=await authenticateFirebaseRequest(request,env);
+  const account=await accountRoute(request,env,body);if(account)return finish(account);
+  // Firebase credentials stay server-side. Raw Firebase JWTs cannot bypass logout.
+  if(!/^Bearer uv1\.[A-Za-z0-9_-]{43}$/.test(request.headers.get('authorization')||''))return finish(json({code:'UNAUTHORIZED'},401));
+  if(url.pathname==='/v1/chat/responses'&&env.CHAT_EXECUTION_ENABLED!=='true')return finish(json({code:'CHAT_EXECUTION_DISABLED'},503));
+  if(url.pathname.startsWith('/v1/agents/')&&env.AGENT_EXECUTION_ENABLED!=='true')return finish(json({code:'AGENT_EXECUTION_DISABLED'},503));
+  if(url.pathname==='/v1/ai/routes'&&env.MODEL_ROUTING_ENABLED!=='true')return finish(json({code:'MODEL_ROUTING_DISABLED'},503));
+  const user=await authenticateAccountRequest(request,env);
+  const profile=await env.DB.prepare('SELECT status FROM account_profiles WHERE owner_id=?').bind(user.sub).first();
+  if(profile?.status!=='active')return finish(json({code:'ACCOUNT_RESTRICTED'},403));
+  if(!user.emailVerified&&!url.pathname.startsWith('/v1/chat/requests/'))return finish(json({code:'EMAIL_VERIFICATION_REQUIRED'},403));
   if(url.pathname==="/v1/ai/routes"&&request.method==="POST"){
    if(env.MODEL_ROUTING_ENABLED!=="true")return finish(json({code:"MODEL_ROUTING_DISABLED"},503));
    return finish(json(await routeModel(await body(request),env)));
@@ -82,9 +93,10 @@ export default {async fetch(request,env={}){
   return finish(json({code:"NOT_FOUND"},404));
  }catch(error){
   if(error instanceof BillingError)return finish(json({code:error.code,...(error.receipt?{reservation:error.receipt}:{})},error.status));
+  if(error instanceof AccountError)return finish(json({code:error.code},error.status));
   if(error instanceof IdentityError||error instanceof RequestError)return finish(json({code:error.code},error.status));
   if(error instanceof URIError)return finish(json({code:"INVALID_PATH"},400));
   if(error.message==="NO_ROUTE")return finish(json({code:"NO_ROUTE",message:"No policy-compliant model is currently available."},503));
   return finish(json({code:"INTERNAL_ERROR",message:"Request could not be completed."},500));
  }
-},async scheduled(event,env,context){context.waitUntil(expireUndispatched(env));}};
+},async scheduled(event,env,context){context.waitUntil(Promise.all([expireUndispatched(env),cleanupAccounts(env)]));}};

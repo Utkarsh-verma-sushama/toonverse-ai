@@ -4,12 +4,14 @@ import {DatabaseSync} from 'node:sqlite';
 import {Miniflare} from 'miniflare';
 import {schema,migration,alice,cfg,messages} from './billing-fixtures.mjs';
 import {reserveChat,beginDispatch,settleChat,releaseChat} from '../backend/chat-billing.mjs';
+import worker from '../backend/worker.mjs';
+import {accountMigration,accountEnv,accountHeaders,identityService} from './account-fixtures.mjs';
 
-function statements(){
+function statements(extra=''){
  // Use SQLite itself to recognize complete statements, including trigger bodies.
  const parser=new DatabaseSync(':memory:');let pending='';const queries=[];
  try{
-  for(const line of (schema+'\n'+migration).split('\n')){
+  for(const line of (schema+'\n'+migration+'\n'+extra).split('\n')){
    if(!line.trim()||line.trim().startsWith('--'))continue;
    pending+=line+'\n';if(!line.trim().endsWith(';'))continue;
    try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}
@@ -44,4 +46,18 @@ test('Cloudflare local D1 applies migration and atomically reserves, settles and
   assert.equal((await DB.prepare('SELECT reserved_credits AS n FROM billing_accounts').first()).n,0);
   assert.equal((await DB.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE idempotency_key='rollback-key'").first()).n,0);
  }finally{await mf.dispose();}
+});
+
+test('Cloudflare local D1 supports real account migrations, session rotation and revocation',async()=>{
+ const mf=new Miniflare({workers:[{name:'account-test',modules:true,script:'export default {fetch(){return new Response("test");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'account-test'}}]});
+ const previousFetch=globalThis.fetch;const provider=await identityService();globalThis.fetch=provider.fetch;
+ try{
+  const DB=await mf.getD1Database('DB');await DB.batch(statements(accountMigration).map(sql=>DB.prepare(sql)));
+  const env={...accountEnv,DB};let jar='',token='';
+  const call=async(path,body={},method='POST')=>{const response=await worker.fetch(new Request('https://api.uvenaro.invalid'+path,{method,headers:{...accountHeaders,...(jar?{cookie:jar}:{}),...(token?{authorization:'Bearer '+token}:{})},...(method==='POST'?{body:JSON.stringify(body)}:{})}),env);if(response.headers.has('set-cookie'))jar=response.headers.get('set-cookie').split(';')[0];return {status:response.status,body:await response.json()};};
+  const login=await call('/v1/auth/sign-in',{email:'alice@example.com',password:'a long password'});assert.equal(login.status,200,JSON.stringify(login.body));token=login.body.accessToken;
+  assert.equal((await call('/v1/auth/sessions',{},'GET')).body.sessions.length,1);
+  const old=jar;const restored=await call('/v1/auth/refresh');assert.equal(restored.status,200,JSON.stringify(restored.body));assert.notEqual(jar,old);token=restored.body.accessToken;
+  assert.equal((await call('/v1/auth/sign-out')).status,200);assert.equal((await call('/v1/account/profile',{},'GET')).status,401);
+ }finally{globalThis.fetch=previousFetch;await mf.dispose();}
 });

@@ -1,356 +1,126 @@
 (() => {
-  "use strict";
-
-  const STORAGE_KEY = "uvenaro:auth:session-hint";
-  const DEVICE_KEY = "uvenaro:auth:device-id";
-  const listeners = new Set();
-  let accessToken = "";
-  let refreshPromise = null;
-  let state = Object.freeze({
-    status: "signed-out",
-    user: null,
-    expiresAt: 0,
-    backendConnected: Boolean(window.UvenaroConfig?.services?.apiBaseUrl),
-    lastError: ""
-  });
-
-  const emit = () => {
-    const snapshot = getState();
-    listeners.forEach(listener => {
-      try { listener(snapshot); } catch (error) { console.error("Auth listener failed.", error); }
-    });
-    window.dispatchEvent(new CustomEvent("uvenaro:auth-change", { detail: snapshot }));
+ 'use strict';
+ const listeners=new Set(),DEVICE='uvenaro:auth:device-id',LOGOUT='uvenaro:auth:logout',BLOCKED='uvenaro:auth:blocked-restore';
+ let accessToken='',epoch=0,refreshPromise=null,restorePromise=null,authBusy=false,capabilities=null,volatileDevice='';
+ let localLogout=false;
+ const blocked=()=>{try{return localLogout||localStorage.getItem(BLOCKED)==='true';}catch{return localLogout;}};
+ const connected=()=>Boolean(window.UvenaroConfig?.features?.authentication&&window.UvenaroConfig?.services?.apiBaseUrl);
+ let state={status:'signed-out',user:null,expiresAt:0,backendConnected:connected(),lastError:''};
+ const errors={
+  ACCOUNT_SERVICE_DISABLED:'Account service is not enabled yet.',ACCOUNT_NOT_CONFIGURED:'Account service is not ready yet.',
+  ACCOUNT_SERVICE_UNAVAILABLE:'Account service is temporarily unavailable.',IDENTITY_UNAVAILABLE:'Sign-in service is temporarily unavailable.',
+  INVALID_CREDENTIALS:'Email or password could not be verified.',ACCOUNT_REGISTRATION_FAILED:'Account could not be created. Try signing in or resetting your password.',
+  PASSWORD_POLICY:'Use a password with 12–128 characters that meets the account password requirements.',
+  INVALID_EMAIL:'Enter a valid email address.',INVALID_NAME:'Enter a name with 1–80 characters.',
+  TOO_MANY_ATTEMPTS:'Too many attempts. Please wait before trying again.',RECENT_AUTH_REQUIRED:'Confirm your password again before making this change.',
+  SESSION_EXPIRED:'Your session has expired. Please sign in again.',SESSION_REFRESH_BUSY:'Another tab is refreshing this session. Try again shortly.',
+  SESSION_CONTEXT_MISMATCH:'Sign in again on this device.',UNAUTHORIZED:'Please sign in again.',
+  MFA_REQUIRED:'Enter the code from your authenticator app.',INVALID_VERIFICATION_CODE:'That verification code could not be confirmed.',
+  INVALID_CHALLENGE:'This verification has expired. Start again.',INVALID_ACTION_CODE:'This email link is invalid, expired or already used.',
+  EMAIL_VERIFICATION_REQUIRED:'Verify your email address first.',ACCOUNT_METHOD_UNAVAILABLE:'This sign-in method is not available yet.',
+  MFA_METHOD_UNAVAILABLE:'This authenticator method is not available for this account service.',
+  AUTH_CANCELLED:'Account request was cancelled.',NETWORK_ERROR:'The connection ended before the result was confirmed. Please try again.'
+ };
+ const error=(code,extra={})=>Object.assign(new Error(errors[code]||'The account action could not finish.'),{code,...extra});
+ function getState(){return {...state,user:state.user?{...state.user,entitlements:[...(state.user.entitlements||[])]}:null};}
+ function emit(patch){state={...state,...patch};const snapshot=getState();for(const fn of listeners){try{fn(snapshot);}catch{}}window.dispatchEvent(new CustomEvent('uvenaro:auth-change',{detail:snapshot}));return snapshot;}
+ function device(){
+  if(volatileDevice)return volatileDevice;
+  try{const value=localStorage.getItem(DEVICE);if(/^[A-Za-z0-9_-]{16,128}$/.test(value||''))return volatileDevice=value;}catch{}
+  volatileDevice=crypto.randomUUID();try{localStorage.setItem(DEVICE,volatileDevice);}catch{}return volatileDevice;
+ }
+ function endpoint(path){
+  if(!connected())throw error('ACCOUNT_SERVICE_DISABLED');
+  const base=String(window.UvenaroConfig.services.apiBaseUrl).replace(/\/$/,'');
+  const url=new URL(base+path,location.href);if(url.protocol!=='https:')throw error('ACCOUNT_NOT_CONFIGURED');return url.href;
+ }
+ async function request(path,{body,method='POST',authenticated=false,token=accessToken}={}){
+  if(authenticated)token=await getAccessToken();
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+  try{
+   let response;try{response=await fetch(endpoint(path),{method,credentials:'include',cache:'no-store',redirect:'error',signal:controller.signal,
+    headers:{accept:'application/json','x-uvenaro-device':device(),'x-uvenaro-csrf':'1',...(method==='POST'?{'content-type':'application/json'}:{}),...(token?{authorization:`Bearer ${token}`}:{})},
+    ...(method==='POST'?{body:JSON.stringify(body||{})}:{})});}catch(e){if(e.code)throw e;throw error('NETWORK_ERROR');}
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok){if(authenticated&&['UNAUTHORIZED','SESSION_EXPIRED'].includes(payload.code))clear(payload.code);throw error(payload.code||'ACCOUNT_SERVICE_UNAVAILABLE',{challengeId:payload.challengeId,methods:payload.methods,retryAfter:payload.retryAfter});}
+   return payload;
+  }finally{clearTimeout(timer);}
+ }
+ function accept(payload,version){
+  if(version!==epoch)throw error('AUTH_CANCELLED');
+  if(!/^uv1\.[A-Za-z0-9_-]{43}$/.test(payload.accessToken||'')||!payload.user?.id||!Number.isFinite(payload.expiresAt)||payload.expiresAt<=Date.now())throw error('SESSION_EXPIRED');
+  accessToken=payload.accessToken;
+  return emit({status:'signed-in',user:{...payload.user,entitlements:Array.isArray(payload.user.entitlements)?payload.user.entitlements:[]},expiresAt:payload.expiresAt,lastError:''});
+ }
+ function clear(code=''){epoch++;accessToken='';return emit({status:'signed-out',user:null,expiresAt:0,lastError:code});}
+ async function authOperation(path,body){
+  if(authBusy)throw error('AUTH_CANCELLED');authBusy=true;const version=++epoch;accessToken='';emit({status:'signing-in',user:null,expiresAt:0,lastError:''});
+  try{const payload=await request(path,{body,token:''});
+   if(version!==epoch){try{await request('/v1/auth/sign-out',{token:payload.accessToken});}catch{}throw error('AUTH_CANCELLED');}
+   const accepted=accept(payload,version);localLogout=false;try{localStorage.removeItem(BLOCKED);}catch{}return accepted;}
+  catch(e){if(version===epoch)emit({status:e.code==='MFA_REQUIRED'?'mfa-required':'signed-out',lastError:e.code});throw e;}
+  finally{authBusy=false;}
+ }
+ async function refresh(){
+  if(blocked())throw error('UNAUTHORIZED');
+  if(authBusy)throw error('AUTH_CANCELLED');if(refreshPromise)return refreshPromise;
+  const version=epoch;
+  const run=async()=>{
+   const refreshCall=()=>request('/v1/auth/refresh',{token:''});
+   const payload=navigator.locks?.request?await navigator.locks.request('uvenaro-auth-refresh',refreshCall):await refreshCall();
+   return accept(payload,version);
   };
-
-  const setState = patch => {
-    state = Object.freeze({ ...state, ...patch });
-    emit();
-    return state;
-  };
-
-  const getState = () => ({
-    ...state,
-    user: state.user
-      ? { ...state.user, entitlements: [...(state.user.entitlements || [])] }
-      : null
-  });
-
-  const deviceId = () => {
-    try {
-      const existing = localStorage.getItem(DEVICE_KEY);
-      if (existing) return existing;
-      const created = crypto.randomUUID?.() || `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-      localStorage.setItem(DEVICE_KEY, created);
-      return created;
-    } catch {
-      return `session-${Date.now().toString(36)}`;
-    }
-  };
-
-  const endpoint = path => {
-    const base = String(window.UvenaroConfig?.services?.apiBaseUrl || "").replace(/\/$/, "");
-    if (!base) throw new Error("ACCOUNT_SERVICE_UNAVAILABLE");
-    return `${base}${path}`;
-  };
-
-  async function request(path, options = {}) {
-    const controller = new AbortController();
-    const timeout = Math.max(5000, Number(window.UvenaroConfig?.services?.requestTimeoutMs) || 30000);
-    const timer = setTimeout(() => controller.abort(), timeout);
-    try {
-      const headers = new Headers(options.headers || {});
-      headers.set("Accept", "application/json");
-      headers.set("X-Uvenaro-Device", deviceId());
-      if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-      const response = await fetch(endpoint(path), {
-        ...options,
-        headers,
-        credentials: "include",
-        cache: "no-store",
-        redirect: "error",
-        signal: controller.signal
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(payload.message || "Account request failed.");
-        error.code = payload.code || `HTTP_${response.status}`;
-        throw error;
-      }
-      return payload;
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  function acceptSession(payload) {
-    accessToken = String(payload?.accessToken || "");
-    const user = payload?.user && typeof payload.user === "object" ? {
-      id: String(payload.user.id || ""),
-      name: String(payload.user.name || ""),
-      email: String(payload.user.email || ""),
-      avatar: String(payload.user.avatar || ""),
-      emailVerified: Boolean(payload.user.emailVerified),
-      mfaEnabled: Boolean(payload.user.mfaEnabled),
-      plan: String(payload.user.plan || "free").toLowerCase(),
-      entitlements: Object.freeze(
-        Array.isArray(payload.user.entitlements)
-          ? [...new Set(payload.user.entitlements.map(value => String(value).toLowerCase()))]
-          : []
-      )
-    } : null;
-    if (!user?.id) throw new Error("INVALID_SESSION");
-    const expiresAt = Number(payload.expiresAt) || Date.now() + 10 * 60 * 1000;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        user: { id: user.id, name: user.name, avatar: user.avatar },
-        lastSeenAt: Date.now()
-      }));
-    } catch {}
-    return setState({ status: "signed-in", user, expiresAt, lastError: "" });
-  }
-
-  async function restore() {
-    if (!state.backendConnected) return getState();
-    setState({ status: "restoring", lastError: "" });
-    try {
-      return acceptSession(await request("/v1/auth/session", { method: "POST" }));
-    } catch (error) {
-      accessToken = "";
-      return setState({ status: "signed-out", user: null, expiresAt: 0, lastError: error.code || error.message });
-    }
-  }
-
-  async function signInWithEmail(email, password) {
-    if (!email || !password) throw new Error("Enter your email and password.");
-    setState({ status: "signing-in", lastError: "" });
-    try {
-      return acceptSession(await request("/v1/auth/sign-in", {
-        method: "POST",
-        body: JSON.stringify({ email: String(email).trim(), password: String(password) })
-      }));
-    } catch (error) {
-      setState({ status: "signed-out", lastError: error.code || error.message });
-      throw error;
-    }
-  }
-
-  async function createAccount(profile) {
-    setState({ status: "signing-in", lastError: "" });
-    try {
-      return acceptSession(await request("/v1/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          name: String(profile?.name || "").trim(),
-          email: String(profile?.email || "").trim(),
-          password: String(profile?.password || "")
-        })
-      }));
-    } catch (error) {
-      setState({ status: "signed-out", lastError: error.code || error.message });
-      throw error;
-    }
-  }
-
-  async function sendOtp(destination) {
-    return request("/v1/auth/otp/request", {
-      method: "POST",
-      body: JSON.stringify({ destination: String(destination || "").trim() })
-    });
-  }
-
-  async function verifyOtp(challengeId, code) {
-    return acceptSession(await request("/v1/auth/otp/verify", {
-      method: "POST",
-      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
-    }));
-  }
-
-  async function beginProvider(provider, returnTo = location.href) {
-    const allowed = new Set(["google", "apple", "microsoft", "facebook", "linkedin", "x", "github"]);
-    if (!allowed.has(provider)) throw new Error("Unsupported sign-in provider.");
-    const payload = await request(`/v1/auth/oauth/${provider}/start`, {
-      method: "POST",
-      body: JSON.stringify({ returnTo })
-    });
-    if (!payload.authorizationUrl) throw new Error("Provider sign-in could not start.");
-    location.assign(payload.authorizationUrl);
-  }
-
-  async function refresh() {
-    if (refreshPromise) return refreshPromise;
-    refreshPromise = request("/v1/auth/refresh", { method: "POST" })
-      .then(acceptSession)
-      .catch(error => {
-        accessToken = "";
-        setState({ status: "signed-out", user: null, expiresAt: 0, lastError: error.code || error.message });
-        throw error;
-      })
-      .finally(() => { refreshPromise = null; });
-    return refreshPromise;
-  }
-
-  async function getAccessToken() {
-    if (!accessToken) await refresh();
-    else if (state.expiresAt - Date.now() < 60000) await refresh();
-    return accessToken;
-  }
-
-  async function signOut(options = {}) {
-    try { if (state.backendConnected) await request("/v1/auth/sign-out", {
-      method: "POST",
-      body: JSON.stringify({ allDevices: Boolean(options.allDevices) })
-    }); } catch (error) { console.warn("Server sign-out could not complete.", error); }
-    accessToken = "";
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    return setState({ status: "signed-out", user: null, expiresAt: 0, lastError: "" });
-  }
-
-  async function listSessions() {
-    const payload = await request("/v1/auth/sessions");
-    return Array.isArray(payload.sessions) ? payload.sessions : [];
-  }
-
-  async function revokeSession(sessionId) {
-    return request(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
-  }
-
-  async function beginAccountLink(provider) {
-    const allowed = new Set(["google", "apple", "microsoft", "facebook", "linkedin", "x", "github"]);
-    if (!allowed.has(provider)) throw new Error("Unsupported account provider.");
-    return request(`/v1/auth/links/${provider}/start`, { method: "POST" });
-  }
-
-  async function confirmAccountLink(challengeId, confirmationToken) {
-    return request("/v1/auth/links/confirm", {
-      method: "POST",
-      body: JSON.stringify({ challengeId, confirmationToken })
-    });
-  }
-
-  async function resolveAccountConflict(challengeId, resolution, verificationToken) {
-    const allowed = new Set(["keep-current", "link-existing", "cancel"]);
-    if (!allowed.has(resolution)) throw new Error("Invalid account resolution.");
-    return request("/v1/auth/links/conflicts/resolve", {
-      method: "POST",
-      body: JSON.stringify({ challengeId, resolution, verificationToken })
-    });
-  }
-
-  async function beginRecovery(identifier) {
-    return request("/v1/auth/recovery/start", {
-      method: "POST",
-      body: JSON.stringify({ identifier: String(identifier || "").trim() })
-    });
-  }
-
-  async function verifyRecovery(challengeId, code) {
-    return request("/v1/auth/recovery/verify", {
-      method: "POST",
-      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
-    });
-  }
-
-  async function completeRecovery(recoveryToken, newPassword) {
-    return request("/v1/auth/recovery/complete", {
-      method: "POST",
-      body: JSON.stringify({ recoveryToken, newPassword: String(newPassword || "") })
-    });
-  }
-
-  async function requestDeviceVerification() {
-    return request("/v1/auth/devices/verification/request", { method: "POST" });
-  }
-
-  async function verifyDevice(challengeId, code) {
-    return request("/v1/auth/devices/verification/confirm", {
-      method: "POST",
-      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
-    });
-  }
-
-  async function listSecurityEvents(options = {}) {
-    const limit = Math.max(1, Math.min(100, Number(options.limit) || 25));
-    const payload = await request(`/v1/auth/security/events?limit=${limit}`);
-    return Array.isArray(payload.events) ? payload.events : [];
-  }
-
-  async function listConnections() {
-    const payload = await request("/v1/auth/connections");
-    return Array.isArray(payload.connections) ? payload.connections : [];
-  }
-
-  async function disconnectProvider(provider) {
-    return request(`/v1/auth/connections/${encodeURIComponent(provider)}`, {
-      method: "DELETE"
-    });
-  }
-
-  async function requestDataExport() {
-    return request("/v1/account/export", { method: "POST" });
-  }
-
-  async function requestAccountDeletion(confirmation) {
-    return request("/v1/account/deletion/request", {
-      method: "POST",
-      body: JSON.stringify({ confirmation: String(confirmation || "") })
-    });
-  }
-
-  async function getSecurityOverview() {
-    return request("/v1/auth/security");
-  }
-
-  async function requestPasswordReset(email) {
-    return request("/v1/auth/password/reset/request", {
-      method: "POST",
-      body: JSON.stringify({ email: String(email || "").trim() })
-    });
-  }
-
-  async function beginTotpEnrollment() {
-    return request("/v1/auth/mfa/totp/enroll", { method: "POST" });
-  }
-
-  async function confirmTotpEnrollment(challengeId, code) {
-    return request("/v1/auth/mfa/totp/confirm", {
-      method: "POST",
-      body: JSON.stringify({ challengeId, code: String(code || "").trim() })
-    });
-  }
-
-  async function rotateRecoveryCodes() {
-    return request("/v1/auth/mfa/recovery-codes/rotate", { method: "POST" });
-  }
-
-  async function signOutOtherDevices() {
-    return request("/v1/auth/sessions/revoke-others", { method: "POST" });
-  }
-
-  async function beginPasskey() {
-    if (!window.PublicKeyCredential || !navigator.credentials) throw new Error("Passkeys are unavailable on this device.");
-    const options = await request("/v1/auth/passkeys/authenticate/options", { method: "POST" });
-    const credential = await navigator.credentials.get({ publicKey: options.publicKey });
-    return acceptSession(await request("/v1/auth/passkeys/authenticate/verify", {
-      method: "POST",
-      body: JSON.stringify({ credential })
-    }));
-  }
-
-  function subscribe(listener) {
-    listeners.add(listener);
-    listener(getState());
-    return () => listeners.delete(listener);
-  }
-
-  window.UvenaroAuth = Object.freeze({
-    getState, subscribe, restore, signInWithEmail, createAccount, sendOtp, verifyOtp,
-    beginProvider, beginPasskey, getAccessToken, signOut, listSessions, revokeSession,
-    getSecurityOverview, requestPasswordReset, beginTotpEnrollment,
-    confirmTotpEnrollment, rotateRecoveryCodes, signOutOtherDevices,
-    requestDeviceVerification, verifyDevice, listSecurityEvents,
-    listConnections, disconnectProvider, requestDataExport, requestAccountDeletion,
-    beginAccountLink, confirmAccountLink, resolveAccountConflict,
-    beginRecovery, verifyRecovery, completeRecovery
-  });
+  refreshPromise=run().catch(e=>{if(version===epoch&&['UNAUTHORIZED','SESSION_EXPIRED','SESSION_CONTEXT_MISMATCH'].includes(e.code))clear(e.code);throw e;}).finally(()=>{refreshPromise=null;});
+  return refreshPromise;
+ }
+ async function restore(){
+  if(!connected()||blocked())return getState();if(restorePromise)return restorePromise;if(state.status==='signed-in')return getState();
+  emit({status:'restoring'});restorePromise=refresh().catch(e=>{if(state.status==='restoring')emit({status:'signed-out',lastError:e.code});return getState();}).finally(()=>{restorePromise=null;});return restorePromise;
+ }
+ async function getAccessToken(){if(!accessToken||state.expiresAt-Date.now()<60000)await refresh();if(!accessToken)throw error('UNAUTHORIZED');return accessToken;}
+ async function signOut({allDevices=false}={}){
+  if(allDevices){const security=await request('/v1/auth/security',{method:'GET',authenticated:true});if(!security.recentAuthentication)throw error('RECENT_AUTH_REQUIRED');}
+  const token=accessToken;localLogout=true;clear();try{localStorage.setItem(BLOCKED,'true');localStorage.setItem(LOGOUT,String(Date.now()));localStorage.removeItem('uvenaro:auth:session-hint');}catch{}
+  if(!connected())return getState();
+  // Local sign-out is immediate. A server failure remains visible to the caller.
+  await request('/v1/auth/sign-out',{body:{allDevices},token});return getState();
+ }
+ window.addEventListener('storage',event=>{if(event.key===LOGOUT){localLogout=true;clear();}else if(event.key===BLOCKED&&event.newValue===null)localLogout=false;});
+ const protectedCall=(path,body={},method='POST')=>request(path,{body,method,authenticated:true});
+ const unavailable=async()=>{throw error('ACCOUNT_METHOD_UNAVAILABLE');};
+ window.UvenaroAuth=Object.freeze({
+  getState,restore,getAccessToken,signOut,
+  subscribe(fn){listeners.add(fn);fn(getState());return()=>listeners.delete(fn);},
+  async getCapabilities(){if(!capabilities)capabilities=await request('/v1/auth/capabilities',{method:'GET',token:''});return {...capabilities};},
+  signInWithEmail:(email,password)=>authOperation('/v1/auth/sign-in',{email,password}),
+  createAccount:profile=>authOperation('/v1/auth/register',profile),
+  completeMfa:(challengeId,methodId,code)=>authOperation('/v1/auth/mfa/challenge',{challengeId,methodId,code}),
+  reauthenticate:password=>protectedCall('/v1/auth/reauthenticate',{password}),
+  completeReauthentication:(challengeId,methodId,code)=>protectedCall('/v1/auth/reauthenticate/mfa',{challengeId,methodId,code}),
+  async getProfile(){const out=await protectedCall('/v1/account/profile',{},'GET');if(state.user?.id===out.user?.id)emit({user:out.user});return out.user;},
+  async updateProfile(profile){const out=await protectedCall('/v1/account/profile',profile);if(state.user?.id===out.user?.id)emit({user:out.user});return out.user;},
+  requestPasswordReset:email=>request('/v1/auth/password/reset/request',{body:{email},token:''}),
+  beginRecovery:identifier=>request('/v1/auth/recovery/start',{body:{identifier},token:''}),
+  confirmPasswordReset:(oobCode,newPassword)=>request('/v1/auth/password/reset/confirm',{body:{oobCode,newPassword},token:''}),
+  confirmEmailVerification:oobCode=>request('/v1/auth/email/verify/confirm',{body:{oobCode},token:''}),
+  requestEmailVerification:()=>protectedCall('/v1/auth/email/verify/request'),
+  requestEmailChange:email=>protectedCall('/v1/auth/email/change/request',{email}),
+  async changePassword(newPassword){const out=await protectedCall('/v1/auth/password/change',{newPassword});clear();return out;},
+  async listSessions(){return (await protectedCall('/v1/auth/sessions',{},'GET')).sessions||[];},
+  revokeSession:id=>protectedCall('/v1/auth/sessions/'+encodeURIComponent(id),{},'DELETE'),
+  signOutOtherDevices:()=>protectedCall('/v1/auth/sessions/revoke-others'),
+  async listSecurityEvents({limit=25}={}){return (await protectedCall('/v1/auth/security/events?limit='+Math.max(1,Math.min(100,limit)),{},'GET')).events||[];},
+  async listConnections(){return (await protectedCall('/v1/auth/connections',{},'GET')).connections||[];},
+  getSecurityOverview:()=>protectedCall('/v1/auth/security',{},'GET'),
+  beginTotpEnrollment:()=>protectedCall('/v1/auth/mfa/totp/enroll'),
+  async confirmTotpEnrollment(challengeId,code){const out=await protectedCall('/v1/auth/mfa/totp/confirm',{challengeId,code});clear();return out;},
+  async removeMfa(id){const out=await protectedCall('/v1/auth/mfa/'+encodeURIComponent(id),{},'DELETE');clear();return out;},
+  requestDataExport:(page={})=>protectedCall('/v1/account/export',page),
+  requestAccountDeletion:confirmation=>protectedCall('/v1/account/deletion/request',{confirmation}),
+  getDeletionStatus:()=>protectedCall('/v1/account/deletion',{},'GET'),
+  cancelAccountDeletion:()=>protectedCall('/v1/account/deletion/cancel'),
+  beginProvider:unavailable,beginPasskey:unavailable,sendOtp:unavailable,verifyOtp:unavailable,
+  beginAccountLink:unavailable,confirmAccountLink:unavailable,resolveAccountConflict:unavailable,disconnectProvider:unavailable,
+  verifyRecovery:unavailable,completeRecovery:unavailable,requestDeviceVerification:unavailable,verifyDevice:unavailable,rotateRecoveryCodes:unavailable
+ });
 })();

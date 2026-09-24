@@ -6,7 +6,8 @@ export const alice={sub:'alice',verified:true};
 export const cfg={provider:'test-gateway',model:'test-text',maxInputTokens:100,maxOutputTokens:50,globalCeiling:100000};
 export const messages=[{role:'user',content:'Hello'}];
 export function d1(sql,{beforeRun,afterRun}={}) {
- return {prepare(query){let values=[];return {bind(...args){values=args;return this;},async first(){await Promise.resolve();return sql.prepare(query).get(...values)||null;},async run(){await Promise.resolve();beforeRun?.(query,values);const out=sql.prepare(query).run(...values);afterRun?.(query,values);return {success:true,meta:{changes:Number(out.changes)}};}};}};
+ return {prepare(query){let values=[];return {get query(){return query;},get values(){return values;},bind(...args){values=args;return this;},async first(){await Promise.resolve();return sql.prepare(query).get(...values)||null;},async all(){return {results:sql.prepare(query).all(...values)};},async run(){await Promise.resolve();beforeRun?.(query,values);const out=sql.prepare(query).run(...values);afterRun?.(query,values);return {success:true,meta:{changes:Number(out.changes)}};}};},
+ async batch(statements){sql.exec('BEGIN');try{const results=statements.map(s=>{beforeRun?.(s.query,s.values);const out=sql.prepare(s.query).run(...s.values);afterRun?.(s.query,s.values);return {success:true,meta:{changes:Number(out.changes)}};});sql.exec('COMMIT');return results;}catch(error){sql.exec('ROLLBACK');throw error;}}};
 }
 export function seedUser(sql,uid='alice',included=20,prepaid=80){
  const start=new Date(Date.now()-86400000).toISOString(),end=new Date(Date.now()+29*86400000).toISOString();

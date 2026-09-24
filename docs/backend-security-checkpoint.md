@@ -4,6 +4,8 @@
 
 Resumed from upstream `305108211511a02777983b26a97719de509c127d` and recovered the local identity patch `2b8d54b1a6d0fb726af3bca6f965c7a59a456fb1`. Work is on `codex/uvenaro-backend-security-20260924`. This record supersedes conversational statements that backend source was unavailable. The backend source is in `backend/`.
 
+Historical checkpoint: the later [account backend](account-backend-checkpoint.md) now requires opaque managed application sessions around the same signed Firebase verification.
+
 This checkpoint hardens identity, API ownership boundaries and Firebase client rules. It does not constitute production deployment or a completed product launch.
 
 ## Implemented
@@ -32,7 +34,7 @@ Local result: **100 tests passed** (40 identity, 17 API/SQLite, 43 Firebase emul
 
 1. Deploying source is separate from configuring and deploying Firebase rules and the Worker. Rules changes are not active in the live Firebase project merely because they exist in GitHub.
 2. Set `FIREBASE_PROJECT_ID` to the actual existing project and `FIREBASE_WEB_API_KEY` to a matching key restricted for Identity Toolkit from the backend. The existing project identifier remains `toonverse-ai`; changing branding does not rename Firebase resources.
-3. No production sign-in or revocation test has been run against the owner's Firebase account. Stage valid login, refresh, logout/revocation, disabled user and account deletion before activation. Current frontend account routes still require backend implementation.
+3. No production sign-in or revocation test has been run against the owner's Firebase account. Stage valid login, refresh, logout/revocation, disabled user and account deletion before activation. The later account checkpoint implements email/session routes; staging is still required.
 4. Direct Firebase client rules enforce user separation but do not independently fetch current Firebase Auth revocation state. Immediate revocation for direct Firebase clients requires server-maintained revocation metadata and rules checks, or moving those operations behind the verified API. Cloud sync remains disabled.
 5. Firebase token download URLs grant bearer access. The emulator accepts reserved `firebaseStorageDownloadTokens` metadata outside the custom-metadata map, so the rules must not be claimed to prevent such links. An emulator regression records a successful unauthenticated fetch using an owner-created token URL. Use a backend-controlled private upload/download path and revoke existing token URLs before promising UID checks on every download. Storage checks declared MIME only. Byte-level validation, malware scanning, safe download responses, controlled sharing, aggregate storage quotas and handling existing download-token URLs remain required. Backend/Admin SDK writes bypass Firebase rules and need their own authorization.
 6. Profile/project clients must use server timestamps and the documented fields. Migrate any existing documents with unsupported fields before deploying stricter rules.
@@ -43,7 +45,7 @@ Local result: **100 tests passed** (40 identity, 17 API/SQLite, 43 Firebase emul
 | Priority | Work | Current evidence / completion gate |
 |---|---|---|
 | 1 | Atomic chat credit reservation and settlement | Source implementation now added in the next checkpoint: [Atomic Chat Billing](atomic-chat-billing.md). Activation still requires the audited gateway, real pricing, funded accounts and staging validation. |
-| 2 | Actual sign-in and account backend | `assets/js/auth.js` calls account/session endpoints not implemented by the core Worker. Implement the Firebase-backed contract, recovery and session controls and test on staging. |
+| 2 | Actual sign-in and account backend | Email/password, recovery and managed sessions are implemented in the [account checkpoint](account-backend-checkpoint.md); staging activation and listed extensions remain open. |
 | 3 | V1 AI chatbot provider | Provider secret, verified provider pricing/privacy configuration, conversation handling, streaming/cancellation, safety and cost limits are pending. A separate prior local Gemini adapter commit `4fb013e` exists in the earlier checkout but is not verified or integrated here. |
 | 4 | Cloud project/file service | Implement the project sync API, private media lifecycle, retention/export/deletion and backup/restore; verify isolation with real staging bindings. |
 | 5 | Advanced AI/agent execution | Queue consumer, tool permissions, spending/step limits and all advertised image/video/voice features need actual provider implementations and end-to-end tests. |
