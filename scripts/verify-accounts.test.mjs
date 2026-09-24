@@ -168,6 +168,14 @@ test('fifth rejected MFA attempt destroys its payload and sixth never reaches pr
  const sixth=await call('/v1/auth/mfa/challenge',{body:{...body,code:'123456'}});
  assert.equal(sixth.body.code,'INVALID_CHALLENGE');assert.equal(provider.providerCalls-before,5);
 });
+test('identity provider outage does not destroy an otherwise valid MFA challenge',async()=>{
+ provider.mfa=true;const out=await call('/v1/auth/sign-in',{body:{email:'alice@example.com',password:'correct'}});
+ const body={challengeId:out.body.challengeId,methodId:'totp-1',code:'123456'};provider.outage=true;
+ const failed=await call('/v1/auth/mfa/challenge',{body});assert.equal(failed.response.status,503);assert.equal(failed.body.code,'IDENTITY_UNAVAILABLE');
+ let row=db.sql.prepare('SELECT attempts,consumed_at,payload_cipher FROM account_challenges WHERE id=?').get(out.body.challengeId);
+ assert.equal(row.attempts,1);assert.equal(row.consumed_at,null);assert.notEqual(row.payload_cipher,'attempts_exhausted');
+ provider.outage=false;const retry=await call('/v1/auth/mfa/challenge',{body});assert.equal(retry.response.status,200,JSON.stringify(retry.body));
+});
 test('TOTP enrollment requires proof of a working code and revokes existing sessions',async()=>{
  await login();const start=await call('/v1/auth/mfa/totp/enroll');assert.equal(start.response.status,200,JSON.stringify(start.body));assert.match(start.body.uri,/^otpauth:/);
  assert.ok(!db.sql.prepare('SELECT payload_cipher FROM account_challenges').get().payload_cipher.includes('enroll-secret'));
