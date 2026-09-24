@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
-import { consumeReplayNonce, ReplayError } from "../backend/replay-guard.mjs";
+import { consumeReplayNonce, cleanupReplayNonces, ReplayError } from "../backend/replay-guard.mjs";
 
 const migration=readFileSync(new URL("../backend/migrations/0004_request_replay_guard.sql",import.meta.url),"utf8");
 function env(){
@@ -45,4 +45,23 @@ test("missing replay migration fails closed when enforcement is enabled",async()
 });
 test("disabled staged rollout never consumes a nonce",async()=>{
  assert.deepEqual(await consumeReplayNonce({REPLAY_PROTECTION_ENABLED:"false"},user,req(),"chat"),{enforced:false});
+});
+
+test("simultaneous duplicate nonce permits exactly one request",async()=>{
+ const e=env();try{
+  const outcomes=await Promise.allSettled(Array.from({length:8},()=>consumeReplayNonce(e,user,req(nonce),"chat")));
+  assert.equal(outcomes.filter(x=>x.status==="fulfilled").length,1);
+  assert.equal(outcomes.filter(x=>x.status==="rejected"&&is("REQUEST_REPLAY_DETECTED")(x.reason)).length,7);
+  assert.equal(e.sql.prepare("SELECT COUNT(*) n FROM request_nonces").get().n,1);
+ }finally{e.sql.close();}
+});
+test("scheduled cleanup removes only expired replay nonces",async()=>{
+ const e=env();try{
+  const expired="2000-01-01T00:00:00.000Z",future="2999-01-01T00:00:00.000Z";
+  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","a".repeat(64),"chat",expired,expired);
+  e.sql.prepare("INSERT INTO request_nonces(owner_id,nonce_hash,purpose,created_at,expires_at) VALUES(?,?,?,?,?)").run("alice","b".repeat(64),"chat",new Date().toISOString(),future);
+  await cleanupReplayNonces(e);
+  const rows=e.sql.prepare("SELECT nonce_hash FROM request_nonces ORDER BY nonce_hash").all();
+  assert.deepEqual(rows.map(x=>x.nonce_hash),["b".repeat(64)]);
+ }finally{e.sql.close();}
 });
