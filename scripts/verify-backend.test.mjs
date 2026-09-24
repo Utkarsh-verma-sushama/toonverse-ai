@@ -104,6 +104,17 @@ test('agent create rejects client policy and limits before queueing',async()=>{
   assert.equal(sends,0);
  }finally{db.sql.close();}
 });
+test('queue dispatch failure is fail-closed and releases active capacity',async()=>{
+ const db=database();const bindings={...db,AGENT_QUEUE:{async send(){throw new Error('queue secret outage');}}};
+ try{
+  db.sql.prepare("UPDATE agent_runs SET status='completed' WHERE id='run-alice'").run();
+  const response=await call('/v1/agents/runs',{method:'POST',body:{objective:'dispatch me'},headers:{'idempotency-key':'queue-failure-key','x-uvenaro-nonce':crypto.randomUUID().replaceAll('-','')},bindings});
+  assert.equal(response.status,503);assert.equal((await response.json()).code,'AGENT_QUEUE_UNAVAILABLE');
+  const row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE owner_id='alice' AND idempotency_key='queue-failure-key'").get();
+  assert.deepEqual(row,{status:'failed',error_code:'QUEUE_DISPATCH_FAILED'});
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM agent_runs WHERE owner_id='alice' AND status IN ('queued','planning','running','awaiting_approval')").get().n,0);
+ }finally{db.sql.close();}
+});
 test('missing database or queue cannot produce false successful writes',async()=>{
  assert.equal((await call('/v1/agents/runs',{method:'POST',body:{objective:'test'}})).status,503);
  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:{DB:undefined}})).status,503);
