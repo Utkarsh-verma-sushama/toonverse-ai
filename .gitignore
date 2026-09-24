@@ -8,3 +8,8 @@ ios/
 *.mobileprovision
 .env
 .DS_Store
+
+# Local Firebase emulator output
+.firebase/
+*-debug.log
+*-debug.*.log

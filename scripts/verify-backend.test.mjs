@@ -1,0 +1,92 @@
+import test, {before, after} from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import worker from '../backend/worker.mjs';
+import {env, claims, token, mockIdentity} from './security-fixtures.mjs';
+const originalFetch=globalThis.fetch;
+before(()=>{globalThis.fetch=mockIdentity().fetch;});
+after(()=>{globalThis.fetch=originalFetch;});
+const defaults={...env,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
+const alice=await token(),bob=await token(claims({sub:'bob'}));
+function database(){
+ const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));
+ const DB={prepare(query){let values=[];return {bind(...args){values=args;return this;},async first(){return sql.prepare(query).get(...values)||null;},async run(){const out=sql.prepare(query).run(...values);return {meta:{changes:Number(out.changes)}};}};}};
+ const now=new Date().toISOString(),future=new Date(Date.now()+60000).toISOString();
+ sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice','alice','awaiting_approval','private objective','{}',now,now,'key-alice');
+ sql.prepare('INSERT INTO agent_approvals (id,run_id,owner_id,action_type,summary,expires_at) VALUES (?,?,?,?,?,?)').run('approval-alice','run-alice','alice','share','private',future);
+ return {sql,DB};
+}
+async function call(path,{method='GET',value=alice,body,headers={},bindings={}}={}){
+ return worker.fetch(new Request(`https://api.uvenaro.invalid${path}`,{method,headers:{...(value?{authorization:`Bearer ${value}`} : {}),...(body!==undefined?{'content-type':'application/json'}:{}),...headers},...(body!==undefined?{body:typeof body==='string'?body:JSON.stringify(body)}:{})}),{...defaults,...bindings});
+}
+test('health is public, but protected routes reject absent identity regardless of flags',async()=>{
+ assert.equal((await call('/v1/health',{value:null})).status,200);
+ for(const bindings of [{},{ENVIRONMENT:'development',AUTH_REQUIRED:'false'},{ENVIRONMENT:undefined,AUTH_REQUIRED:undefined}])assert.equal((await call('/v1/agents/runs/run-alice',{value:null,bindings})).status,401);
+});
+test('chat, agents and routing are disabled by default even for a valid user',async()=>{
+ for(const path of ['/v1/chat/responses','/v1/agents/runs','/v1/ai/routes']){
+  const response=await call(path,{method:'POST',body:{message:'hi'},bindings:{AGENT_EXECUTION_ENABLED:undefined}});
+  assert.equal(response.status,503);assert.match((await response.json()).code,/DISABLED$/);
+ }
+});
+test('another owner cannot read, cancel, or approve a run; spoofed UID header is ignored',async()=>{
+ const db=database();try{
+  for(const [path,method,body] of [['/v1/agents/runs/run-alice','GET'],['/v1/agents/runs/run-alice/cancel','POST'],['/v1/agents/runs/run-alice/approvals/approval-alice','POST',{decision:'approve'}]]){
+   const response=await call(path,{method,body,value:bob,headers:{'x-uvenaro-verified-sub':'alice'},bindings:db});
+   assert.equal(response.status,404);assert.equal((await response.json()).code,'NOT_FOUND');
+  }
+  assert.equal(db.sql.prepare('SELECT status FROM agent_runs').get().status,'awaiting_approval');
+  assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'pending');
+ }finally{db.sql.close();}
+});
+test('owner reads and cancels own run; repeated cancellation does not report success',async()=>{
+ const db=database();try{
+  assert.equal((await call('/v1/agents/runs/run-alice',{bindings:db})).status,200);
+  assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,202);
+  assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,409);
+ }finally{db.sql.close();}
+});
+test('owner approval is recorded once and replay rejected',async()=>{
+ const db=database();try{
+  const options={method:'POST',body:{decision:'approve'},bindings:db};
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',options)).status,200);
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',options)).status,409);
+  assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'approve');
+ }finally{db.sql.close();}
+});
+for(const [name,mutation] of Object.entries({'expired approval':"UPDATE agent_approvals SET expires_at='2000-01-01T00:00:00Z'",'invalid expiry':"UPDATE agent_approvals SET expires_at='nonsense'",'cancelled run':"UPDATE agent_runs SET status='cancelled'",'running run':"UPDATE agent_runs SET status='running'"}))test(`${name} cannot be approved`,async()=>{
+ const db=database();try{
+  db.sql.exec(mutation);
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:db})).status,409);
+  assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'pending');
+ }finally{db.sql.close();}
+});
+test('missing database or queue cannot produce false successful writes',async()=>{
+ assert.equal((await call('/v1/agents/runs',{method:'POST',body:{objective:'test'}})).status,503);
+ assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'}})).status,503);
+});
+test('allowed-origin success and errors consistently include CORS; other origins rejected',async()=>{
+ for(const value of [alice,null]){
+  const response=await call('/v1/agents/runs/run-alice',{value,headers:{origin:'https://uvenaro.com'}});
+  assert.equal(response.headers.get('access-control-allow-origin'),'https://uvenaro.com');
+  assert.equal(response.headers.get('access-control-allow-credentials'),'true');
+  assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+ }
+ for(const origin of ['https://evil.invalid','null'])assert.equal((await call('/v1/health',{headers:{origin}})).status,403);
+});
+test('rejected async database promise becomes a generic error, without leaked details',async()=>{
+ const response=await call('/v1/agents/runs/run-alice',{bindings:{DB:{prepare(){throw new Error('secret database credentials');}}},headers:{origin:'https://uvenaro.com'}});
+ assert.equal(response.status,500);assert.doesNotMatch(await response.text(),/secret/);
+ assert.equal(response.headers.get('access-control-allow-origin'),'https://uvenaro.com');
+});
+for(const [name,body,headers,status] of [
+ ['oversized streamed body','x'.repeat(65537),{},413],['malformed JSON','{',{},400],
+ ['array JSON','[]',{},400],['incorrect media type','{}',{'content-type':'text/plain'},415]
+])test(`rejects ${name} before database/provider work`,async()=>{
+ const response=await call('/v1/ai/routes',{method:'POST',body,headers,bindings:{MODEL_ROUTING_ENABLED:'true'}});assert.equal(response.status,status);
+});
+test('preflight succeeds without contacting identity service',async()=>{
+ const response=await call('/v1/chat/responses',{method:'OPTIONS',value:null,headers:{origin:'https://uvenaro.com'}});
+ assert.equal(response.status,204);assert.match(response.headers.get('access-control-allow-headers'),/authorization/);
+});

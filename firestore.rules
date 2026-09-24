@@ -2,73 +2,63 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-
     function owns(uid) {
-      return signedIn() && request.auth.uid == uid;
+      return request.auth != null && request.auth.uid == uid;
     }
 
-    function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+    function validProfile(data) {
+      return data.keys().hasAll(['createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['displayName', 'photoURL', 'locale', 'createdAt', 'updatedAt'])
+        && data.get('displayName', '') is string
+        && data.get('displayName', '').size() <= 120
+        && data.get('photoURL', '') is string
+        && data.get('photoURL', '').size() <= 2048
+        && (data.get('photoURL', '') == '' || data.photoURL.matches('https://[^\\s]+'))
+        && data.get('locale', 'en') is string
+        && data.get('locale', 'en').matches('[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}')
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
     }
 
-    function validTimestamp(field) {
-      return field is timestamp;
-    }
-
-    // A user may read their profile and update only a constrained set of fields.
     match /users/{uid} {
-      allow create: if owns(uid)
-        && request.resource.data.keys().hasOnly([
-          'displayName', 'photoURL', 'locale', 'createdAt', 'updatedAt'
-        ])
-        && validTimestamp(request.resource.data.createdAt)
-        && validTimestamp(request.resource.data.updatedAt);
-
-      allow read: if owns(uid) || isAdmin();
-
-      allow update: if owns(uid)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'displayName', 'photoURL', 'locale', 'updatedAt'
-        ])
-        && validTimestamp(request.resource.data.updatedAt);
-
+      allow get: if owns(uid);
+      allow list: if false;
+      allow create: if owns(uid) && validProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if owns(uid) && validProfile(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
     }
 
-    // Private, per-user creative projects.
+    function validProject(data, uid) {
+      return data.keys().hasAll(['ownerId', 'name', 'type', 'status', 'createdAt', 'updatedAt', 'schemaVersion'])
+        && data.keys().hasOnly(['ownerId', 'name', 'type', 'status', 'thumbnailPath', 'createdAt', 'updatedAt', 'schemaVersion'])
+        && data.ownerId == uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.type is string && data.type.size() > 0 && data.type.size() <= 40
+        && data.status in ['draft', 'ready', 'archived']
+        && data.schemaVersion is int && data.schemaVersion == 1
+        && data.get('thumbnailPath', '') is string
+        && data.get('thumbnailPath', '').size() <= 512
+        && (data.get('thumbnailPath', '') == ''
+          || (data.thumbnailPath.split('/').size() >= 3
+            && data.thumbnailPath.split('/')[0] == 'users'
+            && data.thumbnailPath.split('/')[1] == uid
+            && !data.thumbnailPath.split('/').hasAny(['..', '.'])))
+        && data.createdAt is timestamp && data.updatedAt == request.time;
+    }
+
     match /users/{uid}/projects/{projectId} {
       allow read: if owns(uid);
-      allow create, update: if owns(uid)
-        && request.resource.data.ownerId == uid
-        && request.resource.data.keys().hasOnly([
-          'ownerId', 'name', 'type', 'status', 'thumbnailPath',
-          'createdAt', 'updatedAt', 'schemaVersion'
-        ])
-        && validTimestamp(request.resource.data.createdAt)
-        && validTimestamp(request.resource.data.updatedAt);
+      allow create: if owns(uid) && validProject(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time;
+      allow update: if owns(uid) && validProject(request.resource.data, uid)
+        && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if owns(uid);
     }
 
-    // Verification records and evidence are written only by trusted backend code.
-    match /claims/{claimId} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-
-      match /evidence/{evidenceId} {
-        allow read: if signedIn();
-        allow write: if isAdmin();
-      }
-    }
-
-    match /auditLogs/{entryId} {
-      allow read: if isAdmin();
-      allow write: if false;
-    }
-
-    // Deny every path that has not been explicitly authorized above.
+    // Claims/evidence/audit/billing/roles are backend-only. A client admin claim
+    // adds no access. The backend must enforce ownership and log privileged use.
     match /{document=**} {
       allow read, write: if false;
     }

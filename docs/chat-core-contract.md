@@ -2,6 +2,10 @@
 
 Chat Core defaults to safe-off until a production model provider, verified identity and server-authoritative billing guard are connected.
 
+## Identity boundary
+
+Production requests carry a Firebase ID token in the `Authorization: Bearer` header. The edge worker verifies its RS256 signature against Google's Secure Token JWK set and validates issuer, audience, subject, expiry, issue time and authentication time. Client-supplied identity headers are never trusted. `FIREBASE_PROJECT_ID` and `FIREBASE_WEB_API_KEY` are required bindings; missing or invalid identity configuration fails closed. The verifier checks current Firebase account status and revocation through `accounts:lookup` on every protected request. `AUTH_REQUIRED=false` does not bypass verification.
+
 ## Request gate order
 
 1. Verify identity, account status and plan entitlement.

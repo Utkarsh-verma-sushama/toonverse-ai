@@ -6,6 +6,8 @@ workers_dev = true
 [vars]
 ENVIRONMENT = "production"
 AUTH_REQUIRED = "true"
+AGENT_EXECUTION_ENABLED = "false"
+MODEL_ROUTING_ENABLED = "false"
 CHAT_EXECUTION_ENABLED = "false"
 CHAT_PROVIDER = ""
 CHAT_MODEL = ""
@@ -16,6 +18,10 @@ CHAT_TIMEOUT_MS = "30000"
 CHAT_GLOBAL_DAILY_COST_MICROUSD = "0"
 # CHAT_PROVIDER_API_KEY must be stored as an encrypted secret, never in this file.
 ALLOWED_ORIGINS = "https://YOUR_DOMAIN"
+FIREBASE_PROJECT_ID = "toonverse-ai"
+# Firebase Web API key restricted to Identity Toolkit, never a service-account key.
+# Missing key fails closed; required for disabled/deleted/revoked-session checks.
+FIREBASE_WEB_API_KEY = ""
 MODEL_CATALOG_JSON = "[]"
 
 [[d1_databases]]

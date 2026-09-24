@@ -1,9 +1,26 @@
+import { authenticateFirebaseRequest, IdentityError } from "./firebase-auth.mjs";
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...headers}});
 const id=()=>crypto.randomUUID();
 const allowedTasks=new Set(["generate","edit","understand","ocr","transcribe","translate","summarize","math","safety"]);
-function cors(request,env){const origin=request.headers.get("origin")||"";const allowed=String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(Boolean);return allowed.includes(origin)?{"access-control-allow-origin":origin,"vary":"origin","access-control-allow-headers":"authorization,content-type,idempotency-key","access-control-allow-methods":"GET,POST,OPTIONS"}:{}}
-function auth(request,env){const value=request.headers.get("authorization")||"";if(env.ENVIRONMENT!=="production"&&!env.AUTH_REQUIRED)return {sub:"development",verified:false};if(!value.startsWith("Bearer ")||request.headers.get("x-uvenaro-verified-sub")==null)return null;return {sub:String(request.headers.get("x-uvenaro-verified-sub")).slice(0,128),verified:true}}
-async function body(request){try{return await request.json()}catch{return null}}
+function cors(request,env){
+ const origin=request.headers.get("origin"),headers={vary:"Origin"};
+ const allowed=String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(x=>x&&x!=="null"&&x!=="*");
+ if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device","access-control-allow-methods":"GET,POST,OPTIONS","access-control-max-age":"600"});
+ return headers;
+}
+async function body(request) {
+ if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") || "")) throw new RequestError("JSON_REQUIRED",415);
+ const declared = request.headers.get("content-length");
+ if (declared && (!/^\d+$/.test(declared) || Number(declared)>65536)) throw new RequestError("REQUEST_TOO_LARGE",413);
+ if (!request.body) throw new RequestError("INVALID_JSON",400);
+ const reader=request.body.getReader(),chunks=[];let size=0;
+ try { while(true) { const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>65536){await reader.cancel();throw new RequestError("REQUEST_TOO_LARGE",413);}chunks.push(value); } }
+ finally {reader.releaseLock();}
+ const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ try {const value=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));if(!value||typeof value!=="object"||Array.isArray(value))throw new Error();return value;}
+ catch {throw new RequestError("INVALID_JSON",400);}
+}
+class RequestError extends Error {constructor(code,status){super(code);this.code=code;this.status=status;}}
 const int=(value,fallback=0)=>Number.isSafeInteger(Number(value))?Number(value):fallback;
 function chatConfig(env){return {enabled:env.CHAT_EXECUTION_ENABLED==="true",provider:String(env.CHAT_PROVIDER||""),model:String(env.CHAT_MODEL||""),url:String(env.CHAT_PROVIDER_URL||""),maxInputTokens:Math.min(12000,Math.max(1,int(env.CHAT_MAX_INPUT_TOKENS,4000))),maxOutputTokens:Math.min(8000,Math.max(1,int(env.CHAT_MAX_OUTPUT_TOKENS,1000))),timeoutMs:Math.min(120000,Math.max(1000,int(env.CHAT_TIMEOUT_MS,30000))),globalCeiling:int(env.CHAT_GLOBAL_DAILY_COST_MICROUSD,0)}}
 function estimateTokens(text){return Math.max(1,Math.ceil(String(text).length/3));}
@@ -49,26 +66,56 @@ async function routeModel(input,env){
  return {routeId:id(),provider:primary.provider,model:primary.model,fallbacks:fallbacks.map(x=>({provider:x.provider,model:x.model})),reason:"capability-policy-health-score",expiresAt:new Date(Date.now()+60000).toISOString(),provenance:{policyVersion:"1.0",candidateCount:candidates.length}};
 }
 async function createAgent(request,env,user){
- const input=await body(request);if(!input?.objective)return json({code:"INVALID_OBJECTIVE",message:"Objective is required."},400);
- const key=request.headers.get("idempotency-key");if(!key)return json({code:"IDEMPOTENCY_REQUIRED"},400);
+ if(!env.DB||!env.AGENT_QUEUE)return json({code:"AGENT_BACKEND_NOT_CONNECTED"},503);
+ const input=await body(request);if(typeof input?.objective!=="string"||!input.objective.trim()||input.objective.length>4000)return json({code:"INVALID_OBJECTIVE",message:"Objective is required."},400);
+ const key=request.headers.get("idempotency-key");if(!key||!/^[A-Za-z0-9_-]{1,128}$/.test(key))return json({code:"IDEMPOTENCY_REQUIRED"},400);
  const runId=id(),now=new Date().toISOString(),run={id:runId,owner:user.sub,status:"queued",objective:String(input.objective).slice(0,4000),limits:input.limits||{},policy:input.policy||{},createdAt:now,updatedAt:now};
  if(env.DB)await env.DB.prepare("INSERT INTO agent_runs (id, owner_id, status, objective, payload_json, created_at, updated_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(runId,user.sub,"queued",run.objective,JSON.stringify(input),now,now,key).run();
  if(env.AGENT_QUEUE)await env.AGENT_QUEUE.send({runId,owner:user.sub});
  return json(run,202);
 }
 async function getRun(runId,env,user){if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);const row=await env.DB.prepare("SELECT id,status,objective,created_at AS createdAt,updated_at AS updatedAt,error_code AS errorCode FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();return row?json(row):json({code:"NOT_FOUND"},404)}
-async function mutateRun(runId,status,env,user){if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);const now=new Date().toISOString();const out=await env.DB.prepare("UPDATE agent_runs SET status=?,updated_at=? WHERE id=? AND owner_id=? AND status NOT IN ('completed','failed','cancelled','expired')").bind(status,now,runId,user.sub).run();return json({ok:true,id:runId,status,changed:out.meta?.changes||0},202)}
-export default {async fetch(request,env){
- const url=new URL(request.url),headers=cors(request,env);if(request.method==="OPTIONS")return new Response(null,{status:204,headers});
- if(url.pathname==="/v1/health")return json({ok:true,version:"2.0.0",services:{database:Boolean(env.DB),queue:Boolean(env.AGENT_QUEUE),storage:Boolean(env.MEDIA),routing:Boolean(env.MODEL_CATALOG_JSON)}},200,headers);
- const user=auth(request,env);if(!user)return json({code:"UNAUTHORIZED"},401,headers);
+async function mutateRun(runId,status,env,user){
+ if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);
+ const row=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();
+ if(!row)return json({code:"NOT_FOUND"},404);
+ if(["completed","failed","cancelled","expired"].includes(row.status))return json({code:"RUN_NOT_ACTIVE"},409);
+ const out=await env.DB.prepare("UPDATE agent_runs SET status=?,updated_at=? WHERE id=? AND owner_id=? AND status NOT IN ('completed','failed','cancelled','expired')").bind(status,new Date().toISOString(),runId,user.sub).run();
+ return out.meta?.changes?json({ok:true,id:runId,status},202):json({code:"RUN_NOT_ACTIVE"},409);
+}
+async function decideApproval(runId,approvalId,input,env,user){
+ if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);
+ if(!["approve","deny"].includes(input?.decision)||input.reason!==undefined&&(typeof input.reason!=="string"||input.reason.length>500))return json({code:"INVALID_DECISION"},400);
+ const row=await env.DB.prepare("SELECT a.decision,a.expires_at AS expiresAt,r.status AS runStatus FROM agent_approvals a JOIN agent_runs r ON r.id=a.run_id AND r.owner_id=a.owner_id WHERE a.id=? AND a.run_id=? AND a.owner_id=?").bind(approvalId,runId,user.sub).first();
+ if(!row)return json({code:"NOT_FOUND"},404);
+ if(row.decision!=="pending"||row.runStatus!=="awaiting_approval"||!Number.isFinite(Date.parse(row.expiresAt))||Date.parse(row.expiresAt)<=Date.now())return json({code:"APPROVAL_NOT_PENDING"},409);
+ const out=await env.DB.prepare("UPDATE agent_approvals SET decision=?,reason=?,decided_at=? WHERE id=? AND run_id=? AND owner_id=? AND decision='pending' AND julianday(expires_at)>julianday('now') AND EXISTS (SELECT 1 FROM agent_runs WHERE id=? AND owner_id=? AND status='awaiting_approval')").bind(input.decision,input.reason||"",new Date().toISOString(),approvalId,runId,user.sub,runId,user.sub).run();
+ return out.meta?.changes?json({ok:true,decision:input.decision},200):json({code:"APPROVAL_NOT_PENDING"},409);
+}
+export default {async fetch(request,env={}){
+ const url=new URL(request.url),headers=cors(request,env);
+ const finish=response=>{const merged=new Headers(response.headers);for(const [key,value] of Object.entries(headers))merged.set(key,value);merged.set("x-content-type-options","nosniff");return new Response(response.body,{status:response.status,headers:merged});};
  try{
-  if(url.pathname==="/v1/ai/routes"&&request.method==="POST")return json(await routeModel(await body(request),env),200,headers);
-  if(url.pathname==="/v1/chat/responses"&&request.method==="POST")return chatResponse(request,env,user,headers);
-  if(url.pathname==="/v1/agents/runs"&&request.method==="POST")return createAgent(request,env,user);
-  let m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)$/);if(m&&request.method==="GET")return getRun(decodeURIComponent(m[1]),env,user);
-  m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)\/cancel$/);if(m&&request.method==="POST")return mutateRun(decodeURIComponent(m[1]),"cancelled",env,user);
-  m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)\/approvals\/([^/]+)$/);if(m&&request.method==="POST"){const input=await body(request);if(!["approve","deny"].includes(input?.decision))return json({code:"INVALID_DECISION"},400,headers);if(env.DB)await env.DB.prepare("UPDATE agent_approvals SET decision=?,reason=?,decided_at=? WHERE id=? AND run_id=? AND owner_id=? AND decision='pending'").bind(input.decision,String(input.reason||"").slice(0,500),new Date().toISOString(),decodeURIComponent(m[2]),decodeURIComponent(m[1]),user.sub).run();return json({ok:true,decision:input.decision},200,headers)}
-  return json({code:"NOT_FOUND"},404,headers);
- }catch(error){return json({code:error.message==="NO_ROUTE"?"NO_ROUTE":"INTERNAL_ERROR",message:error.message==="NO_ROUTE"?"No policy-compliant model is currently available.":"Request could not be completed."},error.message==="NO_ROUTE"?503:500,headers)}
+  if(request.headers.has("origin")&&!headers["access-control-allow-origin"])return finish(json({code:"ORIGIN_NOT_ALLOWED"},403));
+  if(request.method==="OPTIONS")return finish(new Response(null,{status:204}));
+  if(url.pathname==="/v1/health"&&request.method==="GET")return finish(json({ok:true,version:"2.0.0"}));
+  // Defaults fail closed. AUTH_REQUIRED=false never bypasses authentication.
+  const user=await authenticateFirebaseRequest(request,env);
+  if(url.pathname==="/v1/ai/routes"&&request.method==="POST"){
+   if(env.MODEL_ROUTING_ENABLED!=="true")return finish(json({code:"MODEL_ROUTING_DISABLED"},503));
+   return finish(json(await routeModel(await body(request),env)));
+  }
+  if(url.pathname==="/v1/chat/responses"&&request.method==="POST")return finish(await chatResponse(request,env,user,{}));
+  if(url.pathname.startsWith("/v1/agents/")&&env.AGENT_EXECUTION_ENABLED!=="true")return finish(json({code:"AGENT_EXECUTION_DISABLED"},503));
+  if(url.pathname==="/v1/agents/runs"&&request.method==="POST")return finish(await createAgent(request,env,user));
+  let m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)$/);if(m&&request.method==="GET")return finish(await getRun(decodeURIComponent(m[1]),env,user));
+  m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)\/cancel$/);if(m&&request.method==="POST")return finish(await mutateRun(decodeURIComponent(m[1]),"cancelled",env,user));
+  m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)\/approvals\/([^/]+)$/);if(m&&request.method==="POST")return finish(await decideApproval(decodeURIComponent(m[1]),decodeURIComponent(m[2]),await body(request),env,user));
+  return finish(json({code:"NOT_FOUND"},404));
+ }catch(error){
+  if(error instanceof IdentityError||error instanceof RequestError)return finish(json({code:error.code},error.status));
+  if(error instanceof URIError)return finish(json({code:"INVALID_PATH"},400));
+  if(error.message==="NO_ROUTE")return finish(json({code:"NO_ROUTE",message:"No policy-compliant model is currently available."},503));
+  return finish(json({code:"INTERNAL_ERROR",message:"Request could not be completed."},500));
+ }
 }};
