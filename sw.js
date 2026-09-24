@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "uvenaro-shell-v27";
+const CACHE_NAME = "uvenaro-shell-v28";
 const CORE = [
   "./","./index.html","./chat.html","./device-test.html","./launch.html","./privacy.html","./terms.html","./qa.html","./plans.html","./support.html","./utilities.html","./camera.html","./coloring.html","./multimodal.html","./memory.html","./create.html","./editor.html","./layout.html","./wallpaper.html","./library.html","./account.html","./fax.html","./404.html",
   "./assets/css/main.css","./assets/css/components.css","./assets/js/config.js","./assets/js/main.js","./assets/js/chat-core.js","./assets/js/platform-runtime.js","./assets/js/model-router.js","./assets/js/agent-runtime.js",

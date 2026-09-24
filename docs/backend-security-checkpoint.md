@@ -42,7 +42,7 @@ Local result: **100 tests passed** (40 identity, 17 API/SQLite, 43 Firebase emul
 
 | Priority | Work | Current evidence / completion gate |
 |---|---|---|
-| 1 | Atomic chat credit reservation and settlement | Existing chat code has separate check/update operations and estimates usage from characters. Implement transaction-safe quotas/idempotency/settlement, in-flight global ceilings, provider usage accounting and concurrency/failure tests before enabling paid execution. |
+| 1 | Atomic chat credit reservation and settlement | Source implementation now added in the next checkpoint: [Atomic Chat Billing](atomic-chat-billing.md). Activation still requires the audited gateway, real pricing, funded accounts and staging validation. |
 | 2 | Actual sign-in and account backend | `assets/js/auth.js` calls account/session endpoints not implemented by the core Worker. Implement the Firebase-backed contract, recovery and session controls and test on staging. |
 | 3 | V1 AI chatbot provider | Provider secret, verified provider pricing/privacy configuration, conversation handling, streaming/cancellation, safety and cost limits are pending. A separate prior local Gemini adapter commit `4fb013e` exists in the earlier checkout but is not verified or integrated here. |
 | 4 | Cloud project/file service | Implement the project sync API, private media lifecycle, retention/export/deletion and backup/restore; verify isolation with real staging bindings. |

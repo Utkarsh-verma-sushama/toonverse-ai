@@ -38,5 +38,9 @@ Prices and included credits remain unset until verified provider costs, taxes, p
 - Production must keep `CHAT_EXECUTION_ENABLED=false` until verified edge authentication, D1 migrations, a current provider-price snapshot, funded plans, global budget alerts and an encrypted provider secret are all present.
 - The public client never receives provider credentials and never calls a paid provider directly.
 - Every accepted request requires a unique idempotency key and a server-side verified subject.
-- Provider failure or timeout releases the reservation; successful execution settles actual usage and emits a ledger receipt.
+- Confirmed zero-cost rejection releases the reservation. Timeout, unknown provider outcome or unconfirmed settlement retains the hold for reconciliation. Successful execution settles measured usage and emits a ledger receipt.
 - Pricing changes create a new immutable snapshot. Historical usage is never recalculated against a later price.
+
+## Atomic billing checkpoint — 24 September 2026
+
+The reservation/quota/settlement implementation and retry-safe client are described in [Atomic Chat Billing](atomic-chat-billing.md). The metered gateway contract, price snapshots, funded accounts and production activation remain separate gates.
