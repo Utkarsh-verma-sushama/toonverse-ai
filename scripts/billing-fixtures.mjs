@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 export const schema=readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8');
 export const migration=readFileSync(new URL('../backend/migrations/0001_atomic_chat_billing.sql',import.meta.url),'utf8');
+export const abuseMigration=readFileSync(new URL('../backend/migrations/0003_abuse_spend_hardening.sql',import.meta.url),'utf8');
 export const alice={sub:'alice',verified:true};
 export const cfg={provider:'test-gateway',model:'test-text',maxInputTokens:100,maxOutputTokens:50,globalCeiling:100000};
 export const messages=[{role:'user',content:'Hello'}];
@@ -12,11 +13,11 @@ export function d1(sql,{beforeRun,afterRun}={}) {
 export function seedUser(sql,uid='alice',included=20,prepaid=80){
  const start=new Date(Date.now()-86400000).toISOString(),end=new Date(Date.now()+29*86400000).toISOString();
  sql.prepare('INSERT INTO billing_accounts VALUES (?,?,?,?,?,?,?,?,?)').run(uid,'free','active',included,prepaid,0,start,end,start);
- sql.prepare('INSERT INTO usage_limits VALUES (?,?,?,?,?,?,?)').run(uid,1000,10000,100000,1000,null,start);
+ sql.prepare('INSERT INTO usage_limits (owner_id,daily_credit_limit,monthly_credit_limit,max_request_cost_microusd,requests_per_minute,blocked_until,updated_at,max_concurrent_requests,hourly_cost_limit_microusd) VALUES (?,?,?,?,?,?,?,?,?)').run(uid,1000,10000,100000,1000,null,start,2,100000);
 }
 export function fixture(path=':memory:') {
  const sql=new DatabaseSync(path);sql.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;');sql.exec(schema);
- sql.exec('BEGIN;'+migration+'COMMIT;');
+ sql.exec('BEGIN;'+migration+abuseMigration+'COMMIT;');
  seedUser(sql);
  sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,100000,new Date().toISOString());
  sql.prepare('INSERT INTO provider_price_snapshots (id,provider,model,input_microusd_per_million,output_microusd_per_million,credit_value_microusd,effective_at,retired_at,valid_until) VALUES (?,?,?,?,?,?,?,?,?)')
