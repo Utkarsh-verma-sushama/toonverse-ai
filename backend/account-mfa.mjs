@@ -67,6 +67,7 @@ export async function beginEnrollment(request,env,user){
 export async function finishEnrollment(request,env,user,input){
  requireRecent(user);if(!/^\d{6,8}$/.test(input.code||''))throw new AccountError('INVALID_VERIFICATION_CODE',401);
  const {row,payload}=await challenge(request,env,input.challengeId,'mfa_enroll',user);
- await firebaseCall(env,'accounts/mfaEnrollment:finalize',{idToken:user.credentials.idToken,displayName:'Uvenaro authenticator',totpVerificationInfo:{sessionInfo:payload.sessionInfo,verificationCode:input.code}},{v2:true});
+ try{await firebaseCall(env,'accounts/mfaEnrollment:finalize',{idToken:user.credentials.idToken,displayName:'Uvenaro authenticator',totpVerificationInfo:{sessionInfo:payload.sessionInfo,verificationCode:input.code}},{v2:true});}
+ catch(error){return exhaustAfterFailedVerification(env,row,error);}
  await consume(env,row.id);await revokeAll(env,user.sub,'mfa_enrolled');return {ok:true,signInRequired:true};
 }
