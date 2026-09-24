@@ -66,6 +66,23 @@ for(const [name,mutation] of Object.entries({'expired approval':"UPDATE agent_ap
   assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'pending');
  }finally{db.sql.close();}
 });
+test('database trigger enforces two active agent runs per owner',()=>{
+ const db=database();try{
+  const now=new Date().toISOString();
+  db.sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice-2','alice','queued','second','{}',now,now,'key-alice-2');
+  assert.throws(()=>db.sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice-3','alice','queued','third','{}',now,now,'key-alice-3'),/AGENT_CONCURRENCY_LIMIT_REACHED/);
+  db.sql.prepare("UPDATE agent_runs SET status='completed' WHERE id='run-alice'").run();
+  assert.doesNotThrow(()=>db.sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice-3','alice','queued','third','{}',now,now,'key-alice-3'));
+ }finally{db.sql.close();}
+});
+test('inactive run cannot be reactivated past the active-agent cap',()=>{
+ const db=database();try{
+  const now=new Date().toISOString();
+  db.sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice-2','alice','queued','second','{}',now,now,'key-alice-2');
+  db.sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice-3','alice','completed','third','{}',now,now,'key-alice-3');
+  assert.throws(()=>db.sql.prepare("UPDATE agent_runs SET status='running' WHERE id='run-alice-3'").run(),/AGENT_CONCURRENCY_LIMIT_REACHED/);
+ }finally{db.sql.close();}
+});
 test('missing database or queue cannot produce false successful writes',async()=>{
  assert.equal((await call('/v1/agents/runs',{method:'POST',body:{objective:'test'}})).status,503);
  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:{DB:undefined}})).status,503);
