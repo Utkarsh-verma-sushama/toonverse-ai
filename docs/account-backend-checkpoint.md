@@ -62,6 +62,10 @@ Local verification at this checkpoint:
 
 These checks exercise local SQLite, actual Cloudflare local D1/workerd, Firebase emulators and browser flows. Provider MFA responses in Worker/browser tests are fixtures; live Firebase TOTP, delivery, production D1 and physical-device validation are not claimed. Native CI builds provide packaging evidence only.
 
+## Staging preparation update
+
+The [account staging deployment](account-staging-deployment.md) now provides the same-origin test host, invite restrictions, isolated migration/deployment path and browser/preflight tests. Actual deployment is blocked by missing Cloudflare configuration/access and Firebase console sign-in. No live activation is claimed.
+
 ## Next engineering work
 
 Finish and stage account release operations above, then implement the audited V1 model gateway and reconciliation adapter. OAuth/linking/passkeys/recovery codes, security alert delivery, complete deletion processing, native session transport and private cloud sync remain explicit account backlog items.

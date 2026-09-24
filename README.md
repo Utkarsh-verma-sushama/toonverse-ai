@@ -32,3 +32,5 @@ No feature is described as active unless the corresponding production service, e
 ## Account backend
 
 Email/password and managed account sessions are implemented with default-off activation. See [account backend scope and verification](docs/account-backend-checkpoint.md) and [implemented API](backend/openapi-account.yaml). Additional providers, native cookie transport, completed erasure and production activation remain explicit gates.
+
+The [account staging deployment guide](docs/account-staging-deployment.md) describes the isolated same-origin pilot, owner configuration and manual deployment. It is prepared but not deployed.

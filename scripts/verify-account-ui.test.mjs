@@ -9,8 +9,11 @@ import {resolve,extname} from 'node:path';
 import {browser as launchBrowser} from './browser-fixtures.mjs';
 import {accountDatabase,accountEnv,identityService} from './account-fixtures.mjs';
 import worker from '../backend/worker.mjs';
-const root=fileURLToPath(new URL('../',import.meta.url)),originalFetch=globalThis.fetch;let browser,ctx,page,db,provider,errors,enabled,server,origin,certDir,tls;
-before(async()=>{certDir=await mkdtemp(resolve(tmpdir(),'uvenaro-tls-'));execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',resolve(certDir,'key.pem'),'-out',resolve(certDir,'cert.pem'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost,IP:127.0.0.1'],{stdio:'ignore'});tls={key:await readFile(resolve(certDir,'key.pem')),cert:await readFile(resolve(certDir,'cert.pem'))};browser=await launchBrowser();});
+import stagingWorker from '../backend/staging-worker.mjs';
+import {buildStaging} from './prepare-account-staging.mjs';
+const stagingMode=process.env.UVENARO_UI_STAGING==='true';
+const baseRoot=fileURLToPath(new URL('../',import.meta.url)),originalFetch=globalThis.fetch;let root=baseRoot;let browser,ctx,page,db,provider,errors,enabled,server,origin,certDir,tls;
+before(async()=>{if(stagingMode)root=(await buildStaging()).publicDir+'/';certDir=await mkdtemp(resolve(tmpdir(),'uvenaro-tls-'));execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',resolve(certDir,'key.pem'),'-out',resolve(certDir,'cert.pem'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost,IP:127.0.0.1'],{stdio:'ignore'});tls={key:await readFile(resolve(certDir,'key.pem')),cert:await readFile(resolve(certDir,'cert.pem'))};browser=await launchBrowser();});
 after(async()=>{await browser?.close();await rm(certDir,{recursive:true,force:true});});
 beforeEach(async()=>{
  db=accountDatabase();provider=await identityService();globalThis.fetch=provider.fetch;enabled=true;errors=[];
@@ -18,12 +21,12 @@ beforeEach(async()=>{
   const url=new URL(req.url,origin);const send=(status,headers,body)=>{res.writeHead(status,headers);res.end(body);};
   if(url.pathname.startsWith('/api/v1/')){
    const headers={...req.headers,'cf-connecting-ip':'192.0.2.10'},chunks=[];for await(const c of req)chunks.push(c);const data=Buffer.concat(chunks);
-   const response=await worker.fetch(new Request(url.href.replace('/api/v1/','/v1/'),{method:req.method,headers,...(data.length?{body:data}:{})}),{...accountEnv,...db,ALLOWED_ORIGINS:origin});
+   const response=await (stagingMode?stagingWorker:worker).fetch(new Request(stagingMode?url.href:url.href.replace('/api/v1/','/v1/'),{method:req.method,headers,...(data.length?{body:data}:{})}),{...accountEnv,...db,ALLOWED_ORIGINS:origin,...(stagingMode?{ENVIRONMENT:'staging',STAGING_ORIGIN:origin,STAGING_ALLOWED_EMAILS:'alice@example.com'}:{})});
    const body=await response.text();if(response.status>=400&&process.env.UI_DEBUG)console.error('Account test response',url.pathname,response.status,JSON.parse(body).code,headers.origin,headers['sec-fetch-site']);
    return send(response.status,Object.fromEntries(response.headers),body);
   }
   const path=resolve(root,'.'+url.pathname);if(!path.startsWith(root))return send(403,{},'Forbidden');
-  try{let body=await readFile(path);if(url.pathname==='/assets/js/config.js')body=Buffer.from(body.toString().replace('apiBaseUrl: ""','apiBaseUrl: "'+origin+'/api"').replace('authentication: false','authentication: '+enabled));
+  try{let body=await readFile(path);if(url.pathname==='/assets/js/config.js')body=Buffer.from(body.toString().replace('apiBaseUrl: ""','apiBaseUrl: "'+origin+'/api"').replace(/authentication: (?:true|false)/,'authentication: '+enabled));
    return send(200,{'content-type':({'.html':'text/html','.js':'application/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json'})[extname(path)]||'application/octet-stream'},body);
   }catch{return send(404,{},'Not found');}
  }catch(error){errors.push(error.message);res.writeHead(500);res.end('Test server failure');}});
@@ -65,8 +68,8 @@ test('authenticator challenge is required before the browser can show a signed-i
  await page.locator('#step-code').waitFor({state:'visible'});assert.equal(await page.locator('#account-dashboard').isHidden(),true);await page.locator('#step-code').fill('123456');await page.locator('#step-submit').click();
  await page.waitForFunction(()=>document.getElementById('profile-security').textContent.includes('Authenticator enabled'));
 });
-test('authenticator enrollment shows its setup key, verifies a code and clears the setup secret',async()=>{
- await login();await page.locator('[data-security-action="mfa"]').click();await page.locator('#step-code').waitFor({state:'visible'});assert.match(await page.locator('#step-description').textContent(),/JBSWY3DPEHPK3PXP/);
+test(stagingMode?'staging keeps new authenticator enrollment disabled':'authenticator enrollment shows its setup key, verifies a code and clears the setup secret',async()=>{
+ await login();if(stagingMode){assert.equal(await page.locator('[data-security-action="mfa"]').isDisabled(),true);return;}await page.locator('[data-security-action="mfa"]').click();await page.locator('#step-code').waitFor({state:'visible'});assert.match(await page.locator('#step-description').textContent(),/JBSWY3DPEHPK3PXP/);
  await page.locator('#step-code').fill('123456');await page.locator('#step-submit').click();await page.locator('#account-step').waitFor({state:'hidden'});assert.equal(await page.locator('#step-description').textContent(),'');assert.equal(await page.locator('#account-dashboard').isHidden(),true);
 });
 test('account export downloads real owner records without session secrets',async()=>{

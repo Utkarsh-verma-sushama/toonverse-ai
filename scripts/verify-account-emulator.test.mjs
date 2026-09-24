@@ -25,6 +25,7 @@ test('real refresh exchange preserves the same provider user',async()=>{
 test('email verification is applied with a single-use emulator OOB code',async()=>{
  await firebaseCall(env,'accounts:sendOobCode',{requestType:'VERIFY_EMAIL',idToken:created.idToken});
  const code=(await codes()).find(x=>x.requestType==='VERIFY_EMAIL'&&x.email==='account-test@example.invalid').oobCode;
+ const inspected=await firebaseCall(env,'accounts:resetPassword',{oobCode:code});assert.equal(inspected.requestType,'VERIFY_EMAIL');assert.equal(inspected.email,'account-test@example.invalid');
  await firebaseCall(env,'accounts:update',{oobCode:code});
  const lookup=await firebaseCall(env,'accounts:lookup',{idToken:created.idToken});assert.equal(lookup.users[0].emailVerified,true);
  await assert.rejects(firebaseCall(env,'accounts:update',{oobCode:code}),e=>e instanceof FirebaseAccountError);
