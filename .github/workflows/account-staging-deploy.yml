@@ -27,7 +27,7 @@ jobs:
       ACCOUNT_SESSION_KEY: ${{ secrets.ACCOUNT_SESSION_KEY }}
       UVENARO_STAGING_ENABLE_AUTH: ${{ inputs.enable_auth && 'true' || 'false' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v5
         with:
           node-version: 24
