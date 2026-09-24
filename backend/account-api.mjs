@@ -2,7 +2,7 @@ import {AccountError,configured,context,email,password,name,json,cookie,readCook
 import {firebaseCall,credentials,FirebaseAccountError} from './firebase-accounts.mjs';
 import {authenticateAccountRequest,issueSession,refreshSession,profile,verifyCredentials,revoke,revokeAll,requireRecent} from './account-sessions.mjs';
 import {mfaRequired,finishMfa,updateReauth,beginEnrollment,finishEnrollment} from './account-mfa.mjs';
-import {verifyAppCheckRequest} from './app-check.mjs';
+import {verifyAppCheckRequest,AttestationError} from './app-check.mjs';
 const emailContinuation=env=>env.ACCOUNT_ACTION_CONTINUE_URL?{continueUrl:env.ACCOUNT_ACTION_CONTINUE_URL,canHandleCodeInApp:false}:{};
 const genericRecovery={ok:true,message:'If the account is eligible, recovery instructions will be sent.'};
 const actionCode=value=>{if(typeof value!=='string'||value.length<10||value.length>2048)throw new AccountError('INVALID_ACTION_CODE');return value;};
@@ -184,6 +184,7 @@ export async function accountRoute(request,env,readBody){
   return json({code:'ACCOUNT_METHOD_UNAVAILABLE'},501);
  }catch(original){
   if(['JSON_REQUIRED','REQUEST_TOO_LARGE','INVALID_JSON'].includes(original.code))return json({code:original.code},original.status);
+  if(original instanceof AttestationError)return json({code:original.code},original.status);
   const error=providerFailure(original);
   if(error instanceof AccountError)return json({code:error.code,...error.extra},error.status,error.status===429?{'retry-after':String(error.extra.retryAfter||60)}:{});
   if(error.status===401)return json({code:'UNAUTHORIZED'},401);
