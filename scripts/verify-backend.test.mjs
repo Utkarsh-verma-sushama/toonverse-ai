@@ -24,6 +24,31 @@ async function call(path,{method='GET',value=alice,body,headers={},bindings={}}=
  return await worker.fetch(new Request(`https://api.uvenaro.invalid${path}`,{method,headers:{...(value?{authorization:`Bearer ${value}`} : {}),...(body!==undefined?{'content-type':'application/json'}:{}),...headers},...(body!==undefined?{body:typeof body==='string'?body:JSON.stringify(body)}:{})}),{...defaults,...db,...bindings});
  }finally{if(!bindings.sql)db.sql.close();}
 }
+function queueMessage(body){let acked=0,retried=0;return {body,ack(){acked++;},retry(){retried++;},get acked(){return acked;},get retried(){return retried;}};}
+test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
+  const first=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[first]},defaults);
+  assert.equal(first.acked,1);assert.equal(first.retried,0);
+  let row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'failed');assert.equal(row.error_code,'AGENT_RUNTIME_NOT_CONNECTED');
+  const duplicate=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[duplicate]},defaults);
+  assert.equal(duplicate.acked,1);assert.equal(duplicate.retried,0);
+  row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'failed');assert.equal(row.error_code,'AGENT_RUNTIME_NOT_CONNECTED');
+ }finally{db.sql.close();}
+});
+test('agent queue consumer drops malformed, foreign-owner and terminal messages',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='completed' WHERE id='run-alice'").run();
+  for(const message of [queueMessage({runId:'bad/id',owner:'alice'}),queueMessage({runId:'run-alice',owner:'bob'}),queueMessage({runId:'run-alice',owner:'alice'})]){
+   await worker.queue({messages:[message]},defaults);assert.equal(message.acked,1);assert.equal(message.retried,0);
+  }
+  assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'completed');
+ }finally{db.sql.close();}
+});
+test('agent queue consumer retries when database is unavailable',async()=>{
+ const message=queueMessage({runId:'run-alice',owner:'alice'});await worker.queue({messages:[message]},{...defaults,DB:null});
+ assert.equal(message.acked,0);assert.equal(message.retried,1);
+});
 test('health is public, but protected routes reject absent identity regardless of flags',async()=>{
  assert.equal((await call('/v1/health',{value:null})).status,200);
  for(const bindings of [{},{ENVIRONMENT:'development',AUTH_REQUIRED:'false'},{ENVIRONMENT:undefined,AUTH_REQUIRED:undefined}])assert.equal((await call('/v1/agents/runs/run-alice',{value:null,bindings})).status,401);
