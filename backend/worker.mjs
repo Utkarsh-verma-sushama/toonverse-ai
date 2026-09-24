@@ -117,4 +117,19 @@ export default {async fetch(request,env={}){
   if(error.message==="NO_ROUTE")return finish(json({code:"NO_ROUTE",message:"No policy-compliant model is currently available."},503));
   return finish(json({code:"INTERNAL_ERROR",message:"Request could not be completed."},500));
  }
+},async queue(batch,env){
+ if(!env.DB){for(const message of batch.messages)message.retry();return;}
+ for(const message of batch.messages){
+  const runId=message.body?.runId,owner=message.body?.owner;
+  if(typeof runId!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(runId)||typeof owner!=="string"||owner.length<1||owner.length>128){message.ack();continue;}
+  try{
+   const run=await env.DB.prepare("SELECT status,owner_id AS owner FROM agent_runs WHERE id=?").bind(runId).first();
+   if(!run||run.owner!==owner||["completed","failed","cancelled","expired"].includes(run.status)){message.ack();continue;}
+   const claim=await env.DB.prepare("UPDATE agent_runs SET status='planning',updated_at=? WHERE id=? AND owner_id=? AND status='queued'").bind(new Date().toISOString(),runId,owner).run();
+   if(!claim.meta?.changes){message.ack();continue;}
+   // Execution remains deliberately fail-closed until the metered agent runtime is connected.
+   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'").bind(new Date().toISOString(),runId,owner).run();
+   message.ack();
+  }catch{message.retry();}
+ }
 },async scheduled(event,env,context){context.waitUntil(Promise.all([expireUndispatched(env),cleanupAccounts(env),cleanupReplayNonces(env)]));}};
