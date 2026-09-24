@@ -149,6 +149,21 @@ test('MFA challenge is device bound and stops after five wrong codes',async()=>{
  for(let i=0;i<5;i++)assert.equal((await call('/v1/auth/mfa/challenge',{body})).response.status,401);
  assert.equal((await call('/v1/auth/mfa/challenge',{body:{...body,code:'123456'}})).body.code,'INVALID_CHALLENGE');
 });
+test('new authenticated MFA challenge supersedes the previous live challenge',async()=>{
+ await login();provider.mfa=true;
+ const first=await call('/v1/auth/reauthenticate',{body:{password:'correct'}});
+ const second=await call('/v1/auth/reauthenticate',{body:{password:'correct'}});
+ assert.equal(first.body.code,'MFA_REQUIRED');assert.equal(second.body.code,'MFA_REQUIRED');assert.notEqual(first.body.challengeId,second.body.challengeId);
+ const stale=await call('/v1/auth/reauthenticate/mfa',{body:{challengeId:first.body.challengeId,methodId:'totp-1',code:'123456'}});
+ assert.equal(stale.body.code,'INVALID_CHALLENGE');
+});
+test('exhausted MFA challenge destroys its encrypted payload',async()=>{
+ provider.mfa=true;const out=await call('/v1/auth/sign-in',{body:{email:'alice@example.com',password:'correct'}});
+ const body={challengeId:out.body.challengeId,methodId:'totp-1',code:'000000'};
+ for(let i=0;i<5;i++)assert.equal((await call('/v1/auth/mfa/challenge',{body})).response.status,401);
+ const row=db.sql.prepare('SELECT consumed_at,payload_cipher FROM account_challenges WHERE id=?').get(out.body.challengeId);
+ assert.ok(row.consumed_at);assert.equal(row.payload_cipher,'attempts_exhausted');
+});
 test('TOTP enrollment requires proof of a working code and revokes existing sessions',async()=>{
  await login();const start=await call('/v1/auth/mfa/totp/enroll');assert.equal(start.response.status,200,JSON.stringify(start.body));assert.match(start.body.uri,/^otpauth:/);
  assert.ok(!db.sql.prepare('SELECT payload_cipher FROM account_challenges').get().payload_cipher.includes('enroll-secret'));
