@@ -2,41 +2,34 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null;
-    }
-
     function owns(uid) {
-      return signedIn() && request.auth.uid == uid;
-    }
-
-    function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+      return request.auth != null && request.auth.uid == uid;
     }
 
     function allowedMedia() {
-      return request.resource.contentType.matches(
-        'image/.*|video/.*|audio/.*|application/pdf|text/plain'
-      );
+      // Declared MIME is a first gate. Byte sniffing and malware scanning are
+      // required on the backend before any public sharing.
+      return request.resource.contentType in [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
+        'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime',
+        'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg',
+        'audio/webm', 'audio/flac', 'application/pdf', 'text/plain'
+      ];
     }
 
-    // User uploads remain isolated by authenticated UID.
+    // Firebase download-token URLs are bearer access outside these SDK rules.
+    // Do not use them for files requiring a UID check on every download.
     match /users/{uid}/{allPaths=**} {
       allow read: if owns(uid);
       allow create, update: if owns(uid)
-        && request.resource.size < 100 * 1024 * 1024
-        && allowedMedia();
+        && request.resource.size > 0 && request.resource.size <= 100 * 1024 * 1024
+        && allowedMedia()
+        && request.resource.metadata.keys().hasOnly(['ownerId'])
+        && request.resource.metadata.get('ownerId', uid) == uid;
       allow delete: if owns(uid);
     }
 
-    // Evidence is immutable to clients and served through controlled backend flows.
-    match /evidence/{allPaths=**} {
-      allow read: if false;
-      allow write: if isAdmin()
-        && request.resource.size < 500 * 1024 * 1024
-        && allowedMedia();
-    }
-
+    // Evidence is backend-only, including clients with an admin custom claim.
     match /{allPaths=**} {
       allow read, write: if false;
     }

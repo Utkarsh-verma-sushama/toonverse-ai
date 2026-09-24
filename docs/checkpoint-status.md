@@ -1,11 +1,15 @@
 # UVENARO — Checkpoint Resume Record
 
-Last updated: 2026-09-19
+Last updated: 2026-09-24
 
 Current locked checkpoint: 43
 
 Exact next checkpoint: 44
 Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
+
+## Latest engineering checkpoint — 24 September 2026
+
+Backend source has been recovered and identity/API ownership/Firebase-rule hardening has passed 100 local behavioral/emulator tests on `codex/uvenaro-backend-security-20260924`. See [backend security checkpoint](backend-security-checkpoint.md) for verified work, activation requirements and the remaining implementation order. No production backend, AI provider, cloud sync, payment or launch activation is claimed. Next engineering work is atomic credit/quota enforcement followed by actual account backend and V1 chatbot integration.
 
 ## Permanent execution rule
 

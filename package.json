@@ -13,7 +13,9 @@
     "native:android": "npm run native:sync && cap open android",
     "native:ios": "npm run native:sync && cap open ios",
     "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs",
-    "verify:all": "npm run build:web && npm run verify:web && npm run verify:core"
+    "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security",
+    "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs",
+    "verify:rules": "firebase emulators:exec --only firestore,storage --project demo-uvenaro-security \"node --test scripts/verify-rules.test.mjs\""
   },
   "dependencies": {
     "@capacitor/android": "8.5.1",
@@ -22,6 +24,9 @@
     "@capacitor/ios": "8.5.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.5.1"
+    "@capacitor/cli": "8.5.1",
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase": "12.19.0",
+    "firebase-tools": "15.31.0"
   }
 }
