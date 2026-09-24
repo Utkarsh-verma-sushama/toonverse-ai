@@ -83,6 +83,16 @@ test('inactive run cannot be reactivated past the active-agent cap',()=>{
   assert.throws(()=>db.sql.prepare("UPDATE agent_runs SET status='running' WHERE id='run-alice-3'").run(),/AGENT_CONCURRENCY_LIMIT_REACHED/);
  }finally{db.sql.close();}
 });
+test('agent create rejects client policy and limits before queueing',async()=>{
+ const db=database();let sends=0;const bindings={...db,AGENT_QUEUE:{async send(){sends++;}}};
+ try{
+  for(const body of [{objective:'x',limits:{maxSteps:999999}},{objective:'x',policy:{allowAll:true}}]){
+   const response=await call('/v1/agents/runs',{method:'POST',body,headers:{'idempotency-key':crypto.randomUUID().replaceAll('-',''),'x-uvenaro-nonce':crypto.randomUUID().replaceAll('-','')},bindings});
+   assert.equal(response.status,400);assert.equal((await response.json()).code,'SERVER_POLICY_REQUIRED');
+  }
+  assert.equal(sends,0);
+ }finally{db.sql.close();}
+});
 test('missing database or queue cannot produce false successful writes',async()=>{
  assert.equal((await call('/v1/agents/runs',{method:'POST',body:{objective:'test'}})).status,503);
  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:{DB:undefined}})).status,503);
