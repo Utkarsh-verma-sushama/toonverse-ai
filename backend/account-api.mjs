@@ -139,17 +139,18 @@ export async function accountRoute(request,env,readBody){
   }
   const sessionPath=path.match(/^\/v1\/auth\/sessions\/([A-Za-z0-9-]{1,64})$/);
   if(sessionPath&&method==='DELETE'){
+   requireRecent(user);await rateLimit(env,request,'session-revoke',user.sub,10,3600000);
    const row=await env.DB.prepare('SELECT id,owner_id FROM account_sessions WHERE id=? AND owner_id=? AND revoked_at IS NULL').bind(sessionPath[1],user.sub).first();
    if(!row)throw new AccountError('NOT_FOUND',404);await revoke(env,row,'session_revoked');return json({ok:true,current:row.id===user.session.id},200,row.id===user.session.id?{'set-cookie':cookie('')}:{});
   }
-  if(path==='/v1/auth/sessions/revoke-others'&&method==='POST'){await revokeAll(env,user.sub,'other_sessions_revoked',user.session.id);return json({ok:true});}
+  if(path==='/v1/auth/sessions/revoke-others'&&method==='POST'){requireRecent(user);await rateLimit(env,request,'revoke-others',user.sub,5,3600000);await revokeAll(env,user.sub,'other_sessions_revoked',user.session.id);return json({ok:true});}
   if(path==='/v1/auth/security/events'&&method==='GET'){
    const raw=new URL(request.url).searchParams.get('limit')||'25';if(!/^\d{1,3}$/.test(raw))throw new AccountError('INVALID_LIMIT');const limit=Math.min(100,Math.max(1,Number(raw)));
    return json({events:await all(env.DB.prepare('SELECT id,event_type AS type,created_at AS createdAt FROM account_security_events WHERE owner_id=? ORDER BY created_at DESC LIMIT ?').bind(user.sub,limit))});
   }
   if(path==='/v1/auth/security'&&method==='GET')return json({emailVerified:user.emailVerified,mfaEnabled:user.mfaEnabled,mfaMethods:user.mfaMethods,recentAuthentication:now()-user.session.authenticated_at<300000,capabilities:capabilities(env)});
   if(path==='/v1/auth/connections'&&method==='GET')return json({connections:user.providers.map(provider=>({provider,label:provider,status:'Sign-in method',requiredForSignIn:true}))});
-  if(path==='/v1/auth/mfa/totp/enroll'&&method==='POST')return json(await beginEnrollment(request,env,user));
+  if(path==='/v1/auth/mfa/totp/enroll'&&method==='POST'){requireRecent(user);await rateLimit(env,request,'mfa-enroll',user.sub,5,3600000);return json(await beginEnrollment(request,env,user));}
   if(path==='/v1/auth/mfa/totp/confirm'&&method==='POST')return json(await finishEnrollment(request,env,user,input),200,{'set-cookie':cookie('')});
   const mfaPath=path.match(/^\/v1\/auth\/mfa\/([^/]+)$/);
   if(mfaPath&&method==='DELETE'){
