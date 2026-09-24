@@ -34,7 +34,7 @@
     "@capacitor/ios": "8.5.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.5.1",
+    "@capacitor/cli": "8.5.2",
     "@firebase/rules-unit-testing": "5.0.2",
     "@sparticuz/chromium": "153.0.0",
     "firebase": "12.19.0",
