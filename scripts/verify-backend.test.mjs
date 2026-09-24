@@ -5,14 +5,19 @@ import {readFileSync} from 'node:fs';
 import worker from '../backend/worker.mjs';
 import {env, claims, token, mockIdentity} from './security-fixtures.mjs';
 import {accountEnv,accountDatabase,seedManaged} from './account-fixtures.mjs';
+import {migration as billingMigration,abuseMigration,seedUser} from './billing-fixtures.mjs';
 const originalFetch=globalThis.fetch;
 before(()=>{globalThis.fetch=mockIdentity().fetch;});
 after(()=>{globalThis.fetch=originalFetch;});
 const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
 const alice=await token(),bob=await token(claims({sub:'bob'}));
 function database(){
- const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));
+ const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(billingMigration);sql.exec(abuseMigration);sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));
  const DB={prepare(query){let values=[];return {bind(...args){values=args;return this;},async first(){return sql.prepare(query).get(...values)||null;},async run(){const out=sql.prepare(query).run(...values);return {meta:{changes:Number(out.changes)}};}};}};
+ seedUser(sql);
+ sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,1000000,new Date().toISOString());
+ sql.prepare('INSERT INTO provider_price_snapshots (id,provider,model,input_microusd_per_million,output_microusd_per_million,credit_value_microusd,effective_at,retired_at,valid_until) VALUES (?,?,?,?,?,?,?,?,?)')
+  .run('agent-price','test-provider','test-model',1000,1000,1000,new Date(Date.now()-86400000).toISOString(),null,new Date(Date.now()+86400000).toISOString());
  const now=new Date().toISOString(),future=new Date(Date.now()+60000).toISOString();
  sql.prepare('INSERT INTO agent_runs (id,owner_id,status,objective,payload_json,created_at,updated_at,idempotency_key) VALUES (?,?,?,?,?,?,?,?)').run('run-alice','alice','awaiting_approval','private objective','{}',now,now,'key-alice');
  sql.prepare('INSERT INTO agent_approvals (id,run_id,owner_id,action_type,summary,expires_at) VALUES (?,?,?,?,?,?)').run('approval-alice','run-alice','alice','share','private',future);
