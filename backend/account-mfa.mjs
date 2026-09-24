@@ -16,6 +16,8 @@ export async function challenge(request,env,id,kind,user){
   AND expires_at>? AND attempts<5 AND device_hash=? AND origin=? AND (session_id IS NULL OR session_id=?) RETURNING *`)
   .bind(id,kind,now(),ctx.deviceHash,ctx.origin,user?.session.id||null).first();
  if(!row)throw new AccountError('INVALID_CHALLENGE',401);
+ // The fifth failed/invalid attempt is terminal: destroy the encrypted challenge payload.
+ if(row.attempts>=5){await env.DB.prepare("UPDATE account_challenges SET consumed_at=?,payload_cipher='attempts_exhausted' WHERE id=? AND consumed_at IS NULL").bind(now(),id).run();throw new AccountError('INVALID_CHALLENGE',401);}
  return {row,payload:await decrypt(env,row.payload_cipher,'challenge:'+id)};
 }
 async function consume(env,id){
