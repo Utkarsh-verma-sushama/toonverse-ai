@@ -32,6 +32,8 @@ FIREBASE_PROJECT_ID = "toonverse-ai"
 # release gate requires true. Comma-separated Firebase App IDs only.
 APP_CHECK_ENFORCEMENT_ENABLED = "false"
 APP_CHECK_ALLOWED_APP_IDS = ""
+# Enable only after migration 0004 is applied. Production release gate requires true.
+REPLAY_PROTECTION_ENABLED = "false"
 # Firebase Web API key restricted to Identity Toolkit, never a service-account key.
 # Missing key fails closed; required for disabled/deleted/revoked-session checks.
 FIREBASE_WEB_API_KEY = ""
