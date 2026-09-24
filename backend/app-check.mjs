@@ -32,4 +32,7 @@ export function createAppCheckVerifier({fetch:fetcher=(...a)=>fetch(...a),now=Da
   return Object.freeze({enforced:true,appId:c.sub,issuedAt:c.iat*1000,expiresAt:c.exp*1000});
  };
 }
-export const verifyAppCheckRequest=createAppCheckVerifier();
+const defaultVerifier=createAppCheckVerifier();
+export async function verifyAppCheckRequest(request,env){
+ return defaultVerifier(request,env);
+}
