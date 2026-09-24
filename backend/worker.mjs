@@ -1,5 +1,6 @@
 import { IdentityError } from "./firebase-auth.mjs";
 import { AttestationError, verifyAppCheckRequest } from "./app-check.mjs";
+import { ReplayError, consumeReplayNonce } from "./replay-guard.mjs";
 import { BillingError, getChatReceipt, expireUndispatched } from "./chat-billing.mjs";
 import { executeChat } from "./chat-execution.mjs";
 import { accountRoute } from "./account-api.mjs";
@@ -11,7 +12,7 @@ const allowedTasks=new Set(["generate","edit","understand","ocr","transcribe","t
 function cors(request,env){
  const origin=request.headers.get("origin"),headers={vary:"Origin"};
  const allowed=String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(x=>x&&x!=="null"&&x!=="*");
- if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device,x-uvenaro-csrf,x-firebase-appcheck","access-control-allow-methods":"GET,POST,DELETE,OPTIONS","access-control-max-age":"600"});
+ if(origin&&allowed.includes(origin))Object.assign(headers,{"access-control-allow-origin":origin,"access-control-allow-credentials":"true","access-control-allow-headers":"authorization,content-type,idempotency-key,x-uvenaro-device,x-uvenaro-csrf,x-firebase-appcheck,x-uvenaro-nonce","access-control-allow-methods":"GET,POST,DELETE,OPTIONS","access-control-max-age":"600"});
  return headers;
 }
 async function body(request) {
@@ -86,11 +87,11 @@ export default {async fetch(request,env={}){
    if(env.MODEL_ROUTING_ENABLED!=="true")return finish(json({code:"MODEL_ROUTING_DISABLED"},503));
    return finish(json(await routeModel(await body(request),env)));
   }
-  if(url.pathname==="/v1/chat/responses"&&request.method==="POST")return finish(await executeChat(request,env,user,body));
+  if(url.pathname==="/v1/chat/responses"&&request.method==="POST"){await consumeReplayNonce(env,user,request,"chat");return finish(await executeChat(request,env,user,body));}
   const receiptPath=url.pathname.match(/^\/v1\/chat\/requests\/([A-Za-z0-9_-]{1,128})$/);
   if(receiptPath&&request.method==="GET")return finish(json(await getChatReceipt(env,user,receiptPath[1])));
   if(url.pathname.startsWith("/v1/agents/")&&env.AGENT_EXECUTION_ENABLED!=="true")return finish(json({code:"AGENT_EXECUTION_DISABLED"},503));
-  if(url.pathname==="/v1/agents/runs"&&request.method==="POST")return finish(await createAgent(request,env,user));
+  if(url.pathname==="/v1/agents/runs"&&request.method==="POST"){await consumeReplayNonce(env,user,request,"agent");return finish(await createAgent(request,env,user));}
   let m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)$/);if(m&&request.method==="GET")return finish(await getRun(decodeURIComponent(m[1]),env,user));
   m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)\/cancel$/);if(m&&request.method==="POST")return finish(await mutateRun(decodeURIComponent(m[1]),"cancelled",env,user));
   m=url.pathname.match(/^\/v1\/agents\/runs\/([^/]+)\/approvals\/([^/]+)$/);if(m&&request.method==="POST")return finish(await decideApproval(decodeURIComponent(m[1]),decodeURIComponent(m[2]),await body(request),env,user));
@@ -98,7 +99,7 @@ export default {async fetch(request,env={}){
  }catch(error){
   if(error instanceof BillingError)return finish(json({code:error.code,...(error.receipt?{reservation:error.receipt}:{})},error.status));
   if(error instanceof AccountError)return finish(json({code:error.code},error.status));
-  if(error instanceof IdentityError||error instanceof AttestationError||error instanceof RequestError)return finish(json({code:error.code},error.status));
+  if(error instanceof IdentityError||error instanceof AttestationError||error instanceof ReplayError||error instanceof RequestError)return finish(json({code:error.code},error.status));
   if(error instanceof URIError)return finish(json({code:"INVALID_PATH"},400));
   if(error.message==="NO_ROUTE")return finish(json({code:"NO_ROUTE",message:"No policy-compliant model is currently available."},503));
   return finish(json({code:"INTERNAL_ERROR",message:"Request could not be completed."},500));
