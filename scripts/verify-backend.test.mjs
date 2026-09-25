@@ -107,6 +107,14 @@ test('owner approval is recorded once and replay rejected',async()=>{
   assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'approve');
  }finally{db.sql.close();}
 });
+test('cancellation invalidates a pending approval before it can be accepted',async()=>{
+ const db=database();try{
+  assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,202);
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:db})).status,409);
+  assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'cancelled');
+  assert.equal(db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get().decision,'pending');
+ }finally{db.sql.close();}
+});
 for(const [name,mutation] of Object.entries({'expired approval':"UPDATE agent_approvals SET expires_at='2000-01-01T00:00:00Z'",'invalid expiry':"UPDATE agent_approvals SET expires_at='nonsense'",'cancelled run':"UPDATE agent_runs SET status='cancelled'",'running run':"UPDATE agent_runs SET status='running'"}))test(`${name} cannot be approved`,async()=>{
  const db=database();try{
   db.sql.exec(mutation);
