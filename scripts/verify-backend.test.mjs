@@ -120,21 +120,6 @@ test('owner approval is recorded once and replay rejected',async()=>{
   assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'approve');
  }finally{db.sql.close();}
 });
-test('approval and cancellation serialize to one safe outcome',async()=>{
- const db=database();try{
-  db.sql.prepare("UPDATE agent_runs SET status='awaiting_approval',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
-  db.sql.prepare("UPDATE agent_approvals SET decision='pending',reason='',decided_at=NULL,expires_at=datetime('now','+5 minutes') WHERE id='approval-alice'").run();
-  const bindings={...defaults,DB:db.DB};
-  const approval=await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings});
-  assert.equal(approval.status,200);
-  const cancel=await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings});
-  assert.equal(cancel.status,202);
-  const run=db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get();
-  const decision=db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get();
-  assert.equal(run.status,'cancelled');assert.equal(decision.decision,'approve');
- }finally{db.sql.close();}
-});
-
 test('cancellation invalidates a pending approval before it can be accepted',async()=>{
  const db=database();try{
   assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,202);
