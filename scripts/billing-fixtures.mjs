@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 export const schema=readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8');
 export const migration=readFileSync(new URL('../backend/migrations/0001_atomic_chat_billing.sql',import.meta.url),'utf8');
 export const abuseMigration=readFileSync(new URL('../backend/migrations/0003_abuse_spend_hardening.sql',import.meta.url),'utf8');
+export const approvalBindingMigration=readFileSync(new URL('../backend/migrations/0007_bind_agent_approval_to_step.sql',import.meta.url),'utf8');
 export const alice={sub:'alice',verified:true};
 export const cfg={provider:'test-gateway',model:'test-text',maxInputTokens:100,maxOutputTokens:50,globalCeiling:100000};
 export const messages=[{role:'user',content:'Hello'}];
@@ -23,7 +24,7 @@ export function seedUser(sql,uid='alice',included=20,prepaid=80){
 }
 export function fixture(path=':memory:') {
  const sql=new DatabaseSync(path);sql.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;');sql.exec(schema);
- sql.exec('BEGIN;'+migration+abuseMigration+'COMMIT;');
+ sql.exec('BEGIN;'+migration+abuseMigration+approvalBindingMigration+'COMMIT;');
  seedUser(sql);
  sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,100000,new Date().toISOString());
  sql.prepare('INSERT INTO provider_price_snapshots (id,provider,model,input_microusd_per_million,output_microusd_per_million,credit_value_microusd,effective_at,retired_at,valid_until) VALUES (?,?,?,?,?,?,?,?,?)')
