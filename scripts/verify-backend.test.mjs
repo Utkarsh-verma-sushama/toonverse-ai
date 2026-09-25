@@ -132,7 +132,9 @@ test('concurrent cancellation and approval cannot both win',async()=>{
    ]);
    const run=db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get();
    const decision=db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get();
-   assert.ok([200,409].includes(approval.status));assert.ok([202,409].includes(cancel.status));
+   // SQLite may surface transient contention as 503 in this true-concurrency test.
+   // That is fail-closed: only a committed 200/202 is a winning mutation.
+   assert.ok([200,409,503].includes(approval.status));assert.ok([202,409,503].includes(cancel.status));
    if(run.status==='cancelled')assert.equal(decision.decision,'pending');
    if(decision.decision==='approve')assert.equal(run.status,'awaiting_approval');
    assert.ok(!(run.status==='cancelled'&&decision.decision==='approve'));
