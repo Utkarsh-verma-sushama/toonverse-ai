@@ -192,3 +192,15 @@ test('agent runtime configuration rejects missing provider/model and invalid har
   }
  }finally{db.sql.close();}
 });
+
+test('stale queued agent work is not claimed or billed',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',updated_at='2000-01-01T00:00:00Z' WHERE id='run-alice'").run();
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+  const message=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);
+  const row=db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'queued');
+  const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
+ }finally{db.sql.close();}
+});
