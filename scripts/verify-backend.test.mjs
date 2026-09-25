@@ -12,7 +12,7 @@ after(()=>{globalThis.fetch=originalFetch;});
 const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
 const alice=await token(),bob=await token(claims({sub:'bob'}));
 function database(){
- const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(billingMigration);sql.exec(abuseMigration);sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));
+ const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(billingMigration);sql.exec(abuseMigration);sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0006_agent_audit_trail.sql',import.meta.url),'utf8'));
  const DB={prepare(query){let values=[];return {bind(...args){values=args;return this;},async first(){return sql.prepare(query).get(...values)||null;},async run(){const out=sql.prepare(query).run(...values);return {meta:{changes:Number(out.changes)}};}};}};
  seedUser(sql);
  sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,1000000,new Date().toISOString());
@@ -479,5 +479,31 @@ test('tampered persisted agent input cannot reach budget reservation',async()=>{
    assert.equal(redelivery.acked,1);assert.equal(redelivery.retried,0);
    const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
   }
+ }finally{db.sql.close();}
+});
+
+test('agent audit trail records authoritative transitions and is immutable',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+  const bindings={...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'};
+  const message=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[message]},bindings);
+  const events=db.sql.prepare("SELECT event_type,from_state,to_state,owner_id,run_id FROM agent_audit_events WHERE run_id='run-alice' ORDER BY rowid").all();
+  assert.ok(events.some(e=>e.event_type==='claimed'&&e.from_state==='queued'&&e.to_state==='planning'));
+  assert.ok(events.some(e=>e.event_type==='runtime_failed'&&e.from_state==='planning'&&e.to_state==='failed'));
+  assert.ok(events.every(e=>e.owner_id==='alice'&&e.run_id==='run-alice'));
+  const id=db.sql.prepare("SELECT id FROM agent_audit_events WHERE run_id='run-alice' LIMIT 1").get().id;
+  assert.throws(()=>db.sql.prepare("UPDATE agent_audit_events SET owner_id='bob' WHERE id=?").run(id),/AGENT_AUDIT_IMMUTABLE/);
+  assert.throws(()=>db.sql.prepare("DELETE FROM agent_audit_events WHERE id=?").run(id),/AGENT_AUDIT_IMMUTABLE/);
+ }finally{db.sql.close();}
+});
+
+test('rejected approval replay does not create a second audit event',async()=>{
+ const db=database();try{
+  const bindings={...defaults,...db};
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings})).status,200);
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings})).status,409);
+  const events=db.sql.prepare("SELECT event_type,approval_id,decision,owner_id FROM agent_audit_events WHERE approval_id='approval-alice'").all();
+  assert.equal(events.length,1);assert.equal(events[0].event_type,'approval_decided');assert.equal(events[0].decision,'approve');assert.equal(events[0].owner_id,'alice');
  }finally{db.sql.close();}
 });
