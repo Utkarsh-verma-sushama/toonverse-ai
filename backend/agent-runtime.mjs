@@ -54,8 +54,15 @@ export async function prepareAgentExecution(env,runId,owner){
   // the reservation can be safely released without creating a reconciliation hold.
   // beginDispatch belongs immediately before a real provider request.
   await releaseChat(env,{sub:owner},reservation);
-  await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_EXECUTION_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
+  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_EXECUTION_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
    .bind(new Date().toISOString(),runId,owner).run();
+  // A concurrent cancellation may legitimately win after budget release. Any other
+  // lost transition is ambiguous and must not be reported as a successful preparation.
+  if(!terminal.meta?.changes){
+   const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();
+   if(current?.status==='cancelled')return {claimed:true,reserved:true,executed:false,cancelled:true};
+   throw fail('AGENT_TERMINAL_STATE_LOST',409);
+  }
   return {claimed:true,reserved:true,executed:false};
  }catch(error){
   let cleanupError=null;
