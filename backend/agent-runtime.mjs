@@ -11,12 +11,13 @@ export function agentConfig(env){
  if(env.AGENT_EXECUTION_ENABLED!=='true')return {enabled:false};
  const provider=String(env.AGENT_PROVIDER||''),model=String(env.AGENT_MODEL||''),route=String(env.AGENT_PROVIDER_URL||'');
  if(!/^[A-Za-z0-9._-]{1,64}$/.test(provider)||!/^[A-Za-z0-9._:-]{1,128}$/.test(model))throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
+ if(env.AGENT_PROVIDER_DISPATCH_ENABLED!=='true')return {enabled:true,dispatchEnabled:false,maxSteps:integer(env,'AGENT_MAX_STEPS',8,1,32),maxRuntimeMs:integer(env,'AGENT_MAX_RUNTIME_MS',60000,1000,300000),maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model};
  if(env.AGENT_PROVIDER_PROTOCOL!=='metered-v1'||!env.AGENT_PROVIDER_API_KEY)throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
  let url;try{url=new URL(route);}catch{throw fail('AGENT_PROVIDER_NOT_CONFIGURED');}
  if(url.protocol!=='https:'||url.origin!==env.AGENT_PROVIDER_ALLOWED_ORIGIN||url.username||url.password||url.search||url.hash)throw fail('AGENT_PROVIDER_ROUTE_NOT_ALLOWED');
  return {enabled:true,maxSteps:integer(env,'AGENT_MAX_STEPS',8,1,32),maxRuntimeMs:integer(env,'AGENT_MAX_RUNTIME_MS',60000,1000,300000),
   maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),
-  globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model,url:route};
+  globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model,url:route,dispatchEnabled:true};
 }
 const SAFE_AGENT_TOOLS=new Set(['read_project','search_project','draft_content','analyze_asset']);
 const APPROVAL_AGENT_TOOLS=new Set(['write_project','share_project','publish_project','delete_project','external_send']);
@@ -113,6 +114,12 @@ export async function prepareAgentExecution(env,runId,owner){
  let reservation=null,dispatched=false;
  try{
   reservation=await reserveAgentBudget(env,run,cfg);
+  if(!cfg.dispatchEnabled){
+   await releaseChat(env,{sub:owner},reservation);reservation=null;
+   const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_EXECUTION_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'").bind(new Date().toISOString(),runId,owner).run();
+   if(!terminal.meta?.changes){const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();if(current?.status==='cancelled')return {claimed:true,reserved:true,executed:false,cancelled:true};throw fail('AGENT_TERMINAL_STATE_LOST',409);}
+   return {claimed:true,reserved:true,executed:false};
+  }
   const active=await env.DB.prepare("UPDATE agent_runs SET status='running',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
    .bind(new Date().toISOString(),runId,owner).run();
   if(!active.meta?.changes){
