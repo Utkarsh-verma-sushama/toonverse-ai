@@ -323,7 +323,7 @@ test('agent queue lookup of a non-terminal non-queued state cannot trigger billi
  }};
  const message=queueMessage({runId:'run-alice',owner:'alice'});
  await worker.queue({messages:[message]},{...defaults,DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
- assert.equal(message.acked,1);assert.equal(message.retried,0);assert.equal(calls,1);
+ assert.equal(message.acked,1);assert.equal(message.retried,0);assert.equal(calls,0);
 });
 
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
