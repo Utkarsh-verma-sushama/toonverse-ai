@@ -32,8 +32,8 @@ export async function authorizeAgentToolForRun(env,{runId,owner,toolName,approva
  const name=String(toolName||'');
  if(!APPROVAL_AGENT_TOOLS.has(name))return authorizeAgentTool(name);
  if(!/^[A-Za-z0-9_-]{1,128}$/.test(String(runId||''))||!/^[A-Za-z0-9_-]{1,128}$/.test(String(owner||''))||!/^[A-Za-z0-9_-]{1,128}$/.test(String(approvalId||'')))throw fail('AGENT_APPROVAL_REFERENCE_INVALID',400);
- const row=await env.DB.prepare("SELECT a.decision,a.action_type,a.expires_at AS expiresAt,r.status AS runStatus FROM agent_approvals a JOIN agent_runs r ON r.id=a.run_id AND r.owner_id=a.owner_id WHERE a.id=? AND a.run_id=? AND a.owner_id=?").bind(approvalId,runId,owner).first();
- if(!row||row.decision!=='approve'||row.runStatus!=='awaiting_approval'||!Number.isFinite(Date.parse(row.expiresAt))||Date.parse(row.expiresAt)<=Date.now())throw fail('AGENT_TOOL_APPROVAL_REQUIRED',409);
+ const row=await env.DB.prepare("SELECT a.decision,a.action_type,a.expires_at AS expiresAt,a.decided_at AS decidedAt,r.status AS runStatus FROM agent_approvals a JOIN agent_runs r ON r.id=a.run_id AND r.owner_id=a.owner_id WHERE a.id=? AND a.run_id=? AND a.owner_id=?").bind(approvalId,runId,owner).first();
+ if(!row||row.decision!=='approve'||row.runStatus!=='awaiting_approval'||!Number.isFinite(Date.parse(row.expiresAt))||Date.parse(row.expiresAt)<=Date.now()||!Number.isFinite(Date.parse(row.decidedAt))||Date.parse(row.decidedAt)>Date.now())throw fail('AGENT_TOOL_APPROVAL_REQUIRED',409);
  if(String(row.action_type)!==name)throw fail('AGENT_TOOL_APPROVAL_MISMATCH',409);
  return authorizeAgentTool(name,{approvalGranted:true});
 }
