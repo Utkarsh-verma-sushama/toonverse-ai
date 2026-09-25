@@ -58,6 +58,17 @@ export function reconciliationDecision({pending=[],objects=[]}={}){
  }
  return decisions;
 }
+
+export function parseWranglerJson(text,phase='Remote D1 inspection'){
+ let value;try{value=JSON.parse(String(text));}catch{throw new Error(`${phase} returned an unreadable response. Refusing reconciliation.`);}
+ return value;
+}
+export function remoteSchemaInspectionSql(){
+ return "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger') AND name NOT LIKE 'sqlite_%' ORDER BY type,name;";
+}
+export function remoteMigrationHistorySql(){
+ return "SELECT id,name,applied_at FROM d1_migrations ORDER BY id;";
+}
 async function main(){
  const remote=process.argv.includes('--remote');if(!remote){await buildStaging();console.log('Build only. Remote deployment requires --remote and configured credentials.');return;}
  const input=deploymentInputs(process.env);await buildStaging();
@@ -72,6 +83,9 @@ async function main(){
   if(out.error||out.status!==0)throw safeWranglerFailure(phase,out);return out.stdout;
  }
  await verifyRemoteDatabase(input,process.env.CLOUDFLARE_API_TOKEN);
+ const schemaRaw=wrangler(['d1','execute','DB','--remote','--command',remoteSchemaInspectionSql(),'--json'],'Remote schema inspection');
+ const schemaPayload=parseWranglerJson(schemaRaw,'Remote schema inspection');
+ if(!Array.isArray(schemaPayload))throw new Error('Remote schema inspection returned an unexpected shape. Refusing reconciliation.');
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
  wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration');
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
