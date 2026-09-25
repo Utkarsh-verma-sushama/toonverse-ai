@@ -70,6 +70,7 @@ async function mutateRun(runId,status,env,user){
 }
 async function decideApproval(runId,approvalId,input,env,user){
  if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);
+ if(!/^[A-Za-z0-9_-]{1,128}$/.test(runId)||!/^[A-Za-z0-9_-]{1,128}$/.test(approvalId))return json({code:"INVALID_APPROVAL_REFERENCE"},400);
  if(!["approve","deny"].includes(input?.decision)||input.reason!==undefined&&(typeof input.reason!=="string"||input.reason.length>500))return json({code:"INVALID_DECISION"},400);
  const row=await env.DB.prepare("SELECT a.decision,a.expires_at AS expiresAt,r.status AS runStatus FROM agent_approvals a JOIN agent_runs r ON r.id=a.run_id AND r.owner_id=a.owner_id WHERE a.id=? AND a.run_id=? AND a.owner_id=?").bind(approvalId,runId,user.sub).first();
  if(!row)return json({code:"NOT_FOUND"},404);
