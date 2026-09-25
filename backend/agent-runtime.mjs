@@ -15,6 +15,18 @@ export function agentConfig(env){
   maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),
   globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model};
 }
+const SAFE_AGENT_TOOLS=new Set(['read_project','search_project','draft_content','analyze_asset']);
+const APPROVAL_AGENT_TOOLS=new Set(['write_project','share_project','publish_project','delete_project','external_send']);
+export function authorizeAgentTool(toolName,{approvalGranted=false}={}){
+ const name=String(toolName||'');
+ if(!/^[a-z][a-z0-9_]{0,63}$/.test(name))throw fail('AGENT_TOOL_INVALID',400);
+ if(SAFE_AGENT_TOOLS.has(name))return {tool:name,requiresApproval:false};
+ if(APPROVAL_AGENT_TOOLS.has(name)){
+  if(!approvalGranted)throw fail('AGENT_TOOL_APPROVAL_REQUIRED',409);
+  return {tool:name,requiresApproval:true};
+ }
+ throw fail('AGENT_TOOL_NOT_ALLOWED',403);
+}
 export async function claimAgentRun(env,runId,owner){
  if(!env.DB)throw fail('DATABASE_NOT_CONNECTED');
  const cfg=agentConfig(env);if(!cfg.enabled)throw fail('AGENT_EXECUTION_DISABLED');
