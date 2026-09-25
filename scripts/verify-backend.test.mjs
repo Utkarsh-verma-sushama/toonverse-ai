@@ -89,6 +89,17 @@ test('sensitive approval cannot authorize a different persisted agent step',asyn
  }finally{db.sql.close();}
 });
 
+test('sensitive approval cannot replay a started or finished agent step',async()=>{
+ for(const mutation of ["UPDATE agent_steps SET started_at=datetime('now') WHERE id='step-share'","UPDATE agent_steps SET finished_at=datetime('now') WHERE id='step-share'"]){
+  const db=database();try{
+   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
+   db.sql.exec(mutation);
+   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-share',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),e=>e.code==='AGENT_TOOL_STEP_MISMATCH');
+  }finally{db.sql.close();}
+ }
+});
+
 test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
