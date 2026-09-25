@@ -42,6 +42,7 @@ test('agent tool boundary denies unknown tools and gates irreversible actions',(
 
 test('sensitive agent tool approval is bound to owner run action and expiry',async()=>{
  const db=database();try{
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_STEP_REFERENCE_REQUIRED');
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'delete_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_MISMATCH');
@@ -73,6 +74,7 @@ test('sensitive agent tool rejects approval decided at or after expiry',async()=
 
 test('sensitive approval cannot bypass exact-step binding',async()=>{
  const db=database();try{
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),e=>e.code==='AGENT_STEP_REFERENCE_REQUIRED');
  }finally{db.sql.close();}
