@@ -1,4 +1,4 @@
-import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rm,readdir} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -113,10 +113,8 @@ async function main(){
  const historyRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],'Remote migration history inspection');
  const historyRows=wranglerRows(parseWranglerJson(historyRaw,'Remote migration history inspection'),'Remote migration history inspection');
  const appliedNames=migrationHistoryNames(historyRows);
- const localNames=(await readFile(resolve(dir,'migrations'),'utf8').catch(()=>null))===null
-  ? (await import('node:fs/promises')).readdir(resolve(dir,'migrations')).then(xs=>xs.filter(x=>/^\\d+_.+\\.sql$/.test(x)).sort())
-  : [];
- const pending= pendingMigrationNames(await localNames,appliedNames);
+ const localNames=(await readdir(resolve(dir,'migrations'))).filter(x=>/^\\d+_.+\\.sql$/.test(x)).sort();
+ const pending=pendingMigrationNames(localNames,appliedNames);
  const decisions=reconciliationDecision({pending,objects:schemaObjects});
  if(decisions.some(x=>x.action==='reconcile'))throw new Error('Verified schema/history mismatch requires explicit safe tracking reconciliation before migration apply.');
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
