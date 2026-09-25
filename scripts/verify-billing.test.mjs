@@ -296,6 +296,22 @@ test('unknown provider outcome cannot be settled or released twice',async()=>{
  }finally{done(db);}
 });
 
+test('settle versus confirmed-not-billed release has exactly one terminal winner',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'settle-release-race');await beginDispatch(db,alice,row);await markUnknown(db,alice,row);
+  const outcomes=await Promise.allSettled([
+   settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-settle-release-race'),
+   releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-settle-release-race'})
+  ]);
+  assert.equal(outcomes.filter(x=>x.status==='fulfilled').length,1);
+  assert.ok(outcomes.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));
+  const receipt=await getChatReceipt(db,alice,'settle-release-race');assert.ok(['settled','released'].includes(receipt.status));
+  assert.equal(receipt.reconciliationRequired,false);
+  const ledger=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type IN ('settle','release')").get(row.id).n;
+  assert.equal(ledger,1);invariant(db);
+ }finally{done(db);}
+});
+
 test('confirmed-not-billed reconciliation is terminal and cannot later settle',async()=>{
  const db=fixture();try{
   const row=await reserved(db,'release-terminal');await beginDispatch(db,alice,row);await markUnknown(db,alice,row);
