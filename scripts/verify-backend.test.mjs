@@ -237,6 +237,20 @@ test('agent queue delivery with wrong owner is acknowledged without billing or s
  }finally{db.sql.close();}
 });
 
+test('malformed agent queue deliveries are acknowledged before database or billing work',async()=>{
+ const poison=[
+  {},{runId:'bad/id',owner:'alice'},{runId:'run-alice',owner:''},
+  {runId:'run-alice',owner:'x'.repeat(129)}
+ ];
+ for(const payload of poison){
+  let prepared=0;
+  const DB={prepare(){prepared++;throw new Error('database must not be touched');}};
+  const message=queueMessage(payload);
+  await worker.queue({messages:[message]},{...defaults,DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);assert.equal(prepared,0);
+ }
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
