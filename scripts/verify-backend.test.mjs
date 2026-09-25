@@ -219,6 +219,19 @@ test('malformed queued agent timestamp expires without billing',async()=>{
  }finally{db.sql.close();}
 });
 
+test('null queued agent timestamp expires without billing',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',updated_at=NULL WHERE id='run-alice'").run();
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+  const message=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);
+  const row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();
+  assert.equal(row.status,'expired');assert.equal(row.error_code,'AGENT_QUEUE_STALE');
+  const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
+ }finally{db.sql.close();}
+});
+
 test('duplicate agent queue delivery cannot reserve budget twice',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
