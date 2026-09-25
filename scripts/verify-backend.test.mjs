@@ -13,7 +13,7 @@ after(()=>{globalThis.fetch=originalFetch;});
 const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
 const alice=await token(),bob=await token(claims({sub:'bob'}));
 function database(){
- const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(billingMigration);sql.exec(abuseMigration);sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0006_agent_audit_trail.sql',import.meta.url),'utf8'));
+ const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(billingMigration);sql.exec(abuseMigration);sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0006_agent_audit_trail.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0007_bind_agent_approval_to_step.sql',import.meta.url),'utf8'));
  const DB={prepare(query){let values=[];return {bind(...args){values=args;return this;},async first(){return sql.prepare(query).get(...values)||null;},async run(){const out=sql.prepare(query).run(...values);return {meta:{changes:Number(out.changes)}};}};}};
  seedUser(sql);
  sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,1000000,new Date().toISOString());
