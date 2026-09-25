@@ -31,8 +31,14 @@ export async function claimAgentRun(env,runId,owner){
  if(!run||run.status!=='planning')throw fail('AGENT_CLAIM_STATE_INVALID',409);
  if(typeof run.objective!=='string'||!run.objective.trim()||run.objective.length>4000||
     typeof run.idempotency_key!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(run.idempotency_key)){
-   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_PERSISTED_INPUT_INVALID',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
+   const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_PERSISTED_INPUT_INVALID',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
     .bind(new Date().toISOString(),runId,owner).run();
+   // Cancellation may win after the claim. Otherwise a lost quarantine transition
+   // is ambiguous and must not be treated as a successfully quarantined run.
+   if(!terminal.meta?.changes){
+    const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();
+    if(current?.status!=='cancelled')throw fail('AGENT_QUARANTINE_STATE_LOST',409);
+   }
    throw fail('AGENT_PERSISTED_INPUT_INVALID',409);
   }
  return {...run,objective:run.objective.trim()};
