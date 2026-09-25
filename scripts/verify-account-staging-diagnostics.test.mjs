@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames} from './deploy-account-staging.mjs';
+import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames,safeTrackingReconciliationSql} from './deploy-account-staging.mjs';
 
 test('classifies remote D1 permission failures without exposing provider output',()=>{
  const secret='cf-secret-token-value';
@@ -63,4 +63,25 @@ test('rejects malformed or duplicate migration history rows',()=>{
  assert.deepEqual(migrationHistoryNames([{id:1,name:'0000_baseline.sql'},{id:2,name:'0001_atomic_chat_billing.sql'}]),['0000_baseline.sql','0001_atomic_chat_billing.sql']);
  assert.throws(()=>migrationHistoryNames([{id:'1',name:'0000_baseline.sql'}]),/malformed/);
  assert.throws(()=>migrationHistoryNames([{id:1,name:'0000_baseline.sql'},{id:2,name:'0000_baseline.sql'}]),/duplicate names/);
+});
+
+test('builds atomic idempotent tracking reconciliation only for a contiguous verified prefix',()=>{
+ const local=['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql'];
+ const sql=safeTrackingReconciliationSql([{migration:'0002_account_sessions.sql',action:'reconcile'}],local,['0000_baseline.sql','0001_atomic_chat_billing.sql']);
+ assert.match(sql,/^BEGIN IMMEDIATE;/);
+ assert.match(sql,/INSERT INTO d1_migrations/);
+ assert.match(sql,/WHERE NOT EXISTS/);
+ assert.match(sql,/0002_account_sessions\.sql/);
+ assert.match(sql,/COMMIT;$/);
+});
+
+test('tracking reconciliation is a no-op without reconcile decisions',()=>{
+ assert.equal(safeTrackingReconciliationSql([{migration:'0002_account_sessions.sql',action:'apply'}],['0002_account_sessions.sql'],[]),null);
+});
+
+test('tracking reconciliation rejects non-prefix, already-applied and unsafe names',()=>{
+ const local=['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql'];
+ assert.throws(()=>safeTrackingReconciliationSql([{migration:'0002_account_sessions.sql',action:'reconcile'}],local,['0000_baseline.sql']),/contiguous migration prefix/);
+ assert.throws(()=>safeTrackingReconciliationSql([{migration:'0000_baseline.sql',action:'reconcile'}],local,['0000_baseline.sql']),/Unsafe migration reconciliation request/);
+ assert.throws(()=>safeTrackingReconciliationSql([{migration:'../evil.sql',action:'reconcile'}],local,[]),/Unsafe migration reconciliation request/);
 });
