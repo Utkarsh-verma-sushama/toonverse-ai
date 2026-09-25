@@ -51,6 +51,15 @@ test('sensitive agent tool approval is bound to owner run action and expiry',asy
  }finally{db.sql.close();}
 });
 
+test('sensitive agent tool rejects forged approval decision timestamps',async()=>{
+ for(const decidedAt of [null,'nonsense','2999-01-01T00:00:00Z']){
+  const db=database();try{
+   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(decidedAt);
+   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
+  }finally{db.sql.close();}
+ }
+});
+
 test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
