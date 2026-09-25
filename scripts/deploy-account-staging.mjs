@@ -1,4 +1,4 @@
-import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rm,readdir} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -37,6 +37,76 @@ export function safeWranglerFailure(phase,out={}){
  const category=classifyRemoteFailure(raw);
  return new Error(`${phase} failed (${category}); raw provider output and credential values were suppressed.`);
 }
+
+const reconciliationFingerprints={
+ '0002_account_sessions.sql':{
+  tables:['account_profiles','account_sessions','account_access_tokens','account_refresh_tokens','account_security_events','account_rate_limits','account_challenges','account_deletion_requests'],
+  indexes:['idx_account_sessions_owner','idx_account_access_expiry','idx_account_refresh_session','idx_account_security_owner','idx_account_rate_expiry','idx_account_deletion_pending'],
+  triggers:['account_security_no_update']
+ }
+};
+export function reconciliationDecision({pending=[],objects=[]}={}){
+ const names=new Set(objects.map(x=>x?.name).filter(Boolean));
+ const decisions=[];
+ for(const migration of pending){
+  const fp=reconciliationFingerprints[migration];
+  if(!fp){decisions.push({migration,action:'apply'});continue;}
+  const expected=[...fp.tables,...fp.indexes,...fp.triggers],present=expected.filter(x=>names.has(x));
+  if(present.length===0){decisions.push({migration,action:'apply'});continue;}
+  if(present.length!==expected.length)throw new Error('Partial staging schema detected. Refusing automatic migration-state reconciliation.');
+  decisions.push({migration,action:'reconcile'});
+ }
+ return decisions;
+}
+
+export function parseWranglerJson(text,phase='Remote D1 inspection'){
+ let value;try{value=JSON.parse(String(text));}catch{throw new Error(`${phase} returned an unreadable response. Refusing reconciliation.`);}
+ return value;
+}
+export function remoteSchemaInspectionSql(){
+ return "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger') AND name NOT LIKE 'sqlite_%' ORDER BY type,name;";
+}
+export function remoteMigrationHistorySql(){
+ return "SELECT id,name,applied_at FROM d1_migrations ORDER BY id;";
+}
+
+export function wranglerRows(payload,phase='Remote D1 inspection'){
+ if(!Array.isArray(payload)||payload.length!==1||payload[0]?.success!==true||!Array.isArray(payload[0]?.results))throw new Error(`${phase} returned an unexpected shape. Refusing reconciliation.`);
+ return payload[0].results;
+}
+export function migrationHistoryNames(rows=[]){
+ const names=[];
+ for(const row of rows){
+  if(!Number.isInteger(row?.id)||typeof row?.name!=='string'||!row.name.trim())throw new Error('Remote migration history is malformed. Refusing reconciliation.');
+  names.push(row.name.trim());
+ }
+ if(new Set(names).size!==names.length)throw new Error('Remote migration history contains duplicate names. Refusing reconciliation.');
+ return names;
+}
+
+export function pendingMigrationNames(localNames=[],appliedNames=[]){
+ if(!Array.isArray(localNames)||!localNames.length||localNames.some(x=>typeof x!=='string'||!x.trim()))throw new Error('Local migration manifest is invalid. Refusing reconciliation.');
+ const local=localNames.map(x=>x.trim()),applied=new Set(appliedNames);
+ if(new Set(local).size!==local.length)throw new Error('Local migration manifest contains duplicate names. Refusing reconciliation.');
+ for(const name of applied)if(!local.includes(name))throw new Error('Remote migration history contains an unknown migration. Refusing reconciliation.');
+ let seenPending=false;
+ for(const name of local){if(!applied.has(name))seenPending=true;else if(seenPending)throw new Error('Remote migration history is non-contiguous. Refusing reconciliation.');}
+ return local.filter(name=>!applied.has(name));
+}
+
+export function safeTrackingReconciliationSql(decisions=[],localNames=[],appliedNames=[]){
+ const reconcile=decisions.filter(x=>x.action==='reconcile').map(x=>x.migration);
+ if(!reconcile.length)return null;
+ const applied=new Set(appliedNames);
+ for(const name of reconcile){
+  if(!localNames.includes(name)||applied.has(name)||!/^[0-9]{4}_[A-Za-z0-9_.-]+\.sql$/.test(name))throw new Error('Unsafe migration reconciliation request. Refusing tracking mutation.');
+ }
+ const firstMissing=localNames.findIndex(x=>!applied.has(x));
+ const expected=localNames.slice(firstMissing,firstMissing+reconcile.length);
+ if(expected.length!==reconcile.length||expected.some((x,i)=>x!==reconcile[i]))throw new Error('Reconciliation is not a contiguous migration prefix. Refusing tracking mutation.');
+ const q=s=>"'"+s.replaceAll("'","''")+"'";
+ return 'BEGIN IMMEDIATE; '+reconcile.map(name=>`INSERT INTO d1_migrations (name, applied_at) SELECT ${q(name)}, datetime('now') WHERE NOT EXISTS (SELECT 1 FROM d1_migrations WHERE name=${q(name)});`).join(' ')+' COMMIT;';
+}
 async function main(){
  const remote=process.argv.includes('--remote');if(!remote){await buildStaging();console.log('Build only. Remote deployment requires --remote and configured credentials.');return;}
  const input=deploymentInputs(process.env);await buildStaging();
@@ -51,6 +121,22 @@ async function main(){
   if(out.error||out.status!==0)throw safeWranglerFailure(phase,out);return out.stdout;
  }
  await verifyRemoteDatabase(input,process.env.CLOUDFLARE_API_TOKEN);
+ const schemaRaw=wrangler(['d1','execute','DB','--remote','--command',remoteSchemaInspectionSql(),'--json'],'Remote schema inspection');
+ const schemaPayload=parseWranglerJson(schemaRaw,'Remote schema inspection');
+ const schemaObjects=wranglerRows(schemaPayload,'Remote schema inspection');
+ const historyRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],'Remote migration history inspection');
+ const historyRows=wranglerRows(parseWranglerJson(historyRaw,'Remote migration history inspection'),'Remote migration history inspection');
+ const appliedNames=migrationHistoryNames(historyRows);
+ const localNames=(await readdir(resolve(dir,'migrations'))).filter(x=>/^\\d+_.+\\.sql$/.test(x)).sort();
+ const pending=pendingMigrationNames(localNames,appliedNames);
+ const decisions=reconciliationDecision({pending,objects:schemaObjects});
+ const reconciliationSql=safeTrackingReconciliationSql(decisions,localNames,appliedNames);
+ if(reconciliationSql){
+  wrangler(['d1','execute','DB','--remote','--command',reconciliationSql],'Remote migration tracking reconciliation');
+  const verifyRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],'Post-reconciliation history verification');
+  const verified=migrationHistoryNames(wranglerRows(parseWranglerJson(verifyRaw,'Post-reconciliation history verification'),'Post-reconciliation history verification'));
+  pendingMigrationNames(localNames,verified);
+ }
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
  wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration');
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
