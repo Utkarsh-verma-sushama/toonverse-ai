@@ -50,7 +50,8 @@ test('agent execution releases reservation before terminal failure state',async(
   const reservation=db.sql.prepare("SELECT status FROM usage_reservations WHERE owner_id='alice' ORDER BY rowid DESC LIMIT 1").get();
   assert.equal(reservation.status,'released');
   const run=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();
-  assert.deepEqual(run,{status:'failed',error_code:'AGENT_RUNTIME_EXECUTION_NOT_CONNECTED'});
+  assert.equal(run.status,'failed');
+  assert.equal(run.error_code,'AGENT_RUNTIME_EXECUTION_NOT_CONNECTED');
  }finally{db.sql.close();}
 });
 test('agent queue consumer drops malformed, foreign-owner and terminal messages',async()=>{
