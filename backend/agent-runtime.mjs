@@ -42,6 +42,8 @@ export async function authorizeAgentToolForRun(env,{runId,owner,toolName,approva
   const step=await env.DB.prepare("SELECT s.tool_name AS toolName,s.status,s.input_hash AS inputHash,s.started_at AS startedAt,s.finished_at AS finishedAt,r.owner_id AS ownerId FROM agent_steps s JOIN agent_runs r ON r.id=s.run_id WHERE s.id=? AND s.run_id=?").bind(stepId,runId).first();
   if(!step||step.ownerId!==owner||step.toolName!==name||!['pending','awaiting_approval'].includes(String(step.status))||step.startedAt!==null||step.finishedAt!==null)throw fail('AGENT_TOOL_STEP_MISMATCH',409);
   if(typeof inputHash!=='string'||!/^[a-f0-9]{64}$/.test(inputHash)||typeof step.inputHash!=='string'||step.inputHash!==inputHash)throw fail('AGENT_TOOL_INPUT_MISMATCH',409);
+  const claimed=await env.DB.prepare("UPDATE agent_steps SET status='running',started_at=? WHERE id=? AND run_id=? AND tool_name=? AND input_hash=? AND status IN ('pending','awaiting_approval') AND started_at IS NULL AND finished_at IS NULL").bind(new Date().toISOString(),stepId,runId,name,inputHash).run();
+  if(!claimed.meta?.changes)throw fail('AGENT_TOOL_STEP_ALREADY_CLAIMED',409);
  }
  return authorizeAgentTool(name,{approvalGranted:true});
 }
