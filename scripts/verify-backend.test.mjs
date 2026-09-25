@@ -128,17 +128,18 @@ test('approved approval cannot be rebound to a mismatched action',()=>{
  }finally{db.sql.close();}
 });
 
-test('sensitive steps cannot overlap within the same agent run',async()=>{
+test('sensitive steps cannot overlap within the same agent run even with independently valid approvals',async()=>{
  const db=database();try{
+  const now=new Date().toISOString();
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-one','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-two','run-alice',2,'share_project','awaiting_approval','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')").run();
-  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-one',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-one',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(now);
+  db.sql.prepare("INSERT INTO agent_approvals (id,run_id,owner_id,action_type,summary,decision,reason,expires_at,decided_at,step_id,input_hash) VALUES ('approval-two','run-alice','alice','share_project','second sensitive step','approve','',?,?,'step-two','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')").run(new Date(Date.now()+3600000).toISOString(),now);
   await authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-one',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'});
-  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-two',inputHash:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'}),e=>e.code==='AGENT_TOOL_APPROVAL_STEP_MISMATCH');
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-two',stepId:'step-two',inputHash:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'}),e=>e.code==='AGENT_TOOL_STEP_ALREADY_CLAIMED');
   const blocked=db.sql.prepare("SELECT status,started_at AS startedAt FROM agent_steps WHERE id='step-two'").get();assert.equal(blocked.status,'awaiting_approval');assert.equal(blocked.startedAt,null);
  }finally{db.sql.close();}
 });
-
 test('one approval cannot authorize a different same-action step',async()=>{
  const db=database();try{
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
@@ -238,6 +239,12 @@ test('malformed agent references fail closed without changing state',async()=>{
   assert.equal((await call('/v1/agents/runs/run-alice/approvals/'+bad,{method:'POST',body:{decision:'approve'},bindings:db})).status,400);
   assert.equal((await call('/v1/agents/runs/'+bad+'/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:db})).status,400);
   assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'awaiting_approval');
+  assert.equal(db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get().decision,'pending');
+ }finally{db.sql.close();}
+});
+test('database cannot persist an approved approval without exact step binding',()=>{
+ const db=database();try{
+  assert.throws(()=>db.sql.prepare("UPDATE agent_approvals SET decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString()),/AGENT_APPROVAL_STEP_BINDING_REQUIRED/);
   assert.equal(db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get().decision,'pending');
  }finally{db.sql.close();}
 });
