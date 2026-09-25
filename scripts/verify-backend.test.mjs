@@ -41,6 +41,18 @@ test('agent queue consumer claims once and duplicate delivery cannot execute twi
   row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'failed');assert.equal(row.error_code,'AGENT_RUNTIME_EXECUTION_NOT_CONNECTED');
  }finally{db.sql.close();}
 });
+test('agent execution releases reservation before terminal failure state',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
+  const message=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);
+  const reservation=db.sql.prepare("SELECT status FROM usage_reservations WHERE owner_id='alice' ORDER BY rowid DESC LIMIT 1").get();
+  assert.equal(reservation.status,'released');
+  const run=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();
+  assert.deepEqual(run,{status:'failed',error_code:'AGENT_RUNTIME_EXECUTION_NOT_CONNECTED'});
+ }finally{db.sql.close();}
+});
 test('agent queue consumer drops malformed, foreign-owner and terminal messages',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='completed' WHERE id='run-alice'").run();
