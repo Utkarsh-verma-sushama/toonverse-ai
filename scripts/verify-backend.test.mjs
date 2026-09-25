@@ -173,3 +173,22 @@ test('preflight succeeds without contacting identity service',async()=>{
  const response=await call('/v1/chat/responses',{method:'OPTIONS',value:null,headers:{origin:'https://uvenaro.com'}});
  assert.equal(response.status,204);assert.match(response.headers.get('access-control-allow-headers'),/authorization/);
 });
+
+// Agent runtime configuration must fail closed before any database/provider work.
+test('agent runtime configuration rejects missing provider/model and invalid hard limits',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
+  for(const bindings of [
+   {AGENT_PROVIDER:'',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'},
+   {AGENT_PROVIDER:'test-provider',AGENT_MODEL:'',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'},
+   {AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_MAX_STEPS:'0',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'},
+   {AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_MAX_RUNTIME_MS:'999999999',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'},
+   {AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'0'}
+  ]){
+   const message=queueMessage({runId:'run-alice',owner:'alice'});
+   await worker.queue({messages:[message]},{...defaults,DB:db.DB,...bindings});
+   assert.equal(message.acked,0);assert.equal(message.retried,1);
+   assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'queued');
+  }
+ }finally{db.sql.close();}
+});
