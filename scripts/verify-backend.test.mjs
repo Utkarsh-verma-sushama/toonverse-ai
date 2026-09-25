@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import worker from '../backend/worker.mjs';
-import {authorizeAgentTool} from '../backend/agent-runtime.mjs';
+import {authorizeAgentTool,authorizeAgentToolForRun} from '../backend/agent-runtime.mjs';
 import {env, claims, token, mockIdentity} from './security-fixtures.mjs';
 import {accountEnv,accountDatabase,seedManaged} from './account-fixtures.mjs';
 import {migration as billingMigration,abuseMigration,seedUser} from './billing-fixtures.mjs';
@@ -38,6 +38,17 @@ test('agent tool boundary denies unknown tools and gates irreversible actions',(
   assert.deepEqual(authorizeAgentTool(name,{approvalGranted:true}),{tool:name,requiresApproval:true});
  }
  for(const name of ['shell','http_request','admin','../escape','',null,'A'.repeat(65)])assert.throws(()=>authorizeAgentTool(name),e=>['AGENT_TOOL_INVALID','AGENT_TOOL_NOT_ALLOWED'].includes(e.code));
+});
+
+test('sensitive agent tool approval is bound to owner run action and expiry',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  assert.deepEqual(await authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),{tool:'share_project',requiresApproval:true});
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'delete_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_MISMATCH');
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'bob',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
+  db.sql.prepare("UPDATE agent_approvals SET expires_at='2000-01-01T00:00:00Z' WHERE id='approval-alice'").run();
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
+ }finally{db.sql.close();}
 });
 
 test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
