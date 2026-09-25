@@ -42,7 +42,7 @@ test('agent tool boundary denies unknown tools and gates irreversible actions',(
 
 test('sensitive agent tool approval is bound to owner run action and expiry',async()=>{
  const db=database();try{
-  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_STEP_REFERENCE_REQUIRED');
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'delete_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_MISMATCH');
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'bob',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
@@ -54,7 +54,7 @@ test('sensitive agent tool approval is bound to owner run action and expiry',asy
 test('sensitive agent tool rejects forged approval decision timestamps',async()=>{
  for(const decidedAt of [null,'nonsense','2999-01-01T00:00:00Z']){
   const db=database();try{
-   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(decidedAt);
+   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(decidedAt);
    await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
   }finally{db.sql.close();}
  }
@@ -63,7 +63,7 @@ test('sensitive agent tool rejects forged approval decision timestamps',async()=
 test('sensitive agent tool rejects approval decided at or after expiry',async()=>{
  for(const [decidedAt,expiresAt] of [['2099-01-01T00:00:00Z','2099-01-01T00:00:00Z'],['2099-01-02T00:00:00Z','2099-01-01T00:00:00Z']]){
   const db=database();try{
-   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=?,expires_at=? WHERE id='approval-alice'").run(decidedAt,expiresAt);
+   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=?,expires_at=? WHERE id='approval-alice'").run(decidedAt,expiresAt);
    await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
   }finally{db.sql.close();}
  }
@@ -71,7 +71,7 @@ test('sensitive agent tool rejects approval decided at or after expiry',async()=
 
 test('sensitive approval cannot bypass exact-step binding',async()=>{
  const db=database();try{
-  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),e=>e.code==='AGENT_STEP_REFERENCE_REQUIRED');
  }finally{db.sql.close();}
 });
@@ -79,7 +79,7 @@ test('sensitive approval cannot bypass exact-step binding',async()=>{
 test('sensitive approval cannot authorize a different persisted agent step',async()=>{
  const db=database();try{
   const now=new Date().toISOString();
-  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(now);
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(now);
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-delete','run-alice',2,'delete_project','awaiting_approval','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')").run();
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-delete',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),e=>e.code==='AGENT_TOOL_STEP_MISMATCH');
@@ -91,7 +91,7 @@ test('sensitive approval cannot authorize a different persisted agent step',asyn
 
 test('sensitive approval atomically claims exact step only once',async()=>{
  const db=database();try{
-  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   assert.deepEqual(await authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-share',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),{tool:'share_project',requiresApproval:true});
   const claimed=db.sql.prepare("SELECT status,started_at AS startedAt FROM agent_steps WHERE id='step-share'").get();
@@ -107,7 +107,7 @@ test('atomic step claim revalidates persisted approval state',async()=>{
   "UPDATE agent_runs SET status='cancelled' WHERE id='run-alice'"
  ]){
   const db=database();try{
-   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
    db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
    // Simulate authoritative state changing before the atomic claim boundary.
    db.sql.exec(mutation);
@@ -119,7 +119,7 @@ test('atomic step claim revalidates persisted approval state',async()=>{
 
 test('sensitive steps cannot overlap within the same agent run',async()=>{
  const db=database();try{
-  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-one','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-two','run-alice',2,'share_project','awaiting_approval','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')").run();
   await authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-one',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'});
@@ -128,10 +128,19 @@ test('sensitive steps cannot overlap within the same agent run',async()=>{
  }finally{db.sql.close();}
 });
 
+test('one approval cannot authorize a different same-action step',async()=>{
+ const db=database();try{
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share-two','run-alice',2,'share_project','awaiting_approval','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')").run();
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-share-two',inputHash:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'}),e=>e.code==='AGENT_TOOL_APPROVAL_STEP_MISMATCH');
+ }finally{db.sql.close();}
+});
+
 test('sensitive approval cannot replay a started or finished agent step',async()=>{
  for(const mutation of ["UPDATE agent_steps SET started_at=datetime('now') WHERE id='step-share'","UPDATE agent_steps SET finished_at=datetime('now') WHERE id='step-share'"]){
   const db=database();try{
-   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
    db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
    db.sql.exec(mutation);
    await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-share',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),e=>e.code==='AGENT_TOOL_STEP_MISMATCH');
