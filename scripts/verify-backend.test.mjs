@@ -43,7 +43,7 @@ test('agent tool boundary denies unknown tools and gates irreversible actions',(
 test('sensitive agent tool approval is bound to owner run action and expiry',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
-  assert.deepEqual(await authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),{tool:'share_project',requiresApproval:true});
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_STEP_REFERENCE_REQUIRED');
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'delete_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_MISMATCH');
   await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'bob',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
   db.sql.prepare("UPDATE agent_approvals SET expires_at='2000-01-01T00:00:00Z' WHERE id='approval-alice'").run();
@@ -67,6 +67,13 @@ test('sensitive agent tool rejects approval decided at or after expiry',async()=
    await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
   }finally{db.sql.close();}
  }
+});
+
+test('sensitive approval cannot bypass exact-step binding',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),e=>e.code==='AGENT_STEP_REFERENCE_REQUIRED');
+ }finally{db.sql.close();}
 });
 
 test('sensitive approval cannot authorize a different persisted agent step',async()=>{
