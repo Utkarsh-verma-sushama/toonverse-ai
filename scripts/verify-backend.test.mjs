@@ -315,15 +315,15 @@ test('agent queue owner lookup mismatch fails closed before execution',async()=>
 });
 
 test('agent queue lookup of a non-terminal non-queued state cannot trigger billing',async()=>{
- let calls=0;
- const DB={prepare(sql){
-  calls++;
-  if(!String(sql).includes('SELECT status,owner_id AS owner FROM agent_runs'))throw new Error('execution boundary must not be reached');
-  return {bind(){return {first:async()=>({status:'planning',owner:'alice'})}}};
- }};
- const message=queueMessage({runId:'run-alice',owner:'alice'});
- await worker.queue({messages:[message]},{...defaults,DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
- assert.equal(message.acked,1);assert.equal(message.retried,0);assert.equal(calls,1);
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='planning',objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+  const message=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);
+  assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'planning');
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,before);
+ }finally{db.sql.close();}
 });
 
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
