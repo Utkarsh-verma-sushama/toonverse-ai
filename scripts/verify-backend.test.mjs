@@ -54,6 +54,7 @@ test('sensitive agent tool approval is bound to owner run action and expiry',asy
 test('sensitive agent tool rejects forged approval decision timestamps',async()=>{
  for(const decidedAt of [null,'nonsense','2999-01-01T00:00:00Z']){
   const db=database();try{
+   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
    db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=? WHERE id='approval-alice'").run(decidedAt);
    await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
   }finally{db.sql.close();}
@@ -63,6 +64,7 @@ test('sensitive agent tool rejects forged approval decision timestamps',async()=
 test('sensitive agent tool rejects approval decided at or after expiry',async()=>{
  for(const [decidedAt,expiresAt] of [['2099-01-01T00:00:00Z','2099-01-01T00:00:00Z'],['2099-01-02T00:00:00Z','2099-01-01T00:00:00Z']]){
   const db=database();try{
+   db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
    db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',decision='approve',decided_at=?,expires_at=? WHERE id='approval-alice'").run(decidedAt,expiresAt);
    await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice'}),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
   }finally{db.sql.close();}
