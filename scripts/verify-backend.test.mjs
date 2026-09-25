@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import worker from '../backend/worker.mjs';
+import {authorizeAgentTool} from '../backend/agent-runtime.mjs';
 import {env, claims, token, mockIdentity} from './security-fixtures.mjs';
 import {accountEnv,accountDatabase,seedManaged} from './account-fixtures.mjs';
 import {migration as billingMigration,abuseMigration,seedUser} from './billing-fixtures.mjs';
@@ -30,6 +31,15 @@ async function call(path,{method='GET',value=alice,body,headers={},bindings={}}=
  }finally{if(!bindings.sql)db.sql.close();}
 }
 function queueMessage(body){let acked=0,retried=0;return {body,ack(){acked++;},retry(){retried++;},get acked(){return acked;},get retried(){return retried;}};}
+test('agent tool boundary denies unknown tools and gates irreversible actions',()=>{
+ for(const name of ['read_project','search_project','draft_content','analyze_asset'])assert.deepEqual(authorizeAgentTool(name),{tool:name,requiresApproval:false});
+ for(const name of ['write_project','share_project','publish_project','delete_project','external_send']){
+  assert.throws(()=>authorizeAgentTool(name),e=>e.code==='AGENT_TOOL_APPROVAL_REQUIRED');
+  assert.deepEqual(authorizeAgentTool(name,{approvalGranted:true}),{tool:name,requiresApproval:true});
+ }
+ for(const name of ['shell','http_request','admin','../escape','',null,'A'.repeat(65)])assert.throws(()=>authorizeAgentTool(name),e=>['AGENT_TOOL_INVALID','AGENT_TOOL_NOT_ALLOWED'].includes(e.code));
+});
+
 test('agent queue consumer claims once and duplicate delivery cannot execute twice',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued' WHERE id='run-alice'").run();
