@@ -73,8 +73,14 @@ export async function prepareAgentExecution(env,runId,owner){
   // Never hide a reservation-cleanup failure: an uncertain reservation must stay
   // visible for reconciliation instead of being reported as an ordinary agent failure.
   const code=String(cleanupError?.code||error?.code||'AGENT_BUDGET_RESERVATION_FAILED').slice(0,128);
-  await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code=?,updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
+  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code=?,updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
    .bind(code,new Date().toISOString(),runId,owner).run();
+  // Cancellation may legitimately win while cleanup is in flight. Any other lost
+  // failure transition is ambiguous and must remain fail-closed.
+  if(!terminal.meta?.changes){
+   const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();
+   if(current?.status!=='cancelled')throw fail('AGENT_FAILURE_STATE_LOST',409);
+  }
   if(cleanupError)throw cleanupError;
   throw error;
  }
