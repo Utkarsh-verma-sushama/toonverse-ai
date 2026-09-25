@@ -56,7 +56,16 @@ async function createAgent(request,env,user){
   throw error;
  }
  try{await env.AGENT_QUEUE.send({runId,owner:user.sub});}
- catch{await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='QUEUE_DISPATCH_FAILED',updated_at=? WHERE id=? AND owner_id=? AND status='queued'").bind(new Date().toISOString(),runId,user.sub).run();return json({code:"AGENT_QUEUE_UNAVAILABLE"},503);}
+ catch{
+  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='QUEUE_DISPATCH_FAILED',updated_at=? WHERE id=? AND owner_id=? AND status='queued'").bind(new Date().toISOString(),runId,user.sub).run();
+  if(!terminal.meta?.changes){
+   const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();
+   // Cancellation may legitimately win while queue dispatch is failing. Any run
+   // still queued here would leak active capacity without executable work.
+   if(current?.status==='queued')return json({code:"AGENT_QUEUE_STATE_LOST"},503);
+  }
+  return json({code:"AGENT_QUEUE_UNAVAILABLE"},503);
+ }
  return json(run,202);
 }
 async function getRun(runId,env,user){
