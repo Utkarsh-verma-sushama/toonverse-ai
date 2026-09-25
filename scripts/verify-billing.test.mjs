@@ -105,8 +105,9 @@ test('settlement uses its immutable original quote after that quote is retired',
 });
 test('repeated and concurrent settlement charges only once',async()=>{
  const db=fixture();try{const row=await reserved(db);await beginDispatch(db,alice,row);
- const results=await Promise.all(Array.from({length:10},()=>settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-1')));
- assert.ok(results.every(x=>x.credits===2));assert.equal(balance(db).included,18);
+ const results=await Promise.allSettled(Array.from({length:10},()=>settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-1')));
+ assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal(results.find(x=>x.status==='fulfilled').value.credits,2);
+ assert.ok(results.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));assert.equal(balance(db).included,18);
  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE event_type='settle'").get().n,1);
  await assert.rejects(settleChat(db,alice,row,{inputTokens:20,outputTokens:5},'provider-1'),fails('RESERVATION_FINALIZED'));
  }finally{done(db);}
