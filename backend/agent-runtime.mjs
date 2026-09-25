@@ -20,7 +20,13 @@ export async function claimAgentRun(env,runId,owner){
  const cfg=agentConfig(env);if(!cfg.enabled)throw fail('AGENT_EXECUTION_DISABLED');
  const result=await env.DB.prepare("UPDATE agent_runs SET status='planning',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND julianday(updated_at)>=julianday('now','-5 minutes')")
   .bind(new Date().toISOString(),runId,owner).run();
- if(!result.meta?.changes)return null;
+ if(!result.meta?.changes){
+  // A stale queued delivery must not occupy an active-run slot forever. Expire it
+  // atomically; a concurrent worker that already moved it out of queued is untouched.
+  await env.DB.prepare("UPDATE agent_runs SET status='expired',error_code='AGENT_QUEUE_STALE',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND julianday(updated_at)<julianday('now','-5 minutes')")
+   .bind(new Date().toISOString(),runId,owner).run();
+  return null;
+ }
  const run=await env.DB.prepare('SELECT id,owner_id,status,objective,idempotency_key FROM agent_runs WHERE id=? AND owner_id=?').bind(runId,owner).first();
  if(!run||run.status!=='planning')throw fail('AGENT_CLAIM_STATE_INVALID',409);
  if(typeof run.objective!=='string'||!run.objective.trim()||run.objective.length>4000||
