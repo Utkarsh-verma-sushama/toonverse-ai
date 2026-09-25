@@ -291,6 +291,17 @@ test('non-queued active agent redeliveries cannot reserve budget again',async()=
  }finally{db.sql.close();}
 });
 
+test('agent queue database lookup failure retries without billing',async()=>{
+ let prepared=0;
+ const DB={prepare(){
+  prepared++;
+  return {bind(){return {first:async()=>{throw new Error('database unavailable');}}}};
+ }};
+ const message=queueMessage({runId:'run-alice',owner:'alice'});
+ await worker.queue({messages:[message]},{...defaults,DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+ assert.equal(message.acked,0);assert.equal(message.retried,1);assert.equal(prepared,1);
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
