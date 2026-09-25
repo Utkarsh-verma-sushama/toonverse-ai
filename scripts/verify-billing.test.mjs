@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {setTimeout as delay} from 'node:timers/promises';
-import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,getChatReceipt,expireUndispatched,usageCost} from '../backend/chat-billing.mjs';
+import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,getChatReceipt,expireUndispatched,stopBilling,usageCost} from '../backend/chat-billing.mjs';
 import {fixture,balance,invariant,d1,seedUser,schema,migration,abuseMigration,alice,cfg,messages} from './billing-fixtures.mjs';
 const fails=code=>error=>error.code===code;
 async function reserved(db,key='key-1',user=alice,options=cfg){return reserveChat(db,user,key,messages,options);}
@@ -192,6 +192,32 @@ test('billing kill switch is checked again immediately before dispatch',async()=
  await releaseChat(db,alice,row);assert.equal(balance(db).reserved,0);
  }finally{done(db);}
 });
+test('emergency billing shutdown blocks new paid work but preserves started reconciliation',async()=>{
+ const db=fixture();try{
+  db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
+  const started=await reserved(db,'shutdown-started');await beginDispatch(db,alice,started);await markUnknown(db,alice,started,'NETWORK_AFTER_DISPATCH');
+  const undispatched=await reserved(db,'shutdown-undispatched');
+  await stopBilling(db);
+  await assert.rejects(reserved(db,'shutdown-new'),fails('BILLING_DISABLED'));
+  await assert.rejects(beginDispatch(db,alice,undispatched),fails('DISPATCH_NOT_ALLOWED'));
+  await releaseChat(db,alice,undispatched);
+  await assert.rejects(releaseChat(db,alice,started),fails('RECONCILIATION_REQUIRED'));
+  const settled=await settleChat(db,alice,started,{inputTokens:10,outputTokens:5},'provider-shutdown-started');
+  assert.equal(settled.status,'settled');assert.equal(settled.reconciliationRequired,false);invariant(db);
+ }finally{done(db);}
+});
+
+test('emergency shutdown never converts uncertain provider work into a free release',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'shutdown-unknown');await beginDispatch(db,alice,row);await markUnknown(db,alice,row,'TIMEOUT_AFTER_DISPATCH');
+  await stopBilling(db);await expireUndispatched(db);
+  const receipt=await getChatReceipt(db,alice,'shutdown-unknown');assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);
+  await assert.rejects(releaseChat(db,alice,row),fails('RECONCILIATION_REQUIRED'));
+  const released=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-shutdown-no-charge'});
+  assert.equal(released.status,'released');assert.equal(released.reconciliationRequired,false);invariant(db);
+ }finally{done(db);}
+});
+
 test('integer arithmetic rounds money and credits up without floating point drift',()=>{
  assert.deepEqual(usageCost(1,1,{inputRate:1,outputRate:1,creditValue:10}),{cost:1,credits:1});
  assert.deepEqual(usageCost(12000,8000,{inputRate:1e9,outputRate:1e9,creditValue:7}),{cost:20000000,credits:2857143});
