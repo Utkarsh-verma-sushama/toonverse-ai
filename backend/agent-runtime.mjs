@@ -18,7 +18,7 @@ export function agentConfig(env){
 export async function claimAgentRun(env,runId,owner){
  if(!env.DB)throw fail('DATABASE_NOT_CONNECTED');
  const cfg=agentConfig(env);if(!cfg.enabled)throw fail('AGENT_EXECUTION_DISABLED');
- const result=await env.DB.prepare("UPDATE agent_runs SET status='planning',updated_at=? WHERE id=? AND owner_id=? AND status='queued'")
+ const result=await env.DB.prepare("UPDATE agent_runs SET status='planning',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND julianday(updated_at)>=julianday('now','-5 minutes')")
   .bind(new Date().toISOString(),runId,owner).run();
  if(!result.meta?.changes)return null;
  return env.DB.prepare('SELECT id,owner_id,status,objective,idempotency_key FROM agent_runs WHERE id=? AND owner_id=?').bind(runId,owner).first();
