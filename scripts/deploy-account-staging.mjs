@@ -37,6 +37,27 @@ export function safeWranglerFailure(phase,out={}){
  const category=classifyRemoteFailure(raw);
  return new Error(`${phase} failed (${category}); raw provider output and credential values were suppressed.`);
 }
+
+const reconciliationFingerprints={
+ '0002_account_sessions.sql':{
+  tables:['account_profiles','account_sessions','account_access_tokens','account_refresh_tokens','account_security_events','account_rate_limits','account_challenges','account_deletion_requests'],
+  indexes:['idx_account_sessions_owner','idx_account_access_expiry','idx_account_refresh_session','idx_account_security_owner','idx_account_rate_expiry','idx_account_deletion_pending'],
+  triggers:['account_security_no_update']
+ }
+};
+export function reconciliationDecision({pending=[],objects=[]}={}){
+ const names=new Set(objects.map(x=>x?.name).filter(Boolean));
+ const decisions=[];
+ for(const migration of pending){
+  const fp=reconciliationFingerprints[migration];
+  if(!fp){decisions.push({migration,action:'apply'});continue;}
+  const expected=[...fp.tables,...fp.indexes,...fp.triggers],present=expected.filter(x=>names.has(x));
+  if(present.length===0){decisions.push({migration,action:'apply'});continue;}
+  if(present.length!==expected.length)throw new Error('Partial staging schema detected. Refusing automatic migration-state reconciliation.');
+  decisions.push({migration,action:'reconcile'});
+ }
+ return decisions;
+}
 async function main(){
  const remote=process.argv.includes('--remote');if(!remote){await buildStaging();console.log('Build only. Remote deployment requires --remote and configured credentials.');return;}
  const input=deploymentInputs(process.env);await buildStaging();
