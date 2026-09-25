@@ -44,9 +44,14 @@ export async function prepareAgentExecution(env,runId,owner){
    .bind(new Date().toISOString(),runId,owner).run();
   return {claimed:true,reserved:true,executed:false};
  }catch(error){
-  if(reservation){try{await releaseChat(env,{sub:owner},reservation);}catch{}}
+  let cleanupError=null;
+  if(reservation){try{await releaseChat(env,{sub:owner},reservation);}catch(releaseError){cleanupError=releaseError;}}
+  // Never hide a reservation-cleanup failure: an uncertain reservation must stay
+  // visible for reconciliation instead of being reported as an ordinary agent failure.
+  const code=String(cleanupError?.code||error?.code||'AGENT_BUDGET_RESERVATION_FAILED').slice(0,128);
   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code=?,updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
-   .bind(String(error?.code||'AGENT_BUDGET_RESERVATION_FAILED').slice(0,128),new Date().toISOString(),runId,owner).run();
+   .bind(code,new Date().toISOString(),runId,owner).run();
+  if(cleanupError)throw cleanupError;
   throw error;
  }
 }
