@@ -1,4 +1,4 @@
-import {reserveChat,releaseChat} from './chat-billing.mjs';
+import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,stopBilling,whole} from './chat-billing.mjs';
 
 const fail=(code,status=503)=>Object.assign(new Error(code),{code,status});
 const integer=(env,name,fallback,min,max)=>{
@@ -9,11 +9,14 @@ const integer=(env,name,fallback,min,max)=>{
 };
 export function agentConfig(env){
  if(env.AGENT_EXECUTION_ENABLED!=='true')return {enabled:false};
- const provider=String(env.AGENT_PROVIDER||''),model=String(env.AGENT_MODEL||'');
+ const provider=String(env.AGENT_PROVIDER||''),model=String(env.AGENT_MODEL||''),route=String(env.AGENT_PROVIDER_URL||'');
  if(!/^[A-Za-z0-9._-]{1,64}$/.test(provider)||!/^[A-Za-z0-9._:-]{1,128}$/.test(model))throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
+ if(env.AGENT_PROVIDER_PROTOCOL!=='metered-v1'||!env.AGENT_PROVIDER_API_KEY)throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
+ let url;try{url=new URL(route);}catch{throw fail('AGENT_PROVIDER_NOT_CONFIGURED');}
+ if(url.protocol!=='https:'||url.origin!==env.AGENT_PROVIDER_ALLOWED_ORIGIN||url.username||url.password||url.search||url.hash)throw fail('AGENT_PROVIDER_ROUTE_NOT_ALLOWED');
  return {enabled:true,maxSteps:integer(env,'AGENT_MAX_STEPS',8,1,32),maxRuntimeMs:integer(env,'AGENT_MAX_RUNTIME_MS',60000,1000,300000),
   maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),
-  globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model};
+  globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model,url:route};
 }
 const SAFE_AGENT_TOOLS=new Set(['read_project','search_project','draft_content','analyze_asset']);
 const APPROVAL_AGENT_TOOLS=new Set(['write_project','share_project','publish_project','delete_project','external_send']);
@@ -90,43 +93,77 @@ export async function reserveAgentBudget(env,run,cfg=agentConfig(env)){
   provider:cfg.provider,model:cfg.model,maxInputTokens:cfg.maxInputTokens,maxOutputTokens:cfg.maxOutputTokens,globalCeiling:cfg.globalCeiling});
  return reservation;
 }
+async function boundedProviderJson(response){
+ if(!response.body)throw fail('AGENT_PROVIDER_RESPONSE_INVALID',502);
+ const reader=response.body.getReader(),chunks=[];let size=0;
+ try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>262144){await reader.cancel();throw fail('AGENT_PROVIDER_RESPONSE_INVALID',502);}chunks.push(value);}}
+ finally{reader.releaseLock();}
+ const data=new Uint8Array(size);let offset=0;for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.byteLength;}
+ try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));}catch{throw fail('AGENT_PROVIDER_RESPONSE_INVALID',502);}
+}
+function validProviderEnvelope(payload,reservation,cfg){
+ return payload&&typeof payload==='object'&&payload.request_id===reservation.id&&payload.model===cfg.model&&
+  typeof payload.id==='string'&&payload.id.length>0&&payload.id.length<=200;
+}
+async function holdAgentUnknown(env,owner,reservation,reason){
+ try{await markUnknown(env,{sub:owner},reservation,reason);}catch{console.error('AGENT_RECONCILIATION_WRITE_FAILED',reservation.id);}
+}
 export async function prepareAgentExecution(env,runId,owner){
  const cfg=agentConfig(env),run=await claimAgentRun(env,runId,owner);if(!run)return null;
- let reservation;
+ let reservation=null,dispatched=false;
  try{
   reservation=await reserveAgentBudget(env,run,cfg);
-  // No provider/tool dispatch has happened yet. Keep provider_state=not_started so
-  // the reservation can be safely released without creating a reconciliation hold.
-  // beginDispatch belongs immediately before a real provider request.
-  await releaseChat(env,{sub:owner},reservation);
-  // Release is final. Do not let a later terminal-state error re-enter cleanup
-  // with a stale reservation handle and attempt the billing release twice.
-  reservation=null;
-  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_EXECUTION_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
+  const active=await env.DB.prepare("UPDATE agent_runs SET status='running',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
    .bind(new Date().toISOString(),runId,owner).run();
-  // A concurrent cancellation may legitimately win after budget release. Any other
-  // lost transition is ambiguous and must not be reported as a successful preparation.
-  if(!terminal.meta?.changes){
+  if(!active.meta?.changes){
    const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();
-   if(current?.status==='cancelled')return {claimed:true,reserved:true,executed:false,cancelled:true};
-   throw fail('AGENT_TERMINAL_STATE_LOST',409);
+   if(current?.status==='cancelled'){await releaseChat(env,{sub:owner},reservation);reservation=null;return {claimed:true,reserved:true,executed:false,cancelled:true};}
+   throw fail('AGENT_EXECUTION_STATE_LOST',409);
   }
-  return {claimed:true,reserved:true,executed:false};
+  await beginDispatch(env,{sub:owner},reservation);dispatched=true;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),cfg.maxRuntimeMs);
+  let upstream,payload;
+  try{
+   upstream=await fetch(cfg.url,{method:'POST',redirect:'error',signal:controller.signal,headers:{
+    authorization:`Bearer ${env.AGENT_PROVIDER_API_KEY}`,'content-type':'application/json','idempotency-key':reservation.id},
+    body:JSON.stringify({protocol:'metered-v1',request_id:reservation.id,model:cfg.model,objective:run.objective,
+     max_steps:cfg.maxSteps,max_input_tokens:cfg.maxInputTokens,max_output_tokens:cfg.maxOutputTokens,
+     tools:[...SAFE_AGENT_TOOLS,...APPROVAL_AGENT_TOOLS],store:false})});
+   payload=await boundedProviderJson(upstream);
+  }catch(error){
+   await holdAgentUnknown(env,owner,reservation,controller.signal.aborted?'AGENT_PROVIDER_TIMEOUT':'AGENT_PROVIDER_OUTCOME_UNKNOWN');
+   const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RECONCILIATION_REQUIRED',updated_at=? WHERE id=? AND owner_id=? AND status='running'")
+    .bind(new Date().toISOString(),runId,owner).run();
+   if(!terminal.meta?.changes){const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();if(current?.status!=='cancelled')throw fail('AGENT_FAILURE_STATE_LOST',409);}
+   return {claimed:true,reserved:true,executed:false,reconciliationRequired:true};
+  }finally{clearTimeout(timer);}
+  if(validProviderEnvelope(payload,reservation,cfg)&&payload.status==='rejected'&&payload.billable===false&&payload.usage?.input_tokens===0&&payload.usage?.output_tokens===0){
+   await releaseChat(env,{sub:owner},reservation,{confirmedNotBilled:true,providerRequestId:payload.id});reservation=null;
+   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_PROVIDER_REJECTED',updated_at=? WHERE id=? AND owner_id=? AND status='running'").bind(new Date().toISOString(),runId,owner).run();
+   return {claimed:true,reserved:true,executed:false,rejected:true};
+  }
+  const validUsage=whole(payload?.usage?.input_tokens,cfg.maxInputTokens)&&whole(payload?.usage?.output_tokens,cfg.maxOutputTokens);
+  const finalOnly=payload?.status==='completed'&&payload?.tool_calls===undefined&&typeof payload?.output==='string'&&payload.output.trim()&&payload.output.length<=32000;
+  if(!upstream.ok||!validProviderEnvelope(payload,reservation,cfg)||!validUsage||!finalOnly){
+   try{await stopBilling(env);}catch{console.error('AGENT_BILLING_STOP_FAILED',reservation.id);}
+   await holdAgentUnknown(env,owner,reservation,'AGENT_PROVIDER_CONTRACT_VIOLATION');
+   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_PROVIDER_CONTRACT_VIOLATION',updated_at=? WHERE id=? AND owner_id=? AND status='running'").bind(new Date().toISOString(),runId,owner).run();
+   return {claimed:true,reserved:true,executed:false,reconciliationRequired:true};
+  }
+  await settleChat(env,{sub:owner},reservation,{inputTokens:payload.usage.input_tokens,outputTokens:payload.usage.output_tokens},payload.id);reservation=null;
+  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='completed',error_code=NULL,updated_at=? WHERE id=? AND owner_id=? AND status='running'")
+   .bind(new Date().toISOString(),runId,owner).run();
+  if(!terminal.meta?.changes){const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();if(current?.status!=='cancelled')throw fail('AGENT_TERMINAL_STATE_LOST',409);}
+  return {claimed:true,reserved:true,executed:true,completed:true};
  }catch(error){
-  let cleanupError=null;
-  if(reservation){try{await releaseChat(env,{sub:owner},reservation);}catch(releaseError){cleanupError=releaseError;}}
-  // Never hide a reservation-cleanup failure: an uncertain reservation must stay
-  // visible for reconciliation instead of being reported as an ordinary agent failure.
-  const code=String(cleanupError?.code||error?.code||'AGENT_BUDGET_RESERVATION_FAILED').slice(0,128);
-  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code=?,updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
-   .bind(code,new Date().toISOString(),runId,owner).run();
-  // Cancellation may legitimately win while cleanup is in flight. Any other lost
-  // failure transition is ambiguous and must remain fail-closed.
-  if(!terminal.meta?.changes){
-   const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();
-   if(current?.status!=='cancelled')throw fail('AGENT_FAILURE_STATE_LOST',409);
+  if(reservation){
+   if(dispatched){await holdAgentUnknown(env,owner,reservation,'AGENT_EXECUTION_UNCERTAIN');}
+   else{try{await releaseChat(env,{sub:owner},reservation);reservation=null;}catch{}}
   }
-  if(cleanupError)throw cleanupError;
+  const code=String(error?.code||'AGENT_EXECUTION_FAILED').slice(0,128);
+  const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code=?,updated_at=? WHERE id=? AND owner_id=? AND status IN ('planning','running')")
+   .bind(code,new Date().toISOString(),runId,owner).run();
+  if(!terminal.meta?.changes){const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();if(current?.status!=='cancelled')throw fail('AGENT_FAILURE_STATE_LOST',409);}
   throw error;
  }
 }
