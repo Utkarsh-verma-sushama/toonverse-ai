@@ -69,6 +69,20 @@ export function remoteSchemaInspectionSql(){
 export function remoteMigrationHistorySql(){
  return "SELECT id,name,applied_at FROM d1_migrations ORDER BY id;";
 }
+
+export function wranglerRows(payload,phase='Remote D1 inspection'){
+ if(!Array.isArray(payload)||payload.length!==1||payload[0]?.success!==true||!Array.isArray(payload[0]?.results))throw new Error(`${phase} returned an unexpected shape. Refusing reconciliation.`);
+ return payload[0].results;
+}
+export function migrationHistoryNames(rows=[]){
+ const names=[];
+ for(const row of rows){
+  if(!Number.isInteger(row?.id)||typeof row?.name!=='string'||!row.name.trim())throw new Error('Remote migration history is malformed. Refusing reconciliation.');
+  names.push(row.name.trim());
+ }
+ if(new Set(names).size!==names.length)throw new Error('Remote migration history contains duplicate names. Refusing reconciliation.');
+ return names;
+}
 async function main(){
  const remote=process.argv.includes('--remote');if(!remote){await buildStaging();console.log('Build only. Remote deployment requires --remote and configured credentials.');return;}
  const input=deploymentInputs(process.env);await buildStaging();
@@ -85,7 +99,10 @@ async function main(){
  await verifyRemoteDatabase(input,process.env.CLOUDFLARE_API_TOKEN);
  const schemaRaw=wrangler(['d1','execute','DB','--remote','--command',remoteSchemaInspectionSql(),'--json'],'Remote schema inspection');
  const schemaPayload=parseWranglerJson(schemaRaw,'Remote schema inspection');
- if(!Array.isArray(schemaPayload))throw new Error('Remote schema inspection returned an unexpected shape. Refusing reconciliation.');
+ const schemaObjects=wranglerRows(schemaPayload,'Remote schema inspection');
+ const historyRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],'Remote migration history inspection');
+ const historyRows=wranglerRows(parseWranglerJson(historyRaw,'Remote migration history inspection'),'Remote migration history inspection');
+ migrationHistoryNames(historyRows);
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
  wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration');
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
