@@ -59,9 +59,15 @@ async function createAgent(request,env,user){
  catch{await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='QUEUE_DISPATCH_FAILED',updated_at=? WHERE id=? AND owner_id=? AND status='queued'").bind(new Date().toISOString(),runId,user.sub).run();return json({code:"AGENT_QUEUE_UNAVAILABLE"},503);}
  return json(run,202);
 }
-async function getRun(runId,env,user){if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);const row=await env.DB.prepare("SELECT id,status,objective,created_at AS createdAt,updated_at AS updatedAt,error_code AS errorCode FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();return row?json(row):json({code:"NOT_FOUND"},404)}
+async function getRun(runId,env,user){
+ if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);
+ if(!/^[A-Za-z0-9_-]{1,128}$/.test(runId))return json({code:"INVALID_RUN_REFERENCE"},400);
+ const row=await env.DB.prepare("SELECT id,status,objective,created_at AS createdAt,updated_at AS updatedAt,error_code AS errorCode FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();
+ return row?json(row):json({code:"NOT_FOUND"},404);
+}
 async function mutateRun(runId,status,env,user){
  if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);
+ if(!/^[A-Za-z0-9_-]{1,128}$/.test(runId))return json({code:"INVALID_RUN_REFERENCE"},400);
  const row=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();
  if(!row)return json({code:"NOT_FOUND"},404);
  if(["completed","failed","cancelled","expired"].includes(row.status))return json({code:"RUN_NOT_ACTIVE"},409);
