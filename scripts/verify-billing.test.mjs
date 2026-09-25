@@ -256,3 +256,28 @@ test('quota windows parse ISO dates correctly and include already settled spend'
   await assert.rejects(reserved(db,'second'),fails('DAILY_QUOTA_REACHED'));
  }finally{done(db);}
 });
+
+test('started or unknown provider work cannot be released without confirmed non-billing evidence',async()=>{
+ const db=fixture();try{
+  for(const state of ['started','unknown']){
+   const key='reconcile-'+state,row=await reserved(db,key);
+   await beginDispatch(db,alice,row);if(state==='unknown')await markUnknown(db,alice,row);
+   await assert.rejects(releaseChat(db,alice,row),fails('RECONCILIATION_REQUIRED'));
+   let receipt=await getChatReceipt(db,alice,key);assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);
+   const providerRequestId='provider-'+state;
+   receipt=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId});
+   assert.equal(receipt.status,'released');assert.equal(receipt.reconciliationRequired,false);
+  }
+  invariant(db);
+ }finally{done(db);}
+});
+
+test('confirmed non-billing release requires bounded provider evidence',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'evidence-required');await beginDispatch(db,alice,row);
+  for(const providerRequestId of [null,'','x'.repeat(201)])
+   await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId}),fails('RECONCILIATION_REQUIRED'));
+  const receipt=await getChatReceipt(db,alice,'evidence-required');
+  assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);invariant(db);
+ }finally{done(db);}
+});
