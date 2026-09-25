@@ -281,3 +281,27 @@ test('confirmed non-billing release requires bounded provider evidence',async()=
   assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);invariant(db);
  }finally{done(db);}
 });
+
+test('unknown provider outcome cannot be settled or released twice',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'unknown-terminal');await beginDispatch(db,alice,row);await markUnknown(db,alice,row,'NETWORK_AFTER_DISPATCH');
+  const settled=await settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-unknown-terminal');
+  assert.equal(settled.status,'settled');assert.equal(settled.reconciliationRequired,false);
+  await assert.rejects(settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-unknown-terminal'),fails('RESERVATION_FINALIZED'));
+  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-unknown-terminal'}),fails('RECONCILIATION_REQUIRED'));
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type='settle'").get(row.id).n,1);
+  invariant(db);
+ }finally{done(db);}
+});
+
+test('confirmed-not-billed reconciliation is terminal and cannot later settle',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'release-terminal');await beginDispatch(db,alice,row);await markUnknown(db,alice,row);
+  const released=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'});
+  assert.equal(released.status,'released');
+  await assert.rejects(settleChat(db,alice,row,{inputTokens:1,outputTokens:1},'provider-release-terminal'),fails('RESERVATION_FINALIZED'));
+  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'}),fails('RECONCILIATION_REQUIRED'));
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type='release'").get(row.id).n,1);
+  invariant(db);
+ }finally{done(db);}
+});
