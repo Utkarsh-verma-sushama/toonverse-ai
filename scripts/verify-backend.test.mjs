@@ -241,12 +241,22 @@ test('malformed agent references fail closed without changing state',async()=>{
   assert.equal(db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get().decision,'pending');
  }finally{db.sql.close();}
 });
-test('owner approval is recorded once and replay rejected',async()=>{
+test('unbound approval cannot be accepted',async()=>{
  const db=database();try{
+  const response=await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:db});
+  assert.equal(response.status,409);assert.equal((await response.json()).code,'APPROVAL_STEP_BINDING_REQUIRED');
+  assert.equal(db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get().decision,'pending');
+ }finally{db.sql.close();}
+});
+test('owner approval is recorded once and replay rejected only after trusted step binding',async()=>{
+ const db=database();try{
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' WHERE id='approval-alice'").run();
   const options={method:'POST',body:{decision:'approve'},bindings:db};
   assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',options)).status,200);
   assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',options)).status,409);
-  assert.equal(db.sql.prepare('SELECT decision FROM agent_approvals').get().decision,'approve');
+  const approval=db.sql.prepare("SELECT decision,step_id AS stepId,input_hash AS inputHash FROM agent_approvals WHERE id='approval-alice'").get();
+  assert.equal(approval.decision,'approve');assert.equal(approval.stepId,'step-share');assert.equal(approval.inputHash,'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
  }finally{db.sql.close();}
 });
 test('cancellation invalidates a pending approval before it can be accepted',async()=>{
