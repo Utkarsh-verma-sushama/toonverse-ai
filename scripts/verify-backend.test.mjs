@@ -314,6 +314,18 @@ test('agent queue owner lookup mismatch fails closed before execution',async()=>
  assert.equal(message.acked,1);assert.equal(message.retried,0);assert.equal(calls,1);
 });
 
+test('agent queue lookup of a non-terminal non-queued state cannot trigger billing',async()=>{
+ let calls=0;
+ const DB={prepare(sql){
+  calls++;
+  if(!String(sql).includes('SELECT status,owner_id AS owner FROM agent_runs'))throw new Error('execution boundary must not be reached');
+  return {bind(){return {first:async()=>({status:'planning',owner:'alice'})}}};
+ }};
+ const message=queueMessage({runId:'run-alice',owner:'alice'});
+ await worker.queue({messages:[message]},{...defaults,DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+ assert.equal(message.acked,1);assert.equal(message.retried,0);assert.equal(calls,1);
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
