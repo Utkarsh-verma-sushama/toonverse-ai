@@ -323,6 +323,25 @@ test('concurrent cancellation and execution never leave reserved agent budget',a
  }finally{db.sql.close();}
 });
 
+test('concurrent cancellation and execution preserve a single terminal outcome across repeated races',async()=>{
+ for(let i=0;i<8;i++){
+  const db=database();try{
+   db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key=?,error_code=NULL,updated_at=? WHERE id='run-alice'").run('cancel-race-'+i,new Date().toISOString());
+   const message=queueMessage({runId:'run-alice',owner:'alice'});
+   const bindings={...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'};
+   await Promise.all([
+    worker.queue({messages:[message]},bindings),
+    call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings})
+   ]);
+   const run=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();
+   assert.ok(['failed','cancelled'].includes(run.status));
+   if(run.status==='failed')assert.equal(run.error_code,'AGENT_RUNTIME_EXECUTION_NOT_CONNECTED');
+   assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice' AND status='reserved'").get().n,0);
+   assert.ok(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n<=1);
+  }finally{db.sql.close();}
+ }
+});
+
 test('agent queue delivery with wrong owner is acknowledged without billing or state change',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
