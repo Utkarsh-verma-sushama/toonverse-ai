@@ -118,11 +118,12 @@ test('multiple concurrent settlements consume included then prepaid without drop
  assert.deepEqual({...balance(db)},{included:0,prepaid:10,reserved:0});
  }finally{done(db);}
 });
-test('release is idempotent and cannot undo a settled request',async()=>{
- const db=fixture();try{const row=await reserved(db);await Promise.all([releaseChat(db,alice,row),releaseChat(db,alice,row)]);
+test('release is terminal and cannot undo a settled request',async()=>{
+ const db=fixture();try{const row=await reserved(db);const releases=await Promise.allSettled([releaseChat(db,alice,row),releaseChat(db,alice,row)]);
+ assert.equal(releases.filter(x=>x.status==='fulfilled').length,1);assert.ok(releases.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));
  assert.deepEqual({...balance(db)},{included:20,prepaid:80,reserved:0});assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE event_type='release'").get().n,1);
  const other=await reserved(db,'other');await beginDispatch(db,alice,other);await settleChat(db,alice,other,{inputTokens:10,outputTokens:5},'p');
- await assert.rejects(releaseChat(db,alice,other,{confirmedNotBilled:true,providerRequestId:'p'}),fails('RECONCILIATION_REQUIRED'));
+ await assert.rejects(releaseChat(db,alice,other,{confirmedNotBilled:true,providerRequestId:'p'}),fails('RESERVATION_FINALIZED'));
  assert.equal(balance(db).included,18);
  }finally{done(db);}
 });
