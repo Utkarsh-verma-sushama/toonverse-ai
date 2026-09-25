@@ -204,3 +204,18 @@ test('stale queued agent work is not claimed or billed',async()=>{
   const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
  }finally{db.sql.close();}
 });
+
+test('tampered persisted agent input cannot reach budget reservation',async()=>{
+ const db=database();try{
+  for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
+   db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='safe-key',updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+   db.sql.prepare(`UPDATE agent_runs SET ${field}=? WHERE id='run-alice'`).run(value);
+   const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+   const message=queueMessage({runId:'run-alice',owner:'alice'});
+   await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+   assert.equal(message.acked,0);assert.equal(message.retried,1);
+   assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'planning');
+   const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
+  }
+ }finally{db.sql.close();}
+});
