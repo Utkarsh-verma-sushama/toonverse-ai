@@ -224,6 +224,19 @@ test('duplicate agent queue delivery cannot reserve budget twice',async()=>{
  }finally{db.sql.close();}
 });
 
+test('agent queue delivery with wrong owner is acknowledged without billing or state change',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations").get().n;
+  const message=queueMessage({runId:'run-alice',owner:'mallory'});
+  await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);
+  const run=db.sql.prepare("SELECT status,owner_id FROM agent_runs WHERE id='run-alice'").get();
+  assert.equal(run.status,'queued');assert.equal(run.owner_id,'alice');
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations").get().n,before);
+ }finally{db.sql.close();}
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
