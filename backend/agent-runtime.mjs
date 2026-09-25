@@ -27,6 +27,10 @@ export function authorizeAgentTool(toolName,{approvalGranted=false}={}){
  }
  throw fail('AGENT_TOOL_NOT_ALLOWED',403);
 }
+export async function authorizeAgentToolForRun(env,{runId,owner,toolName,approvalId=null}){
+ const base=authorizeAgentTool(toolName,{approvalGranted:false});
+ return base;
+}
 export async function claimAgentRun(env,runId,owner){
  if(!env.DB)throw fail('DATABASE_NOT_CONNECTED');
  const cfg=agentConfig(env);if(!cfg.enabled)throw fail('AGENT_EXECUTION_DISABLED');
