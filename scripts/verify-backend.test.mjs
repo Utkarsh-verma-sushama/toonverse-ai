@@ -214,11 +214,13 @@ test('duplicate agent queue delivery cannot reserve budget twice',async()=>{
   await worker.queue({messages:[first]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
   assert.equal(first.acked,1);assert.equal(first.retried,0);
   const afterFirst=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
-  assert.equal(afterFirst,before);
+  assert.equal(afterFirst,before+1);
+  const firstReservation=db.sql.prepare("SELECT status FROM usage_reservations WHERE owner_id='alice' ORDER BY rowid DESC LIMIT 1").get();
+  assert.equal(firstReservation.status,'released');
   const second=queueMessage({runId:'run-alice',owner:'alice'});
   await worker.queue({messages:[second]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
   assert.equal(second.acked,1);assert.equal(second.retried,0);
-  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,before);
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,afterFirst);
  }finally{db.sql.close();}
 });
 
