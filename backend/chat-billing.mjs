@@ -100,10 +100,14 @@ export async function settleChat(env,user,reservation,usage,providerRequestId) {
   const actual=usageCost(usage.inputTokens,usage.outputTokens,reservation);
   if(actual.cost>reservation.estimated_cost_microusd||actual.credits>reservation.estimated_credits)throw new BillingError('INVALID_PROVIDER_USAGE');
   try {
-    await db.prepare(`UPDATE usage_reservations SET status='settled',provider_state='finished',actual_credits=?,actual_cost_microusd=?,
+    const out=await db.prepare(`UPDATE usage_reservations SET status='settled',provider_state='finished',actual_credits=?,actual_cost_microusd=?,
       input_tokens=?,output_tokens=?,provider_request_id=?,failure_code=NULL,settled_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
       WHERE id=? AND owner_id=? AND status='reserved' AND provider_state IN ('started','unknown')`)
       .bind(actual.credits,actual.cost,usage.inputTokens,usage.outputTokens,providerRequestId,reservation.id,user.sub).run();
+    if(!out.meta?.changes){
+      const current=await findById(db,user.sub,reservation.id);if(!current)throw new BillingError('RESERVATION_NOT_FOUND');
+      throw new BillingError('RESERVATION_FINALIZED',receipt(current));
+    }
     const row=await findById(db,user.sub,reservation.id);if(!row)throw new BillingError('RESERVATION_NOT_FOUND');
     if(row.status!=='settled'||row.input_tokens!==usage.inputTokens||row.output_tokens!==usage.outputTokens||row.provider_request_id!==providerRequestId)
       throw new BillingError('RESERVATION_FINALIZED',receipt(row));
@@ -114,10 +118,15 @@ export async function releaseChat(env,user,reservation,{confirmedNotBilled=false
   const db=requireDb(env);
   if(confirmedNotBilled&&(typeof providerRequestId!=='string'||!providerRequestId||providerRequestId.length>200))throw new BillingError('RECONCILIATION_REQUIRED');
   try {
-    await db.prepare(`UPDATE usage_reservations SET status='released',provider_state='finished',actual_credits=0,actual_cost_microusd=0,
+    const out=await db.prepare(`UPDATE usage_reservations SET status='released',provider_state='finished',actual_credits=0,actual_cost_microusd=0,
       input_tokens=0,output_tokens=0,provider_request_id=?,failure_code=?,settled_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
       WHERE id=? AND owner_id=? AND status='reserved' AND (provider_state='not_started' OR ?=1)`)
       .bind(providerRequestId,confirmedNotBilled?'CONFIRMED_NOT_BILLED':'NOT_DISPATCHED',reservation.id,user.sub,confirmedNotBilled?1:0).run();
+    if(!out.meta?.changes){
+      const current=await findById(db,user.sub,reservation.id);if(!current)throw new BillingError('RESERVATION_NOT_FOUND');
+      if(current.status!=='reserved')throw new BillingError('RESERVATION_FINALIZED',receipt(current));
+      throw new BillingError('RECONCILIATION_REQUIRED',receipt(current));
+    }
     const row=await findById(db,user.sub,reservation.id);if(!row)throw new BillingError('RESERVATION_NOT_FOUND');
     if(row.status!=='released')throw new BillingError('RECONCILIATION_REQUIRED',receipt(row));
     return receipt(row);
