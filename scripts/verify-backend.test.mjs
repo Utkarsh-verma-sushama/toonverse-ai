@@ -117,6 +117,17 @@ test('atomic step claim revalidates persisted approval state',async()=>{
  }
 });
 
+test('sensitive steps cannot overlap within the same agent run',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',decision='approve',decided_at=? WHERE id='approval-alice'").run(new Date().toISOString());
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-one','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-two','run-alice',2,'share_project','awaiting_approval','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')").run();
+  await authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-one',inputHash:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'});
+  await assert.rejects(authorizeAgentToolForRun(db,{runId:'run-alice',owner:'alice',toolName:'share_project',approvalId:'approval-alice',stepId:'step-two',inputHash:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'}),e=>e.code==='AGENT_TOOL_STEP_ALREADY_CLAIMED');
+  const blocked=db.sql.prepare("SELECT status,started_at AS startedAt FROM agent_steps WHERE id='step-two'").get();assert.equal(blocked.status,'awaiting_approval');assert.equal(blocked.startedAt,null);
+ }finally{db.sql.close();}
+});
+
 test('sensitive approval cannot replay a started or finished agent step',async()=>{
  for(const mutation of ["UPDATE agent_steps SET started_at=datetime('now') WHERE id='step-share'","UPDATE agent_steps SET finished_at=datetime('now') WHERE id='step-share'"]){
   const db=database();try{
