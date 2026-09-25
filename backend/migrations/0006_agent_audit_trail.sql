@@ -25,3 +25,31 @@ BEFORE DELETE ON agent_audit_events
 BEGIN
   SELECT RAISE(ABORT,'AGENT_AUDIT_IMMUTABLE');
 END;
+
+-- Audit successful lifecycle changes inside the same SQLite statement transaction.
+CREATE TRIGGER IF NOT EXISTS agent_runs_audit_status
+AFTER UPDATE OF status ON agent_runs
+WHEN OLD.status <> NEW.status
+BEGIN
+  INSERT INTO agent_audit_events(id,run_id,owner_id,event_type,from_state,to_state,error_code,created_at)
+  VALUES(
+    lower(hex(randomblob(16))), NEW.id, NEW.owner_id,
+    CASE
+      WHEN NEW.status='planning' THEN 'claimed'
+      WHEN NEW.status='expired' THEN 'expired'
+      WHEN NEW.status='cancelled' THEN 'cancelled'
+      WHEN NEW.status='failed' AND NEW.error_code='AGENT_PERSISTED_INPUT_INVALID' THEN 'quarantined'
+      WHEN NEW.status='failed' AND NEW.error_code='QUEUE_DISPATCH_FAILED' THEN 'queue_dispatch_failed'
+      ELSE 'runtime_failed'
+    END,
+    OLD.status, NEW.status, NEW.error_code, strftime('%Y-%m-%dT%H:%M:%fZ','now')
+  );
+END;
+
+CREATE TRIGGER IF NOT EXISTS agent_approvals_audit_decision
+AFTER UPDATE OF decision ON agent_approvals
+WHEN OLD.decision <> NEW.decision
+BEGIN
+  INSERT INTO agent_audit_events(id,run_id,owner_id,event_type,from_state,to_state,approval_id,decision,created_at)
+  VALUES(lower(hex(randomblob(16))),NEW.run_id,NEW.owner_id,'approval_decided',OLD.decision,NEW.decision,NEW.id,NEW.decision,strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+END;
