@@ -81,6 +81,17 @@ test('owner reads and cancels own run; repeated cancellation does not report suc
   assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,409);
  }finally{db.sql.close();}
 });
+test('malformed agent references fail closed without changing state',async()=>{
+ const db=database();try{
+  const bad='x'.repeat(129);
+  assert.equal((await call('/v1/agents/runs/'+bad,{bindings:db})).status,400);
+  assert.equal((await call('/v1/agents/runs/'+bad+'/cancel',{method:'POST',bindings:db})).status,400);
+  assert.equal((await call('/v1/agents/runs/run-alice/approvals/'+bad,{method:'POST',body:{decision:'approve'},bindings:db})).status,400);
+  assert.equal((await call('/v1/agents/runs/'+bad+'/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings:db})).status,400);
+  assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,'awaiting_approval');
+  assert.equal(db.sql.prepare("SELECT decision FROM agent_approvals WHERE id='approval-alice'").get().decision,'pending');
+ }finally{db.sql.close();}
+});
 test('owner approval is recorded once and replay rejected',async()=>{
  const db=database();try{
   const options={method:'POST',body:{decision:'approve'},bindings:db};
