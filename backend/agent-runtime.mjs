@@ -30,8 +30,11 @@ export async function claimAgentRun(env,runId,owner){
  const run=await env.DB.prepare('SELECT id,owner_id,status,objective,idempotency_key FROM agent_runs WHERE id=? AND owner_id=?').bind(runId,owner).first();
  if(!run||run.status!=='planning')throw fail('AGENT_CLAIM_STATE_INVALID',409);
  if(typeof run.objective!=='string'||!run.objective.trim()||run.objective.length>4000||
-    typeof run.idempotency_key!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(run.idempotency_key))
+    typeof run.idempotency_key!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(run.idempotency_key)){
+   await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_PERSISTED_INPUT_INVALID',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
+    .bind(new Date().toISOString(),runId,owner).run();
    throw fail('AGENT_PERSISTED_INPUT_INVALID',409);
+  }
  return {...run,objective:run.objective.trim()};
 }
 export async function reserveAgentBudget(env,run,cfg=agentConfig(env)){
