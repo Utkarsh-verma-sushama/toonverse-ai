@@ -288,7 +288,7 @@ test('unknown provider outcome cannot be settled or released twice',async()=>{
   const settled=await settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-unknown-terminal');
   assert.equal(settled.status,'settled');assert.equal(settled.reconciliationRequired,false);
   await assert.rejects(settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-unknown-terminal'),fails('RESERVATION_FINALIZED'));
-  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-unknown-terminal'}),fails('RECONCILIATION_REQUIRED'));
+  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-unknown-terminal'}),fails('RESERVATION_FINALIZED'));
   assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type='settle'").get(row.id).n,1);
   invariant(db);
  }finally{done(db);}
@@ -300,7 +300,7 @@ test('confirmed-not-billed reconciliation is terminal and cannot later settle',a
   const released=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'});
   assert.equal(released.status,'released');
   await assert.rejects(settleChat(db,alice,row,{inputTokens:1,outputTokens:1},'provider-release-terminal'),fails('RESERVATION_FINALIZED'));
-  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'}),fails('RECONCILIATION_REQUIRED'));
+  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'}),fails('RESERVATION_FINALIZED'));
   assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type='release'").get(row.id).n,1);
   invariant(db);
  }finally{done(db);}
