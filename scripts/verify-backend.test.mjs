@@ -405,6 +405,25 @@ test('agent queue lookup of a non-terminal non-queued state cannot trigger billi
  }finally{db.sql.close();}
 });
 
+test('concurrent cancellation cannot resurrect quarantined agent work',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',objective='',idempotency_key='quarantine-race-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+  const message=queueMessage({runId:'run-alice',owner:'alice'});
+  const bindings={...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'};
+  await Promise.all([
+   worker.queue({messages:[message]},bindings),
+   call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings})
+  ]);
+  const run=db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get();
+  assert.ok(['failed','cancelled'].includes(run.status));
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,0);
+  const redelivery=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[redelivery]},bindings);
+  assert.equal(redelivery.acked,1);assert.equal(redelivery.retried,0);
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,0);
+ }finally{db.sql.close();}
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
