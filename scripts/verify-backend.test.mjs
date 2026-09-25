@@ -251,6 +251,16 @@ test('malformed agent queue deliveries are acknowledged before database or billi
  }
 });
 
+test('unknown agent queue delivery is acknowledged without billing',async()=>{
+ const db=database();try{
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations").get().n;
+  const message=queueMessage({runId:'missing-run',owner:'alice'});
+  await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(message.acked,1);assert.equal(message.retried,0);
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations").get().n,before);
+ }finally{db.sql.close();}
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
