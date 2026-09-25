@@ -206,6 +206,22 @@ test('stale queued agent work is not claimed or billed',async()=>{
  }finally{db.sql.close();}
 });
 
+test('duplicate agent queue delivery cannot reserve budget twice',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+  const first=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[first]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(first.acked,1);assert.equal(first.retried,0);
+  const afterFirst=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+  assert.equal(afterFirst,before);
+  const second=queueMessage({runId:'run-alice',owner:'alice'});
+  await worker.queue({messages:[second]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+  assert.equal(second.acked,1);assert.equal(second.retried,0);
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,before);
+ }finally{db.sql.close();}
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
