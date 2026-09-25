@@ -23,8 +23,14 @@ export async function claimAgentRun(env,runId,owner){
  if(!result.meta?.changes){
   // A stale or malformed queued timestamp must not occupy an active-run slot forever.
   // Expire it atomically; a concurrent worker that already moved it out of queued is untouched.
-  await env.DB.prepare("UPDATE agent_runs SET status='expired',error_code='AGENT_QUEUE_STALE',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND (updated_at IS NULL OR julianday(updated_at) IS NULL OR julianday(updated_at)<julianday('now','-5 minutes'))")
+  const expired=await env.DB.prepare("UPDATE agent_runs SET status='expired',error_code='AGENT_QUEUE_STALE',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND (updated_at IS NULL OR julianday(updated_at) IS NULL OR julianday(updated_at)<julianday('now','-5 minutes'))")
    .bind(new Date().toISOString(),runId,owner).run();
+  if(!expired.meta?.changes){
+   const current=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,owner).first();
+   // A concurrent worker/cancellation may legitimately move the run first. A run
+   // that is still queued here is an ambiguous lost expiry and must fail closed.
+   if(current?.status==='queued')throw fail('AGENT_EXPIRY_STATE_LOST',409);
+  }
   return null;
  }
  const run=await env.DB.prepare('SELECT id,owner_id,status,objective,idempotency_key FROM agent_runs WHERE id=? AND owner_id=?').bind(runId,owner).first();
