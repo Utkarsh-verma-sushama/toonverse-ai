@@ -21,9 +21,9 @@ export async function claimAgentRun(env,runId,owner){
  const result=await env.DB.prepare("UPDATE agent_runs SET status='planning',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND julianday(updated_at)>=julianday('now','-5 minutes')")
   .bind(new Date().toISOString(),runId,owner).run();
  if(!result.meta?.changes){
-  // A stale queued delivery must not occupy an active-run slot forever. Expire it
-  // atomically; a concurrent worker that already moved it out of queued is untouched.
-  await env.DB.prepare("UPDATE agent_runs SET status='expired',error_code='AGENT_QUEUE_STALE',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND julianday(updated_at)<julianday('now','-5 minutes')")
+  // A stale or malformed queued timestamp must not occupy an active-run slot forever.
+  // Expire it atomically; a concurrent worker that already moved it out of queued is untouched.
+  await env.DB.prepare("UPDATE agent_runs SET status='expired',error_code='AGENT_QUEUE_STALE',updated_at=? WHERE id=? AND owner_id=? AND status='queued' AND (updated_at IS NULL OR julianday(updated_at) IS NULL OR julianday(updated_at)<julianday('now','-5 minutes'))")
    .bind(new Date().toISOString(),runId,owner).run();
   return null;
  }
