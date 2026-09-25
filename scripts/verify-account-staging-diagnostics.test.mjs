@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision} from './deploy-account-staging.mjs';
+import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames} from './deploy-account-staging.mjs';
 
 test('classifies remote D1 permission failures without exposing provider output',()=>{
  const secret='cf-secret-token-value';
@@ -45,4 +45,22 @@ test('fails closed when known migration schema is only partially present',()=>{
 
 test('does not auto-reconcile an unknown migration fingerprint',()=>{
  assert.deepEqual(reconciliationDecision({pending:['9999_unknown.sql'],objects:[{name:'account_profiles'}]}),[{migration:'9999_unknown.sql',action:'apply'}]);
+});
+
+test('rejects non-contiguous and unknown remote migration history',()=>{
+ const local=['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql'];
+ assert.throws(()=>pendingMigrationNames(local,['0000_baseline.sql','0002_account_sessions.sql']),/non-contiguous/);
+ assert.throws(()=>pendingMigrationNames(local,['0000_baseline.sql','9999_unknown.sql']),/unknown migration/);
+});
+
+test('accepts only strict successful Wrangler D1 JSON result envelopes',()=>{
+ assert.deepEqual(wranglerRows([{success:true,results:[{name:'account_profiles'}]}]),[{name:'account_profiles'}]);
+ assert.throws(()=>wranglerRows([{success:false,results:[]}]),/unexpected shape/);
+ assert.throws(()=>wranglerRows([{success:true}]),/unexpected shape/);
+});
+
+test('rejects malformed or duplicate migration history rows',()=>{
+ assert.deepEqual(migrationHistoryNames([{id:1,name:'0000_baseline.sql'},{id:2,name:'0001_atomic_chat_billing.sql'}]),['0000_baseline.sql','0001_atomic_chat_billing.sql']);
+ assert.throws(()=>migrationHistoryNames([{id:'1',name:'0000_baseline.sql'}]),/malformed/);
+ assert.throws(()=>migrationHistoryNames([{id:1,name:'0000_baseline.sql'},{id:2,name:'0000_baseline.sql'}]),/duplicate names/);
 });
