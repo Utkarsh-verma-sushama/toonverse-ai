@@ -276,6 +276,20 @@ test('duplicate agent queue delivery cannot reserve budget twice',async()=>{
  }finally{db.sql.close();}
 });
 
+test('concurrent duplicate agent deliveries create at most one reservation',async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='concurrent-safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
+  const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+  const first=queueMessage({runId:'run-alice',owner:'alice'}),second=queueMessage({runId:'run-alice',owner:'alice'});
+  const bindings={...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'};
+  await Promise.all([worker.queue({messages:[first]},bindings),worker.queue({messages:[second]},bindings)]);
+  assert.equal(first.acked+second.acked,2);assert.equal(first.retried+second.retried,0);
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,before+1);
+  const reservation=db.sql.prepare("SELECT status FROM usage_reservations WHERE owner_id='alice' ORDER BY rowid DESC LIMIT 1").get();
+  assert.equal(reservation.status,'released');
+ }finally{db.sql.close();}
+});
+
 test('agent queue delivery with wrong owner is acknowledged without billing or state change',async()=>{
  const db=database();try{
   db.sql.prepare("UPDATE agent_runs SET status='queued',objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(new Date().toISOString());
