@@ -200,7 +200,8 @@ test('stale queued agent work is not claimed or billed',async()=>{
   const message=queueMessage({runId:'run-alice',owner:'alice'});
   await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
   assert.equal(message.acked,1);assert.equal(message.retried,0);
-  const row=db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get();assert.equal(row.status,'queued');
+  const row=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();
+  assert.equal(row.status,'expired');assert.equal(row.error_code,'AGENT_QUEUE_STALE');
   const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
  }finally{db.sql.close();}
 });
