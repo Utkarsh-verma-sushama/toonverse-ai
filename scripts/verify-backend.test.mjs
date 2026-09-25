@@ -639,6 +639,8 @@ test('agent audit trail records authoritative transitions and is immutable',asyn
 
 test('rejected approval replay does not create a second audit event',async()=>{
  const db=database();try{
+  db.sql.prepare("INSERT INTO agent_steps (id,run_id,sequence_no,tool_name,status,input_hash) VALUES ('step-share','run-alice',1,'share_project','awaiting_approval','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
+  db.sql.prepare("UPDATE agent_approvals SET action_type='share_project',step_id='step-share',input_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' WHERE id='approval-alice'").run();
   const bindings={...defaults,...db};
   assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings})).status,200);
   assert.equal((await call('/v1/agents/runs/run-alice/approvals/approval-alice',{method:'POST',body:{decision:'approve'},bindings})).status,409);
