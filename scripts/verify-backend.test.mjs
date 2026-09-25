@@ -217,6 +217,9 @@ test('tampered persisted agent input cannot reach budget reservation',async()=>{
    assert.equal(message.acked,0);assert.equal(message.retried,1);
    const quarantined=db.sql.prepare("SELECT status,error_code FROM agent_runs WHERE id='run-alice'").get();
    assert.equal(quarantined.status,'failed');assert.equal(quarantined.error_code,'AGENT_PERSISTED_INPUT_INVALID');
+   const redelivery=queueMessage({runId:'run-alice',owner:'alice'});
+   await worker.queue({messages:[redelivery]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+   assert.equal(redelivery.acked,1);assert.equal(redelivery.retried,0);
    const after=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;assert.equal(after,before);
   }
  }finally{db.sql.close();}
