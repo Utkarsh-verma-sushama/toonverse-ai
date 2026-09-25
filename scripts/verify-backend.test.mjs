@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import worker from '../backend/worker.mjs';
-import {authorizeAgentTool,authorizeAgentToolForRun} from '../backend/agent-runtime.mjs';
+import {agentConfig,authorizeAgentTool,authorizeAgentToolForRun} from '../backend/agent-runtime.mjs';
 import {env, claims, token, mockIdentity} from './security-fixtures.mjs';
 import {accountEnv,accountDatabase,seedManaged} from './account-fixtures.mjs';
 import {migration as billingMigration,abuseMigration,seedUser} from './billing-fixtures.mjs';
@@ -31,6 +31,22 @@ async function call(path,{method='GET',value=alice,body,headers={},bindings={}}=
  }finally{if(!bindings.sql)db.sql.close();}
 }
 function queueMessage(body){let acked=0,retried=0;return {body,ack(){acked++;},retry(){retried++;},get acked(){return acked;},get retried(){return retried;}};}
+test('agent provider dispatch requires an explicit second kill switch and strict route contract',()=>{
+ const base={...defaults,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'};
+ assert.equal(agentConfig(base).dispatchEnabled,false);
+ const enabled={...base,AGENT_PROVIDER_DISPATCH_ENABLED:'true',AGENT_PROVIDER_PROTOCOL:'metered-v1',AGENT_PROVIDER_API_KEY:'secret',AGENT_PROVIDER_URL:'https://agent.example/v1/run',AGENT_PROVIDER_ALLOWED_ORIGIN:'https://agent.example'};
+ assert.equal(agentConfig(enabled).dispatchEnabled,true);
+ for(const patch of [
+  {AGENT_PROVIDER_PROTOCOL:'wrong'},
+  {AGENT_PROVIDER_API_KEY:''},
+  {AGENT_PROVIDER_URL:'http://agent.example/v1/run'},
+  {AGENT_PROVIDER_URL:'https://evil.example/v1/run'},
+  {AGENT_PROVIDER_URL:'https://user:pass@agent.example/v1/run'},
+  {AGENT_PROVIDER_URL:'https://agent.example/v1/run?q=1'},
+  {AGENT_PROVIDER_URL:'https://agent.example/v1/run#frag'}
+ ])assert.throws(()=>agentConfig({...enabled,...patch}),e=>['AGENT_PROVIDER_NOT_CONFIGURED','AGENT_PROVIDER_ROUTE_NOT_ALLOWED'].includes(e.code));
+});
+
 test('agent tool boundary denies unknown tools and gates irreversible actions',()=>{
  for(const name of ['read_project','search_project','draft_content','analyze_asset'])assert.deepEqual(authorizeAgentTool(name),{tool:name,requiresApproval:false});
  for(const name of ['write_project','share_project','publish_project','delete_project','external_send']){
