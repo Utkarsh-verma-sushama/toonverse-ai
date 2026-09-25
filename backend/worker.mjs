@@ -68,10 +68,11 @@ async function getRun(runId,env,user){
 async function mutateRun(runId,status,env,user){
  if(!env.DB)return json({code:"DATABASE_NOT_CONNECTED"},503);
  if(!/^[A-Za-z0-9_-]{1,128}$/.test(runId))return json({code:"INVALID_RUN_REFERENCE"},400);
+ if(status!=="cancelled")return json({code:"INVALID_RUN_TRANSITION"},400);
  const row=await env.DB.prepare("SELECT status FROM agent_runs WHERE id=? AND owner_id=?").bind(runId,user.sub).first();
  if(!row)return json({code:"NOT_FOUND"},404);
- if(["completed","failed","cancelled","expired"].includes(row.status))return json({code:"RUN_NOT_ACTIVE"},409);
- const out=await env.DB.prepare("UPDATE agent_runs SET status=?,updated_at=? WHERE id=? AND owner_id=? AND status NOT IN ('completed','failed','cancelled','expired')").bind(status,new Date().toISOString(),runId,user.sub).run();
+ if(!["queued","planning","running","awaiting_approval"].includes(row.status))return json({code:"RUN_NOT_ACTIVE"},409);
+ const out=await env.DB.prepare("UPDATE agent_runs SET status='cancelled',updated_at=? WHERE id=? AND owner_id=? AND status IN ('queued','planning','running','awaiting_approval')").bind(new Date().toISOString(),runId,user.sub).run();
  return out.meta?.changes?json({ok:true,id:runId,status},202):json({code:"RUN_NOT_ACTIVE"},409);
 }
 async function decideApproval(runId,approvalId,input,env,user){
