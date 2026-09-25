@@ -81,6 +81,13 @@ test('owner reads and cancels own run; repeated cancellation does not report suc
   assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,409);
  }finally{db.sql.close();}
 });
+for(const state of ['completed','failed','cancelled','expired'])test(`terminal agent run ${state} cannot be cancelled`,async()=>{
+ const db=database();try{
+  db.sql.prepare("UPDATE agent_runs SET status=? WHERE id='run-alice'").run(state);
+  assert.equal((await call('/v1/agents/runs/run-alice/cancel',{method:'POST',bindings:db})).status,409);
+  assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,state);
+ }finally{db.sql.close();}
+});
 test('malformed agent references fail closed without changing state',async()=>{
  const db=database();try{
   const bad='x'.repeat(129);
