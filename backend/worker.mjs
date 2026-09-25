@@ -125,7 +125,9 @@ export default {async fetch(request,env={}){
   if(typeof runId!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(runId)||typeof owner!=="string"||owner.length<1||owner.length>128){message.ack();continue;}
   try{
    const run=await env.DB.prepare("SELECT status,owner_id AS owner FROM agent_runs WHERE id=?").bind(runId).first();
-   if(!run||run.owner!==owner||["completed","failed","cancelled","expired"].includes(run.status)){message.ack();continue;}
+   // Only a queued run may cross the execution boundary. Duplicate deliveries for
+   // planning/running/approval states are acknowledged here without re-claiming or billing.
+   if(!run||run.owner!==owner||run.status!=="queued"){message.ack();continue;}
    const prepared=await prepareAgentExecution(env,runId,owner);
    // A duplicate delivery, terminal run or already-claimed run performs no work.
    // The metered runtime owns the atomic queued->planning claim and budget boundary.
