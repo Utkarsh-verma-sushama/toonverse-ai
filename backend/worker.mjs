@@ -96,8 +96,10 @@ async function decideApproval(runId,approvalId,input,env,user){
   const step=await env.DB.prepare("SELECT tool_name AS toolName,input_hash AS inputHash,status,started_at AS startedAt,finished_at AS finishedAt FROM agent_steps WHERE id=? AND run_id=?").bind(row.stepId,runId).first();
   if(!step||step.toolName!==row.actionType||step.inputHash!==row.inputHash||!['pending','awaiting_approval'].includes(String(step.status))||step.startedAt!==null||step.finishedAt!==null)return json({code:"APPROVAL_STEP_BINDING_REQUIRED"},409);
  }
- const bindingClause=input.decision==="approve"?" AND step_id IS NOT NULL AND input_hash IS NOT NULL AND EXISTS (SELECT 1 FROM agent_steps s WHERE s.id=agent_approvals.step_id AND s.run_id=agent_approvals.run_id AND s.tool_name=agent_approvals.action_type AND s.input_hash=agent_approvals.input_hash AND s.status IN ('pending','awaiting_approval') AND s.started_at IS NULL AND s.finished_at IS NULL)":"";
- const out=await env.DB.prepare("UPDATE agent_approvals SET decision=?,reason=?,decided_at=? WHERE id=? AND run_id=? AND owner_id=? AND decision='pending' AND julianday(expires_at) IS NOT NULL AND julianday(expires_at)>julianday('now') AND EXISTS (SELECT 1 FROM agent_runs WHERE id=? AND owner_id=? AND status='awaiting_approval')"+bindingClause).bind(input.decision,input.reason||"",new Date().toISOString(),approvalId,runId,user.sub,runId,user.sub).run();
+ const bindingClause=input.decision==="approve"?" AND step_id=? AND input_hash=? AND action_type=? AND EXISTS (SELECT 1 FROM agent_steps s WHERE s.id=agent_approvals.step_id AND s.run_id=agent_approvals.run_id AND s.tool_name=agent_approvals.action_type AND s.input_hash=agent_approvals.input_hash AND s.status IN ('pending','awaiting_approval') AND s.started_at IS NULL AND s.finished_at IS NULL)":"";
+ const params=[input.decision,input.reason||"",new Date().toISOString(),approvalId,runId,user.sub,runId,user.sub];
+ if(input.decision==="approve")params.push(row.stepId,row.inputHash,row.actionType);
+ const out=await env.DB.prepare("UPDATE agent_approvals SET decision=?,reason=?,decided_at=? WHERE id=? AND run_id=? AND owner_id=? AND decision='pending' AND julianday(expires_at) IS NOT NULL AND julianday(expires_at)>julianday('now') AND EXISTS (SELECT 1 FROM agent_runs WHERE id=? AND owner_id=? AND status='awaiting_approval')"+bindingClause).bind(...params).run();
  return out.meta?.changes?json({ok:true,decision:input.decision},200):json({code:"APPROVAL_NOT_PENDING"},409);
 }
 export default {async fetch(request,env={}){
