@@ -261,6 +261,21 @@ test('unknown agent queue delivery is acknowledged without billing',async()=>{
  }finally{db.sql.close();}
 });
 
+test('terminal agent queue redeliveries are acknowledged without billing',async()=>{
+ const terminal=['completed','failed','cancelled','expired'];
+ const db=database();try{
+  for(const status of terminal){
+   db.sql.prepare("UPDATE agent_runs SET status=?,objective='safe',idempotency_key='safe-key',error_code=NULL,updated_at=? WHERE id='run-alice'").run(status,new Date().toISOString());
+   const before=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n;
+   const message=queueMessage({runId:'run-alice',owner:'alice'});
+   await worker.queue({messages:[message]},{...defaults,DB:db.DB,AGENT_PROVIDER:'test-provider',AGENT_MODEL:'test-model',AGENT_GLOBAL_DAILY_COST_MICROUSD:'1000000'});
+   assert.equal(message.acked,1);assert.equal(message.retried,0);
+   assert.equal(db.sql.prepare("SELECT status FROM agent_runs WHERE id='run-alice'").get().status,status);
+   assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE owner_id='alice'").get().n,before);
+  }
+ }finally{db.sql.close();}
+});
+
 test('tampered persisted agent input cannot reach budget reservation',async()=>{
  const db=database();try{
   for(const [field,value] of [['objective',''],['objective','x'.repeat(4001)],['idempotency_key','bad/key']]){
