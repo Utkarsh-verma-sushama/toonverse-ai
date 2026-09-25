@@ -74,7 +74,7 @@ async function decideApproval(runId,approvalId,input,env,user){
  const row=await env.DB.prepare("SELECT a.decision,a.expires_at AS expiresAt,r.status AS runStatus FROM agent_approvals a JOIN agent_runs r ON r.id=a.run_id AND r.owner_id=a.owner_id WHERE a.id=? AND a.run_id=? AND a.owner_id=?").bind(approvalId,runId,user.sub).first();
  if(!row)return json({code:"NOT_FOUND"},404);
  if(row.decision!=="pending"||row.runStatus!=="awaiting_approval"||!Number.isFinite(Date.parse(row.expiresAt))||Date.parse(row.expiresAt)<=Date.now())return json({code:"APPROVAL_NOT_PENDING"},409);
- const out=await env.DB.prepare("UPDATE agent_approvals SET decision=?,reason=?,decided_at=? WHERE id=? AND run_id=? AND owner_id=? AND decision='pending' AND julianday(expires_at)>julianday('now') AND EXISTS (SELECT 1 FROM agent_runs WHERE id=? AND owner_id=? AND status='awaiting_approval')").bind(input.decision,input.reason||"",new Date().toISOString(),approvalId,runId,user.sub,runId,user.sub).run();
+ const out=await env.DB.prepare("UPDATE agent_approvals SET decision=?,reason=?,decided_at=? WHERE id=? AND run_id=? AND owner_id=? AND decision='pending' AND julianday(expires_at) IS NOT NULL AND julianday(expires_at)>julianday('now') AND EXISTS (SELECT 1 FROM agent_runs WHERE id=? AND owner_id=? AND status='awaiting_approval')").bind(input.decision,input.reason||"",new Date().toISOString(),approvalId,runId,user.sub,runId,user.sub).run();
  return out.meta?.changes?json({ok:true,decision:input.decision},200):json({code:"APPROVAL_NOT_PENDING"},409);
 }
 export default {async fetch(request,env={}){
