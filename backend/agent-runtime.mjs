@@ -36,7 +36,8 @@ export async function authorizeAgentToolForRun(env,{runId,owner,toolName,approva
  const now=Date.now(),expiresAt=Date.parse(row?.expiresAt),decidedAt=Date.parse(row?.decidedAt);
  if(!row||row.decision!=='approve'||row.runStatus!=='awaiting_approval'||!Number.isFinite(expiresAt)||expiresAt<=now||!Number.isFinite(decidedAt)||decidedAt>now||decidedAt>=expiresAt)throw fail('AGENT_TOOL_APPROVAL_REQUIRED',409);
  if(String(row.action_type)!==name)throw fail('AGENT_TOOL_APPROVAL_MISMATCH',409);
- if(stepId!==null){
+ if(stepId===null)throw fail('AGENT_STEP_REFERENCE_REQUIRED',409);
+ {
   if(!/^[A-Za-z0-9_-]{1,128}$/.test(String(stepId)))throw fail('AGENT_STEP_REFERENCE_INVALID',400);
   const step=await env.DB.prepare("SELECT s.tool_name AS toolName,s.status,s.input_hash AS inputHash,r.owner_id AS ownerId FROM agent_steps s JOIN agent_runs r ON r.id=s.run_id WHERE s.id=? AND s.run_id=?").bind(stepId,runId).first();
   if(!step||step.ownerId!==owner||step.toolName!==name||!['pending','awaiting_approval'].includes(String(step.status)))throw fail('AGENT_TOOL_STEP_MISMATCH',409);
