@@ -54,6 +54,9 @@ export async function prepareAgentExecution(env,runId,owner){
   // the reservation can be safely released without creating a reconciliation hold.
   // beginDispatch belongs immediately before a real provider request.
   await releaseChat(env,{sub:owner},reservation);
+  // Release is final. Do not let a later terminal-state error re-enter cleanup
+  // with a stale reservation handle and attempt the billing release twice.
+  reservation=null;
   const terminal=await env.DB.prepare("UPDATE agent_runs SET status='failed',error_code='AGENT_RUNTIME_EXECUTION_NOT_CONNECTED',updated_at=? WHERE id=? AND owner_id=? AND status='planning'")
    .bind(new Date().toISOString(),runId,owner).run();
   // A concurrent cancellation may legitimately win after budget release. Any other
