@@ -3,9 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "description": "UVENARO cross-platform web, Android and iOS application",
-  "engines": {
-    "node": ">=22"
-  },
+  "engines": {"node": ">=22"},
   "scripts": {
     "build:web": "node scripts/prepare-native.mjs",
     "verify:web": "node scripts/verify-native-bundle.mjs",
@@ -23,24 +21,10 @@
     "build:account-staging": "node scripts/prepare-account-staging.mjs",
     "deploy:account-staging": "node scripts/deploy-account-staging.mjs --remote",
     "check:account-staging": "node scripts/check-account-staging.mjs",
-    "verify:account-staging": "node --test scripts/verify-account-staging.test.mjs",
+    "verify:account-staging": "node --test scripts/verify-account-staging.test.mjs scripts/verify-account-staging-diagnostics.test.mjs",
     "verify:account-staging-ui": "UVENARO_UI_STAGING=true node --test scripts/verify-account-ui.test.mjs",
     "verify:account-staging-build": "npm run build:account-staging && wrangler deploy --dry-run --config deploy/account-staging/wrangler.json --outdir .account-staging/bundle"
   },
-  "dependencies": {
-    "@capacitor/android": "8.5.1",
-    "@capacitor/app": "8.0.0",
-    "@capacitor/core": "8.5.1",
-    "@capacitor/ios": "8.5.1"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "8.5.2",
-    "@firebase/rules-unit-testing": "5.0.2",
-    "@sparticuz/chromium": "153.0.0",
-    "firebase": "12.19.0",
-    "firebase-tools": "15.31.0",
-    "miniflare": "4.20260730.0",
-    "playwright": "1.62.1",
-    "wrangler": "4.137.0"
-  }
+  "dependencies": {"@capacitor/android":"8.5.1","@capacitor/app":"8.0.0","@capacitor/core":"8.5.1","@capacitor/ios":"8.5.1"},
+  "devDependencies": {"@capacitor/cli":"8.5.2","@firebase/rules-unit-testing":"5.0.2","@sparticuz/chromium":"153.0.0","firebase":"12.19.0","firebase-tools":"15.31.0","miniflare":"4.20260730.0","playwright":"1.62.1","wrangler":"4.137.0"}
 }
