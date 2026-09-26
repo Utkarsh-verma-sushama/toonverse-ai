@@ -95,7 +95,10 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
    const complete=pending;
    pending='';
    if(!complete.trim().startsWith('PRAGMA'))queries.push(complete);}assert.equal(pending,'');}finally{parser.close();}
-  assert.ok(queries.some(sql=>/CREATE TABLE account_sessions/i.test(sql)),'proven parser omitted account_sessions');
+  const artifact002=await readFile(join(migrations,'0002_account_sessions.sql'),'utf8');
+  assert.match(artifact002,/CREATE TABLE account_sessions/,'generated 0002 artifact omitted account_sessions');
+  const accountHits=queries.map((sql,i)=>({i,head:sql.trim().slice(0,80),hasAccount:/account_sessions/i.test(sql)})).filter(x=>x.hasAccount);
+  assert.ok(queries.some(sql=>/CREATE TABLE account_sessions/i.test(sql)),'proven parser omitted account_sessions; queries='+queries.length+'; accountHits='+JSON.stringify(accountHits));
   await DB.batch(queries.map(sql=>DB.prepare(sql)));
   assert.equal((await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='account_sessions'").first())?.name,'account_sessions');
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
