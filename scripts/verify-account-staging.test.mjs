@@ -88,9 +88,9 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
    const sql=await readFile(join(migrations,file),'utf8');
    // Use SQLite's parser to preserve trigger bodies while producing individual complete statements for D1.
    const parser=new DatabaseSync(':memory:');let pending='';const statements=[];
-   try{for(const line of sql.split('\\n')){if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;/* schema-dependent parse: statement is syntactically complete */}statements.push(pending);pending='';}}finally{parser.close();}
+   try{for(const line of sql.split('\\n')){if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;try{parser.exec(pending);statements.push(pending);pending='';}catch(error){const message=String(error.message);if(message.includes('incomplete input'))continue;/* Missing schema objects can be valid syntax; use SQLite complete() behavior via a savepoint parser below. */if(/no such (?:table|column)/i.test(message)){statements.push(pending);pending='';continue;}throw error;}}}finally{parser.close();}
    assert.equal(pending.trim(),'','incomplete SQL in '+file);
-   try{for(const statement of statements)await DB.prepare(statement).run();}catch(error){throw new Error('D1 migration '+file+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}
+   try{for(let i=0;i<statements.length;i++)await DB.prepare(statements[i]).run();}catch(error){throw new Error('D1 migration '+file+' statement '+(statements.findIndex((_,i)=>i>=0)+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}
   }
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM account_sessions').first()).n,0);
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
