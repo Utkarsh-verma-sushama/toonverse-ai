@@ -1,4 +1,4 @@
-import {mkdir,readFile,writeFile,copyFile,readdir,rm} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,readdir,rm} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -18,8 +18,14 @@ export async function buildStaging(destination=resolve(root,'.account-staging'))
   await writeFile(target,source);
  }
  await writeFile(resolve(publicDir,'index.html'),'<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Uvenaro account test</title><h1>Uvenaro account test</h1><p>Invited testers only. Use a dedicated test account.</p><a href="/account.html">Open account test</a></html>');
- await copyFile(resolve(root,'backend/schema.sql'),resolve(migrations,'0000_baseline.sql'));
- for(const file of (await readdir(resolve(root,'backend/migrations'))).filter(f=>/^\d{4}_.+\.sql$/.test(f)).sort())await copyFile(resolve(root,'backend/migrations',file),resolve(migrations,file));
+ const writeMigrationLf=async(source,target)=>{
+  const sql=await readFile(source,'utf8');
+  const normalized=sql.replace(/\r\n?/g,'\n');
+  if(normalized.includes('\r'))throw new Error('D1 migration normalization failed');
+  await writeFile(target,normalized,'utf8');
+ };
+ await writeMigrationLf(resolve(root,'backend/schema.sql'),resolve(migrations,'0000_baseline.sql'));
+ for(const file of (await readdir(resolve(root,'backend/migrations'))).filter(f=>/^\d{4}_.+\.sql$/.test(f)).sort())await writeMigrationLf(resolve(root,'backend/migrations',file),resolve(migrations,file));
  return {publicDir,migrations};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){await buildStaging();console.log('Built isolated account assets and ordered staging migrations. No remote changes.');}
