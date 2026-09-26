@@ -85,11 +85,11 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  try{
   const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
   const ordered=(await readdir(migrations)).sort();assert.deepEqual(ordered,['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql']);
-  const sql=(await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')))).join('\\n');
+  const sql=(await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')))).join('\n');
   // Exact proven parser pattern from verify-d1-billing.test.mjs.
   const parser=new DatabaseSync(':memory:');let pending='';const queries=[];
-  try{for(const line of sql.split('\\n')){if(!line.trim()||line.trim().startsWith('--'))continue;
-   pending+=line+'\\n';
+  try{for(const line of sql.split('\n')){if(!line.trim()||line.trim().startsWith('--'))continue;
+   pending+=line+'\n';
    if(!line.trim().endsWith(';'))continue;
    try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}
    const complete=pending;
