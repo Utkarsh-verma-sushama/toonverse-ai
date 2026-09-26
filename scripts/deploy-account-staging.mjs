@@ -174,6 +174,16 @@ async function main(){
   pendingMigrationNames(localNames,verified);
  }
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
+ // Before the tracked apply, ask remote D1 to compile the first pending migration in a transaction that is always rolled back.
+ // This isolates remote-only SQL incompatibility without changing schema, data, or migration history.
+ const firstPending=pending.find(name=>decisions.find(x=>x.migration===name)?.action==='apply');
+ if(firstPending){
+  const probeSql=await readFile(resolve(dir,'migrations',firstPending),'utf8');
+  const probeFile=resolve(dir,'migration-probe.sql');
+  await writeFile(probeFile,'BEGIN IMMEDIATE;\\n'+probeSql+'\\nROLLBACK;\\n',{mode:0o600});
+  try{wrangler(['d1','execute','DB','--remote','--file',probeFile],'Remote migration rollback probe',{safeDiagnostic:true});}
+  finally{await rm(probeFile,{force:true});}
+ }
  wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration',{safeDiagnostic:true});
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
  const response=await fetch(input.origin+'/api/v1/health',{redirect:'error',signal:AbortSignal.timeout(15000)}),health=await response.json();
