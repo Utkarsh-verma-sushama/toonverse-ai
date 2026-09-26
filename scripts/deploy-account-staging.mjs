@@ -85,6 +85,26 @@ export function remoteSchemaInspectionSql(){
 export function remoteMigrationHistorySql(){
  return "SELECT id,name,applied_at FROM d1_migrations ORDER BY id;";
 }
+export function remoteBaselineColumnsSql(){
+ const tables=['billing_accounts','usage_reservations','usage_limits','usage_ledger','provider_price_snapshots'];
+ return tables.map(t=>`SELECT '${t}' AS table_name,name,type,"notnull" AS not_null,pk FROM pragma_table_info('${t}')`).join(' UNION ALL ')+' ORDER BY table_name,name;';
+}
+export function expectedBaselineColumns(){
+ return {
+  billing_accounts:['owner_id','plan_id','status','included_credits','prepaid_credits','reserved_credits','cycle_started_at','cycle_ends_at','updated_at'],
+  usage_reservations:['id','owner_id','idempotency_key','feature','estimated_credits','actual_credits','estimated_cost_microusd','actual_cost_microusd','status','created_at','settled_at'],
+  usage_limits:['owner_id','daily_credit_limit','monthly_credit_limit','max_request_cost_microusd','requests_per_minute','blocked_until','updated_at'],
+  usage_ledger:['id','owner_id','reservation_id','event_type','credits','cost_microusd','metadata_json','created_at'],
+  provider_price_snapshots:['id','provider','model','input_microusd_per_million','output_microusd_per_million','credit_value_microusd','effective_at','retired_at']
+ };
+}
+export function baselineColumnParity(rows=[]){
+ const expected=expectedBaselineColumns(),actual={};
+ for(const row of rows){if(typeof row?.table_name!=='string'||typeof row?.name!=='string')throw new Error('Remote baseline metadata is malformed. Refusing migration.');(actual[row.table_name]??=[]).push(row.name);}
+ const mismatches=[];
+ for(const [table,cols] of Object.entries(expected)){const got=actual[table]||[],missing=cols.filter(x=>!got.includes(x)),extra=got.filter(x=>!cols.includes(x));if(missing.length||extra.length)mismatches.push({table,missing,extra});}
+ return mismatches;
+}
 
 export function wranglerRows(payload,phase='Remote D1 inspection'){
  if(!Array.isArray(payload)||payload.length!==1||payload[0]?.success!==true||!Array.isArray(payload[0]?.results))throw new Error(`${phase} returned an unexpected shape. Refusing reconciliation.`);
@@ -177,6 +197,11 @@ async function main(){
   const verified=migrationHistoryNames(wranglerRows(parseWranglerJson(verifyRaw,'Post-reconciliation history verification'),'Post-reconciliation history verification'));
   pendingMigrationNames(localNames,verified);
  }
+ const baselineRaw=wrangler(['d1','execute','DB','--remote','--command',remoteBaselineColumnsSql(),'--json'],'Remote baseline structural inspection');
+ const baselineRows=wranglerRows(parseWranglerJson(baselineRaw,'Remote baseline structural inspection'),'Remote baseline structural inspection');
+ const baselineMismatches=baselineColumnParity(baselineRows);
+ console.log(JSON.stringify({baselineParity:{matched:baselineMismatches.length===0,mismatches:baselineMismatches}}));
+ if(baselineMismatches.length)throw new Error('Remote staging baseline differs from the current baseline. Refusing tracked migration until drift is resolved.');
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
  // The tracked Wrangler migration path is authoritative. Do not wrap remote D1 execution in an explicit SQL transaction probe; provider-managed D1 execution can reject transaction-control statements before the migration SQL is evaluated.
  wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration',{safeDiagnostic:true});
