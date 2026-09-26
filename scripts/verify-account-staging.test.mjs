@@ -95,6 +95,8 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
    const complete=pending;
    pending='';
    if(!complete.trim().startsWith('PRAGMA'))queries.push(complete);}assert.equal(pending,'');}finally{parser.close();}
+  assert.ok(sql.length>1000,'combined migration SQL unexpectedly empty');
+  assert.ok(sql.includes('CREATE TABLE account_sessions'),'combined migration SQL omitted account_sessions');
   const artifact002=await readFile(join(migrations,'0002_account_sessions.sql'),'utf8');
   assert.match(artifact002,/CREATE TABLE account_sessions/,'generated 0002 artifact omitted account_sessions');
   const accountHits=queries.map((sql,i)=>({i,head:sql.trim().slice(0,80),hasAccount:/account_sessions/i.test(sql)})).filter(x=>x.hasAccount);
