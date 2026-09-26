@@ -112,6 +112,16 @@ export function baselineColumnParity(rows=[],allowedMigrationColumns=[]){
 export function reconciledMigrationColumns(decisions=[]){
  return decisions.filter(x=>x?.action==='reconcile').flatMap(x=>reconciliationFingerprints[x.migration]?.columns||[]);
 }
+export function verifiedTrackedMigrationColumns(appliedNames=[],objects=[]){
+ const columns=[];
+ for(const migration of appliedNames){
+  const fp=reconciliationFingerprints[migration];if(!fp)continue;
+  const decision=reconciliationDecision({pending:[migration],objects})[0];
+  if(decision?.action!=='reconcile')throw new Error('Tracked migration schema fingerprint mismatch. Refusing migration.');
+  columns.push(...(fp.columns||[]));
+ }
+ return columns;
+}
 
 export function wranglerRows(payload,phase='Remote D1 inspection'){
  if(!Array.isArray(payload)||payload.length!==1||payload[0]?.success!==true||!Array.isArray(payload[0]?.results))throw new Error(`${phase} returned an unexpected shape. Refusing reconciliation.`);
@@ -207,7 +217,8 @@ async function main(){
  }
  const baselineRaw=wrangler(['d1','execute','DB','--remote','--command',remoteBaselineColumnsSql(),'--json'],'Remote baseline structural inspection');
  const baselineRows=wranglerRows(parseWranglerJson(baselineRaw,'Remote baseline structural inspection'),'Remote baseline structural inspection');
- const baselineMismatches=baselineColumnParity(baselineRows,reconciledMigrationColumns(decisions));
+ const allowedMigrationColumns=[...verifiedTrackedMigrationColumns(appliedNames,schemaObjects),...reconciledMigrationColumns(decisions)];
+ const baselineMismatches=baselineColumnParity(baselineRows,allowedMigrationColumns);
  console.log(JSON.stringify({baselineParity:{matched:baselineMismatches.length===0,mismatches:baselineMismatches}}));
  if(baselineMismatches.length)throw new Error('Remote staging baseline differs from the current baseline. Refusing tracked migration until drift is resolved.');
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
