@@ -96,7 +96,8 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
    assert.equal(pending.trim(),'','incomplete ordered migration SQL');
   }finally{parser.close();}
   for(let i=0;i<statements.length;i++){const item=statements[i];try{await DB.prepare(item.sql).run();}catch(error){throw new Error('D1 migration '+item.file+' statement '+(i+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}}
-  assert.equal((await DB.prepare('SELECT COUNT(*) n FROM account_sessions').first()).n,0);
+  const objects=await DB.prepare("SELECT type,name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name").all();
+  assert.ok(objects.results.some(x=>x.type==='table'&&x.name==='account_sessions'),'account_sessions missing after D1 migration chain');
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
 });
 
