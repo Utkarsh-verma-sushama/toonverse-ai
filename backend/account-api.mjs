@@ -2,6 +2,7 @@ import {AccountError,configured,context,email,password,name,json,cookie,readCook
 import {firebaseCall,credentials,FirebaseAccountError} from './firebase-accounts.mjs';
 import {authenticateAccountRequest,issueSession,refreshSession,profile,verifyCredentials,revoke,revokeAll,requireRecent} from './account-sessions.mjs';
 import {mfaRequired,finishMfa,updateReauth,beginEnrollment,finishEnrollment} from './account-mfa.mjs';
+import {verifyAppCheckRequest,AttestationError} from './app-check.mjs';
 const emailContinuation=env=>env.ACCOUNT_ACTION_CONTINUE_URL?{continueUrl:env.ACCOUNT_ACTION_CONTINUE_URL,canHandleCodeInApp:false}:{};
 const genericRecovery={ok:true,message:'If the account is eligible, recovery instructions will be sent.'};
 const actionCode=value=>{if(typeof value!=='string'||value.length<10||value.length>2048)throw new AccountError('INVALID_ACTION_CODE');return value;};
@@ -72,6 +73,10 @@ export async function accountRoute(request,env,readBody){
   // Every account request, including login and cookie restore, requires an
   // exact trusted origin and a custom header (therefore a CORS preflight).
   await context(request,env);
+  // Protect account/bootstrap endpoints with App Check when production
+  // enforcement is enabled. Staged environments remain compatible while the
+  // flag is false, but production can fail closed before Firebase/provider work.
+  await verifyAppCheckRequest(request,env);
   if(path==='/v1/auth/capabilities'&&method==='GET')return json(capabilities(env));
   const input=method==='POST'?await readBody(request):{};
   if(['/v1/auth/sign-in','/v1/auth/register'].includes(path)&&method==='POST')return await signIn(request,env,input,path.endsWith('/register'));
@@ -139,17 +144,18 @@ export async function accountRoute(request,env,readBody){
   }
   const sessionPath=path.match(/^\/v1\/auth\/sessions\/([A-Za-z0-9-]{1,64})$/);
   if(sessionPath&&method==='DELETE'){
+   requireRecent(user);await rateLimit(env,request,'session-revoke',user.sub,10,3600000);
    const row=await env.DB.prepare('SELECT id,owner_id FROM account_sessions WHERE id=? AND owner_id=? AND revoked_at IS NULL').bind(sessionPath[1],user.sub).first();
    if(!row)throw new AccountError('NOT_FOUND',404);await revoke(env,row,'session_revoked');return json({ok:true,current:row.id===user.session.id},200,row.id===user.session.id?{'set-cookie':cookie('')}:{});
   }
-  if(path==='/v1/auth/sessions/revoke-others'&&method==='POST'){await revokeAll(env,user.sub,'other_sessions_revoked',user.session.id);return json({ok:true});}
+  if(path==='/v1/auth/sessions/revoke-others'&&method==='POST'){requireRecent(user);await rateLimit(env,request,'revoke-others',user.sub,5,3600000);await revokeAll(env,user.sub,'other_sessions_revoked',user.session.id);return json({ok:true});}
   if(path==='/v1/auth/security/events'&&method==='GET'){
    const raw=new URL(request.url).searchParams.get('limit')||'25';if(!/^\d{1,3}$/.test(raw))throw new AccountError('INVALID_LIMIT');const limit=Math.min(100,Math.max(1,Number(raw)));
    return json({events:await all(env.DB.prepare('SELECT id,event_type AS type,created_at AS createdAt FROM account_security_events WHERE owner_id=? ORDER BY created_at DESC LIMIT ?').bind(user.sub,limit))});
   }
   if(path==='/v1/auth/security'&&method==='GET')return json({emailVerified:user.emailVerified,mfaEnabled:user.mfaEnabled,mfaMethods:user.mfaMethods,recentAuthentication:now()-user.session.authenticated_at<300000,capabilities:capabilities(env)});
   if(path==='/v1/auth/connections'&&method==='GET')return json({connections:user.providers.map(provider=>({provider,label:provider,status:'Sign-in method',requiredForSignIn:true}))});
-  if(path==='/v1/auth/mfa/totp/enroll'&&method==='POST')return json(await beginEnrollment(request,env,user));
+  if(path==='/v1/auth/mfa/totp/enroll'&&method==='POST'){requireRecent(user);await rateLimit(env,request,'mfa-enroll',user.sub,5,3600000);return json(await beginEnrollment(request,env,user));}
   if(path==='/v1/auth/mfa/totp/confirm'&&method==='POST')return json(await finishEnrollment(request,env,user,input),200,{'set-cookie':cookie('')});
   const mfaPath=path.match(/^\/v1\/auth\/mfa\/([^/]+)$/);
   if(mfaPath&&method==='DELETE'){
@@ -178,6 +184,7 @@ export async function accountRoute(request,env,readBody){
   return json({code:'ACCOUNT_METHOD_UNAVAILABLE'},501);
  }catch(original){
   if(['JSON_REQUIRED','REQUEST_TOO_LARGE','INVALID_JSON'].includes(original.code))return json({code:original.code},original.status);
+  if(original instanceof AttestationError)return json({code:original.code},original.status);
   const error=providerFailure(original);
   if(error instanceof AccountError)return json({code:error.code,...error.extra},error.status,error.status===429?{'retry-after':String(error.extra.retryAfter||60)}:{});
   if(error.status===401)return json({code:'UNAUTHORIZED'},401);

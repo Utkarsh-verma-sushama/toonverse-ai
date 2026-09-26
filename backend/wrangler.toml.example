@@ -13,6 +13,16 @@ ACCOUNT_TOTP_ENABLED = "false"
 # Serve web and API on the same HTTPS site (e.g. uvenaro.com/api).
 # Native WebViews need verified secure cookie transport before activation.
 AGENT_EXECUTION_ENABLED = "false"
+# Agent execution stays fail-closed until these server-owned metering limits are
+# reviewed for the production provider/model. Clients must never supply them.
+AGENT_PROVIDER = ""
+AGENT_MODEL = ""
+AGENT_MAX_STEPS = "8"
+AGENT_MAX_RUNTIME_MS = "60000"
+AGENT_MAX_INPUT_TOKENS = "4000"
+AGENT_MAX_OUTPUT_TOKENS = "1000"
+# Required before AGENT_EXECUTION_ENABLED=true. Zero/missing is intentionally invalid.
+AGENT_GLOBAL_DAILY_COST_MICROUSD = "0"
 MODEL_ROUTING_ENABLED = "false"
 CHAT_EXECUTION_ENABLED = "false"
 CHAT_PROVIDER = ""
@@ -28,6 +38,12 @@ CHAT_GLOBAL_DAILY_COST_MICROUSD = "0"
 # CHAT_PROVIDER_API_KEY must be stored as an encrypted secret, never in this file.
 ALLOWED_ORIGINS = "https://YOUR_DOMAIN"
 FIREBASE_PROJECT_ID = "toonverse-ai"
+# Keep false until valid app IDs are registered and staging tests pass. Production
+# release gate requires true. Comma-separated Firebase App IDs only.
+APP_CHECK_ENFORCEMENT_ENABLED = "false"
+APP_CHECK_ALLOWED_APP_IDS = ""
+# Enable only after migration 0004 is applied. Production release gate requires true.
+REPLAY_PROTECTION_ENABLED = "false"
 # Firebase Web API key restricted to Identity Toolkit, never a service-account key.
 # Missing key fails closed; required for disabled/deleted/revoked-session checks.
 FIREBASE_WEB_API_KEY = ""

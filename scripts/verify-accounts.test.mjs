@@ -14,6 +14,11 @@ async function call(path,{method='POST',body={},headers={},value=access,cookie=j
  return {response,body:await response.json()};
 }
 async function login(uid='alice',options={}){const out=await call('/v1/auth/sign-in',{body:{email:uid+'@example.com',password:'test-password-123'},value:'',...options});assert.equal(out.response.status,200,JSON.stringify(out.body));access=out.body.accessToken;return out;}
+test('account bootstrap App Check fails closed before identity provider work',async()=>{
+ const before=provider.providerCalls;
+ const out=await call('/v1/auth/sign-in',{body:{email:'alice@example.com',password:'test-password-123'},bindings:{APP_CHECK_ENFORCEMENT_ENABLED:'true',FIREBASE_PROJECT_ID:'toonverse-ai',APP_CHECK_ALLOWED_APP_IDS:'1:123:web:allowed'}});
+ assert.equal(out.response.status,401);assert.equal(out.body.code,'APP_ATTESTATION_REQUIRED');assert.equal(provider.providerCalls,before);
+});
 test('registration issues only an opaque access token and secure host-only refresh cookie',async()=>{
  const {response,body}=await call('/v1/auth/register',{body:{name:'Alice',email:' Alice@example.com ',password:'correct horse battery staple'}});
  assert.equal(response.status,200,JSON.stringify(body));assert.match(body.accessToken,/^uv1\./);assert.equal(body.user.id,'alice');assert.equal(body.user.name,'Alice');
@@ -148,6 +153,41 @@ test('MFA challenge is device bound and stops after five wrong codes',async()=>{
  assert.equal((await call('/v1/auth/mfa/challenge',{body,headers:{'x-uvenaro-device':'other-device-00000000'}})).body.code,'INVALID_CHALLENGE');
  for(let i=0;i<5;i++)assert.equal((await call('/v1/auth/mfa/challenge',{body})).response.status,401);
  assert.equal((await call('/v1/auth/mfa/challenge',{body:{...body,code:'123456'}})).body.code,'INVALID_CHALLENGE');
+});
+test('new authenticated MFA challenge supersedes the previous live challenge',async()=>{
+ await login();provider.mfa=true;
+ await call('/v1/auth/reauthenticate',{body:{password:'correct'}});
+ const first=db.sql.prepare("SELECT id FROM account_challenges WHERE owner_id='alice' AND kind='reauth_mfa' AND consumed_at IS NULL ORDER BY expires_at DESC LIMIT 1").get();
+ assert.ok(first?.id);
+ await call('/v1/auth/reauthenticate',{body:{password:'correct'}});
+ const rows=db.sql.prepare("SELECT id,consumed_at FROM account_challenges WHERE owner_id='alice' AND kind='reauth_mfa' ORDER BY rowid").all();
+ assert.equal(rows.length,2);assert.ok(rows[0].consumed_at);assert.equal(rows[1].consumed_at,null);assert.notEqual(rows[0].id,rows[1].id);
+});
+test('fifth rejected MFA attempt destroys its payload and sixth never reaches provider',async()=>{
+ provider.mfa=true;const out=await call('/v1/auth/sign-in',{body:{email:'alice@example.com',password:'correct'}});
+ const body={challengeId:out.body.challengeId,methodId:'totp-1',code:'000000'},before=provider.providerCalls;
+ for(let i=0;i<5;i++)assert.equal((await call('/v1/auth/mfa/challenge',{body})).response.status,401);
+ assert.equal(provider.providerCalls-before,5);
+ const row=db.sql.prepare('SELECT attempts,consumed_at,payload_cipher FROM account_challenges WHERE id=?').get(out.body.challengeId);
+ assert.equal(row.attempts,5);assert.ok(row.consumed_at);assert.equal(row.payload_cipher,'attempts_exhausted');
+ const sixth=await call('/v1/auth/mfa/challenge',{body:{...body,code:'123456'}});
+ assert.equal(sixth.body.code,'INVALID_CHALLENGE');assert.equal(provider.providerCalls-before,5);
+});
+test('identity provider outage does not destroy an otherwise valid MFA challenge',async()=>{
+ provider.mfa=true;const out=await call('/v1/auth/sign-in',{body:{email:'alice@example.com',password:'correct'}});
+ const body={challengeId:out.body.challengeId,methodId:'totp-1',code:'123456'};provider.outage=true;
+ const failed=await call('/v1/auth/mfa/challenge',{body});assert.equal(failed.response.status,503);assert.equal(failed.body.code,'IDENTITY_UNAVAILABLE');
+ let row=db.sql.prepare('SELECT attempts,consumed_at,payload_cipher FROM account_challenges WHERE id=?').get(out.body.challengeId);
+ assert.equal(row.attempts,1);assert.equal(row.consumed_at,null);assert.notEqual(row.payload_cipher,'attempts_exhausted');
+ provider.outage=false;const retry=await call('/v1/auth/mfa/challenge',{body});assert.equal(retry.response.status,200,JSON.stringify(retry.body));
+});
+test('TOTP enrollment challenge is destroyed after five rejected codes',async()=>{
+ await login();const start=await call('/v1/auth/mfa/totp/enroll');assert.equal(start.response.status,200,JSON.stringify(start.body));
+ const body={challengeId:start.body.challengeId,code:'000000'};const before=provider.providerCalls;
+ for(let i=0;i<5;i++){const out=await call('/v1/auth/mfa/totp/confirm',{body});assert.equal(out.response.status,401);}
+ const row=db.sql.prepare('SELECT attempts,consumed_at,payload_cipher FROM account_challenges WHERE id=?').get(start.body.challengeId);
+ assert.equal(provider.providerCalls-before,5);assert.equal(row.attempts,5);assert.notEqual(row.consumed_at,null);assert.equal(row.payload_cipher,'attempts_exhausted');
+ const sixth=await call('/v1/auth/mfa/totp/confirm',{body});assert.equal(sixth.response.status,401);assert.equal(provider.providerCalls-before,5);
 });
 test('TOTP enrollment requires proof of a working code and revokes existing sessions',async()=>{
  await login();const start=await call('/v1/auth/mfa/totp/enroll');assert.equal(start.response.status,200,JSON.stringify(start.body));assert.match(start.body.uri,/^otpauth:/);
