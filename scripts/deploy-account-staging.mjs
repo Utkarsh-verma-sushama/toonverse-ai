@@ -48,7 +48,7 @@ const reconciliationFingerprints={
   ],
   tables:['chat_billing_policy'],
   indexes:['idx_usage_active','idx_usage_time','idx_usage_settled_time','idx_usage_owner_settled','idx_chat_ledger_event'],
-  triggers:['chat_reservation_guard','chat_reservation_hold','chat_reservation_transition','chat_reservation_finish','chat_reservation_no_delete']
+  triggers:['chat_reservation_guard','chat_reservation_hold','chat_reservation_transition','chat_reservation_finish','chat_reservation_no_delete','usage_ledger_no_update','usage_ledger_no_delete','price_snapshot_no_change','price_snapshot_no_delete','billing_account_guard']
  },
  '0002_account_sessions.sql':{
   tables:['account_profiles','account_sessions','account_access_tokens','account_refresh_tokens','account_security_events','account_rate_limits','account_challenges','account_deletion_requests'],
@@ -203,8 +203,26 @@ async function main(){
  console.log(JSON.stringify({baselineParity:{matched:baselineMismatches.length===0,mismatches:baselineMismatches}}));
  if(baselineMismatches.length)throw new Error('Remote staging baseline differs from the current baseline. Refusing tracked migration until drift is resolved.');
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
- // The tracked Wrangler migration path is authoritative. Do not wrap remote D1 execution in an explicit SQL transaction probe; provider-managed D1 execution can reject transaction-control statements before the migration SQL is evaluated.
- wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration',{safeDiagnostic:true});
+ // Remote D1's /query migration splitter has known trigger-body parsing defects. Apply each
+ // reviewed SQL file through D1's file-import path, then verify the complete fingerprint
+ // before recording migration history. Never mark an unverified or partial migration applied.
+ let trackedApplied=[...appliedNames];
+ for(const migration of pending){
+  const initialDecision=reconciliationDecision({pending:[migration],objects:schemaObjects})[0];
+  if(initialDecision?.action==='apply'){
+   const migrationPath=resolve(dir,'migrations',migration);
+   wrangler(['d1','execute','DB','--remote','--file',migrationPath],`Remote migration file import ${migration}`,{safeDiagnostic:true});
+  }
+  const verifySchemaRaw=wrangler(['d1','execute','DB','--remote','--command',remoteSchemaInspectionSql(),'--json'],`Post-import schema verification ${migration}`);
+  const verifyObjects=wranglerRows(parseWranglerJson(verifySchemaRaw,`Post-import schema verification ${migration}`),`Post-import schema verification ${migration}`);
+  const verifiedDecision=reconciliationDecision({pending:[migration],objects:verifyObjects})[0];
+  if(verifiedDecision?.action!=='reconcile')throw new Error('Remote migration import did not produce the complete expected schema. Refusing tracking mutation.');
+  const trackingSql=safeTrackingReconciliationSql([{migration,action:'reconcile'}],localNames,trackedApplied);
+  if(!trackingSql)throw new Error('Expected a verified migration tracking mutation.');
+  wrangler(['d1','execute','DB','--remote','--command',trackingSql],`Verified migration tracking ${migration}`);
+  trackedApplied=[...trackedApplied,migration];
+  pendingMigrationNames(localNames,trackedApplied);
+ }
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
  const response=await fetch(input.origin+'/api/v1/health',{redirect:'error',signal:AbortSignal.timeout(15000)}),health=await response.json();
  if(!response.ok||health.service!=='uvenaro-account-staging'||health.accountReady!==input.enabled)throw new Error('Deployment health check did not match requested activation. Inspect staging before use.');
