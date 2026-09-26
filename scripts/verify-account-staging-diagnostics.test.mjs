@@ -65,14 +65,14 @@ test('rejects malformed or duplicate migration history rows',()=>{
  assert.throws(()=>migrationHistoryNames([{id:1,name:'0000_baseline.sql'},{id:2,name:'0000_baseline.sql'}]),/duplicate names/);
 });
 
-test('builds atomic idempotent tracking reconciliation only for a contiguous verified prefix',()=>{
+test('builds single-step idempotent tracking reconciliation only for the next verified migration',()=>{
  const local=['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql'];
  const sql=safeTrackingReconciliationSql([{migration:'0002_account_sessions.sql',action:'reconcile'}],local,['0000_baseline.sql','0001_atomic_chat_billing.sql']);
- assert.match(sql,/^BEGIN IMMEDIATE;/);
+ assert.doesNotMatch(sql,/\b(?:BEGIN|COMMIT|ROLLBACK)\b/i);
  assert.match(sql,/INSERT INTO d1_migrations/);
  assert.match(sql,/WHERE NOT EXISTS/);
  assert.match(sql,/0002_account_sessions\.sql/);
- assert.match(sql,/COMMIT;$/);
+ assert.match(sql,/^INSERT INTO d1_migrations/);
 });
 
 test('tracking reconciliation is a no-op without reconcile decisions',()=>{
