@@ -130,6 +130,7 @@ async function main(){
  const localNames=(await readdir(resolve(dir,'migrations'))).filter(x=>/^\d+_.+\.sql$/.test(x)).sort();
  const pending=pendingMigrationNames(localNames,appliedNames);
  const decisions=reconciliationDecision({pending,objects:schemaObjects});
+ console.log(JSON.stringify({migrationPreflight:{local:localNames,applied:appliedNames,pending,decisions}}));
  const reconciliationSql=safeTrackingReconciliationSql(decisions,localNames,appliedNames);
  if(reconciliationSql){
   wrangler(['d1','execute','DB','--remote','--command',reconciliationSql],'Remote migration tracking reconciliation');
