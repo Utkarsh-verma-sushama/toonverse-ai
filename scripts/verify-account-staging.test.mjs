@@ -80,6 +80,32 @@ test('staging pages have response security headers and cannot install a service 
  assert.match(response.headers.get('content-security-policy'),/frame-ancestors 'none'/);assert.match(response.headers.get('x-robots-tag'),/noindex/);
  assert.equal((await call('/sw.js',{method:'GET'})).response.status,410);assert.equal((await call('/.env',{method:'GET'})).response.status,404);
 });
+test('staging migration chain is D1-compatible in Miniflare, not only SQLite',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-d1-'));const mf=new (await import('miniflare')).Miniflare({workers:[{name:'migration-chain',modules:true,script:'export default {fetch(){return new Response("ok");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'staging-migration-chain'}}]});
+ try{
+  const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
+  const ordered=(await readdir(migrations)).sort();assert.deepEqual(ordered,['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql']);
+  const sql=(await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')))).join('\n');
+  // Exact proven parser pattern from verify-d1-billing.test.mjs.
+  const parser=new DatabaseSync(':memory:');let pending='';const queries=[];
+  try{for(const line of sql.split('\n')){if(!line.trim()||line.trim().startsWith('--'))continue;
+   pending+=line+'\n';
+   if(!line.trim().endsWith(';'))continue;
+   try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}
+   const complete=pending;
+   pending='';
+   if(!complete.trim().startsWith('PRAGMA'))queries.push(complete);}assert.equal(pending,'');}finally{parser.close();}
+  assert.ok(sql.length>1000,'combined migration SQL unexpectedly empty');
+  assert.ok(sql.includes('CREATE TABLE account_sessions'),'combined migration SQL omitted account_sessions');
+  const artifact002=await readFile(join(migrations,'0002_account_sessions.sql'),'utf8');
+  assert.match(artifact002,/CREATE TABLE account_sessions/,'generated 0002 artifact omitted account_sessions');
+  const accountHits=queries.map((sql,i)=>({i,head:sql.trim().slice(0,80),hasAccount:/account_sessions/i.test(sql)})).filter(x=>x.hasAccount);
+  assert.ok(queries.some(sql=>/CREATE TABLE account_sessions/i.test(sql)),'proven parser omitted account_sessions; queries='+queries.length+'; accountHits='+JSON.stringify(accountHits));
+  await DB.batch(queries.map(sql=>DB.prepare(sql)));
+  assert.equal((await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='account_sessions'").first())?.name,'account_sessions');
+ }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
+});
+
 test('staging artifact includes only reviewed browser assets and fresh tracked migrations',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-'));const sql=new DatabaseSync(':memory:');
  try{
