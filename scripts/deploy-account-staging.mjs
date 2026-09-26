@@ -132,9 +132,17 @@ async function main(){
  const publicContext={window:{}};vm.runInNewContext(await readFile(resolve(root,'assets/js/config.js'),'utf8'),publicContext);
  const firebase=publicContext.window.UvenaroConfig.firebase;if(firebase.projectId!=='toonverse-ai'||!firebase.apiKey)throw new Error('Firebase project configuration changed');
  const dir=resolve(root,'.account-staging');await mkdir(dir,{recursive:true,mode:0o700});const configPath=resolve(dir,'wrangler.json'),secretPath=resolve(dir,'deployment-secrets.json');await writeFile(configPath,JSON.stringify(config,null,2),{mode:0o600});
- function wrangler(args,phase){
+ function wrangler(args,phase,{safeDiagnostic=false}={}){
   const out=spawnSync(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),...args,'--config',configPath],{cwd:root,env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'},encoding:'utf8',maxBuffer:8*1024*1024,timeout:180000});
-  if(out.error||out.status!==0)throw safeWranglerFailure(phase,out);return out.stdout;
+  if(out.error||out.status!==0){
+   if(safeDiagnostic){
+    const raw=[out.stderr,out.stdout].filter(Boolean).join('\n');
+    const migration=(raw.match(/(?:migration|file)\s+["'`]?([0-9]+_[A-Za-z0-9_.-]+\.sql)/i)||[])[1]||null;
+    const sqlite=(raw.match(/(?:SQLITE_[A-Z_]+|D1_[A-Z_]+|duplicate column name|already exists|no such (?:table|column|index|trigger)|foreign key constraint failed|syntax error|near ["'`][^"'\n`]+["'`]:? syntax error)/i)||[])[0]||null;
+    console.error(JSON.stringify({migrationFailure:{phase,migration,errorClass:sqlite||classifyRemoteFailure(raw)}}));
+   }
+   throw safeWranglerFailure(phase,out);
+  }return out.stdout;
  }
  await verifyRemoteDatabase(input,process.env.CLOUDFLARE_API_TOKEN);
  const schemaRaw=wrangler(['d1','execute','DB','--remote','--command',remoteSchemaInspectionSql(),'--json'],'Remote schema inspection');
@@ -155,7 +163,7 @@ async function main(){
   pendingMigrationNames(localNames,verified);
  }
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');
- wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration');
+ wrangler(['d1','migrations','apply','DB','--remote'],'Tracked database migration',{safeDiagnostic:true});
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
  const response=await fetch(input.origin+'/api/v1/health',{redirect:'error',signal:AbortSignal.timeout(15000)}),health=await response.json();
  if(!response.ok||health.service!=='uvenaro-account-staging'||health.accountReady!==input.enabled)throw new Error('Deployment health check did not match requested activation. Inspect staging before use.');
