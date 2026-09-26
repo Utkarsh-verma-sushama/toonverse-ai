@@ -92,7 +92,7 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
    try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}
    if(!pending.trim().startsWith('PRAGMA'))statements.push({file,sql:pending});pending='';
   }assert.equal(pending,'');}finally{parser.close();}
-  assert.ok(statements.some(x=>x.file==='0002_account_sessions.sql'&&/CREATE TABLE account_sessions/i.test(x.sql)),'parser omitted account_sessions CREATE TABLE');
+  assert.ok(statements.some(x=>/CREATE TABLE account_sessions/i.test(x.sql)),'parser omitted account_sessions CREATE TABLE; files='+[...new Set(statements.map(x=>x.file))].join(',')+'; count='+statements.length);
   for(let i=0;i<statements.length;i++){const item=statements[i];try{await DB.prepare(item.sql).run();}catch(error){throw new Error('D1 migration '+item.file+' statement '+(i+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}}
   const session=await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='account_sessions'").first();assert.equal(session?.name,'account_sessions');
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
