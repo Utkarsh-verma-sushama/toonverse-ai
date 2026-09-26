@@ -80,6 +80,18 @@ test('staging pages have response security headers and cannot install a service 
  assert.match(response.headers.get('content-security-policy'),/frame-ancestors 'none'/);assert.match(response.headers.get('x-robots-tag'),/noindex/);
  assert.equal((await call('/sw.js',{method:'GET'})).response.status,410);assert.equal((await call('/.env',{method:'GET'})).response.status,404);
 });
+test('staging migration chain is D1-compatible in Miniflare, not only SQLite',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-d1-'));const mf=new (await import('miniflare')).Miniflare({workers:[{name:'migration-chain',modules:true,script:'export default {fetch(){return new Response("ok");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'staging-migration-chain'}}]});
+ try{
+  const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
+  for(const file of (await readdir(migrations)).sort()){
+   const sql=await readFile(join(migrations,file),'utf8');
+   try{await DB.exec(sql);}catch(error){throw new Error('D1 migration '+file+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}
+  }
+  assert.equal((await DB.prepare('SELECT COUNT(*) n FROM account_sessions').first()).n,0);
+ }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
+});
+
 test('staging artifact includes only reviewed browser assets and fresh tracked migrations',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-'));const sql=new DatabaseSync(':memory:');
  try{
