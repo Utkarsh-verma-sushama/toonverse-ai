@@ -111,6 +111,14 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
 });
 
+
+test('remote deploy uses verified file import for trigger migrations and never tracked apply',async()=>{
+ const source=await readFile(resolve(root,'scripts/deploy-account-staging.mjs'),'utf8');
+ assert.match(source,/\['d1','execute','DB','--remote','--file',migrationPath\]/);
+ assert.doesNotMatch(source,/\['d1','migrations','apply','DB','--remote'\]/);
+ for(const trigger of ['chat_reservation_guard','chat_reservation_hold','chat_reservation_transition','chat_reservation_finish','chat_reservation_no_delete','usage_ledger_no_update','usage_ledger_no_delete','price_snapshot_no_change','price_snapshot_no_delete','billing_account_guard'])assert.ok(source.includes("'"+trigger+"'"),trigger+' missing from fail-closed migration fingerprint');
+});
+
 test('generated staging migrations pass the same Wrangler tracked-migration engine locally',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'uvenaro-wrangler-local-'));
  try{
