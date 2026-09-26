@@ -230,8 +230,22 @@ async function main(){
   schemaObjects=verifyObjects;
  }
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
- const response=await fetch(input.origin+'/api/v1/health',{redirect:'error',signal:AbortSignal.timeout(15000)}),health=await response.json();
- if(!response.ok||health.service!=='uvenaro-account-staging'||health.accountReady!==input.enabled)throw new Error('Deployment health check did not match requested activation. Inspect staging before use.');
+ let health=null,lastHealthFailure='unavailable';
+ for(let attempt=1;attempt<=3;attempt++){
+  try{
+   const response=await fetch(input.origin+'/api/v1/health',{redirect:'error',signal:AbortSignal.timeout(15000)});
+   const contentType=response.headers.get('content-type')||'',body=await response.text();
+   if(!response.ok){lastHealthFailure='http '+response.status;}
+   else if(!/application\/json/i.test(contentType)){lastHealthFailure='non-json response';}
+   else{
+    try{health=JSON.parse(body);}catch{lastHealthFailure='invalid json response';}
+    if(health&&health.service==='uvenaro-account-staging'&&health.accountReady===input.enabled)break;
+    if(health)lastHealthFailure='health payload mismatch';
+   }
+  }catch(error){lastHealthFailure=error?.name==='TimeoutError'?'timeout':'network failure';}
+  if(attempt<3)await new Promise(resolve=>setTimeout(resolve,2000*attempt));
+ }
+ if(!health||health.service!=='uvenaro-account-staging'||health.accountReady!==input.enabled)throw new Error(`Deployment health verification failed after retries (${lastHealthFailure}); response bodies were suppressed.`);
  console.log(JSON.stringify({deployed:true,url:input.origin+'/account.html',accountReady:health.accountReady,providerChecked:false}));
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))main().catch(error=>{console.error(error.message);process.exitCode=1;});
