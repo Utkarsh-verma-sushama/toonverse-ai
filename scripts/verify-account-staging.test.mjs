@@ -90,7 +90,7 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
   try{for(const file of (await readdir(migrations)).sort())for(const line of (await readFile(join(migrations,file),'utf8')).split('\\n')){
    if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;
    try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}
-   if(!pending.trim().startsWith('PRAGMA'))statements.push({file,sql:pending});pending='';
+   const complete=pending;pending='';if(!complete.trim().startsWith('PRAGMA'))statements.push({file,sql:complete});
   }assert.equal(pending,'');}finally{parser.close();}
   assert.ok(statements.some(x=>/CREATE TABLE account_sessions/i.test(x.sql)),'parser omitted account_sessions CREATE TABLE; files='+[...new Set(statements.map(x=>x.file))].join(',')+'; count='+statements.length);
   for(let i=0;i<statements.length;i++){const item=statements[i];try{await DB.prepare(item.sql).run();}catch(error){throw new Error('D1 migration '+item.file+' statement '+(i+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}}
