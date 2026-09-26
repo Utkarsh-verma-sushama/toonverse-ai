@@ -88,7 +88,9 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  try{
   const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
   const ordered=(await readdir(migrations)).sort();assert.deepEqual(ordered,['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql']);
-  const sql=(await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')))).join('\n');
+  const artifacts=await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')));
+  for(let i=0;i<artifacts.length;i++)assert.equal(artifacts[i].includes('\r'),false,ordered[i]+' must use LF-only line endings for remote D1 trigger migrations');
+  const sql=artifacts.join('\n');
   // Exact proven parser pattern from verify-d1-billing.test.mjs.
   const parser=new DatabaseSync(':memory:');let pending='';const queries=[];
   try{for(const line of sql.split('\n')){if(!line.trim()||line.trim().startsWith('--'))continue;
