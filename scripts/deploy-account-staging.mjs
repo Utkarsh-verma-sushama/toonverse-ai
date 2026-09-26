@@ -98,12 +98,19 @@ export function expectedBaselineColumns(){
   provider_price_snapshots:['id','provider','model','input_microusd_per_million','output_microusd_per_million','credit_value_microusd','effective_at','retired_at']
  };
 }
-export function baselineColumnParity(rows=[]){
- const expected=expectedBaselineColumns(),actual={};
+export function baselineColumnParity(rows=[],allowedMigrationColumns=[]){
+ const expected=expectedBaselineColumns(),actual={},allowed=new Map();
+ for(const entry of allowedMigrationColumns){
+  if(!Array.isArray(entry)||entry.length!==2||typeof entry[0]!=='string'||typeof entry[1]!=='string')throw new Error('Allowed migration column metadata is malformed. Refusing migration.');
+  if(!allowed.has(entry[0]))allowed.set(entry[0],new Set());allowed.get(entry[0]).add(entry[1]);
+ }
  for(const row of rows){if(typeof row?.table_name!=='string'||typeof row?.name!=='string')throw new Error('Remote baseline metadata is malformed. Refusing migration.');(actual[row.table_name]??=[]).push(row.name);}
  const mismatches=[];
- for(const [table,cols] of Object.entries(expected)){const got=actual[table]||[],missing=cols.filter(x=>!got.includes(x)),extra=got.filter(x=>!cols.includes(x));if(missing.length||extra.length)mismatches.push({table,missing,extra});}
+ for(const [table,cols] of Object.entries(expected)){const got=actual[table]||[],missing=cols.filter(x=>!got.includes(x)),extra=got.filter(x=>!cols.includes(x)&&!allowed.get(table)?.has(x));if(missing.length||extra.length)mismatches.push({table,missing,extra});}
  return mismatches;
+}
+export function reconciledMigrationColumns(decisions=[]){
+ return decisions.filter(x=>x?.action==='reconcile').flatMap(x=>reconciliationFingerprints[x.migration]?.columns||[]);
 }
 
 export function wranglerRows(payload,phase='Remote D1 inspection'){
@@ -200,7 +207,7 @@ async function main(){
  }
  const baselineRaw=wrangler(['d1','execute','DB','--remote','--command',remoteBaselineColumnsSql(),'--json'],'Remote baseline structural inspection');
  const baselineRows=wranglerRows(parseWranglerJson(baselineRaw,'Remote baseline structural inspection'),'Remote baseline structural inspection');
- const baselineMismatches=baselineColumnParity(baselineRows);
+ const baselineMismatches=baselineColumnParity(baselineRows,reconciledMigrationColumns(decisions));
  console.log(JSON.stringify({baselineParity:{matched:baselineMismatches.length===0,mismatches:baselineMismatches}}));
  if(baselineMismatches.length)throw new Error('Remote staging baseline differs from the current baseline. Refusing tracked migration until drift is resolved.');
  wrangler(['d1','migrations','list','DB','--remote'],'Remote migration preflight');

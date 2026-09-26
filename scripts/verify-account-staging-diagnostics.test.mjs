@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames,safeTrackingReconciliationSql} from './deploy-account-staging.mjs';
+import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames,safeTrackingReconciliationSql,baselineColumnParity,reconciledMigrationColumns} from './deploy-account-staging.mjs';
 
 test('classifies remote D1 permission failures without exposing provider output',()=>{
  const secret='cf-secret-token-value';
@@ -84,4 +84,28 @@ test('tracking reconciliation rejects non-prefix, already-applied and unsafe nam
  assert.throws(()=>safeTrackingReconciliationSql([{migration:'0002_account_sessions.sql',action:'reconcile'}],local,['0000_baseline.sql']),/contiguous migration prefix/);
  assert.throws(()=>safeTrackingReconciliationSql([{migration:'0000_baseline.sql',action:'reconcile'}],local,['0000_baseline.sql']),/Unsafe migration reconciliation request/);
  assert.throws(()=>safeTrackingReconciliationSql([{migration:'../evil.sql',action:'reconcile'}],local,[]),/Unsafe migration reconciliation request/);
+});
+
+
+test('baseline parity permits only columns owned by a fully reconciled migration',()=>{
+ const base={
+  billing_accounts:['owner_id','plan_id','status','included_credits','prepaid_credits','reserved_credits','cycle_started_at','cycle_ends_at','updated_at'],
+  usage_reservations:['id','owner_id','idempotency_key','feature','estimated_credits','actual_credits','estimated_cost_microusd','actual_cost_microusd','status','created_at','settled_at'],
+  usage_limits:['owner_id','daily_credit_limit','monthly_credit_limit','max_request_cost_microusd','requests_per_minute','blocked_until','updated_at'],
+  usage_ledger:['id','owner_id','reservation_id','event_type','credits','cost_microusd','metadata_json','created_at'],
+  provider_price_snapshots:['id','provider','model','input_microusd_per_million','output_microusd_per_million','credit_value_microusd','effective_at','retired_at']
+ };
+ const rows=Object.entries(base).flatMap(([table,cols])=>cols.map(name=>({table_name:table,name})));
+ rows.push({table_name:'usage_reservations',name:'request_hash'},{table_name:'provider_price_snapshots',name:'valid_until'});
+ const allowed=reconciledMigrationColumns([{migration:'0001_atomic_chat_billing.sql',action:'reconcile'}]);
+ assert.deepEqual(baselineColumnParity(rows,allowed),[]);
+ assert.deepEqual(baselineColumnParity([...rows,{table_name:'usage_reservations',name:'unexpected_drift'}],allowed),[
+  {table:'usage_reservations',missing:[],extra:['unexpected_drift']}
+ ]);
+});
+
+test('unreconciled migration columns remain drift and malformed allowlists fail closed',()=>{
+ const rows=[{table_name:'usage_reservations',name:'request_hash'}];
+ assert.ok(baselineColumnParity(rows,[]).some(x=>x.table==='usage_reservations'&&x.extra.includes('request_hash')));
+ assert.throws(()=>baselineColumnParity([],['bad']),/Allowed migration column metadata is malformed/);
 });
