@@ -139,7 +139,18 @@ async function main(){
     const raw=[out.stderr,out.stdout].filter(Boolean).join('\n');
     const migration=(raw.match(/(?:migration|file)\s+["'`]?([0-9]+_[A-Za-z0-9_.-]+\.sql)/i)||[])[1]||null;
     const sqlite=(raw.match(/(?:SQLITE_[A-Z_]+|D1_[A-Z_]+|duplicate column name|already exists|no such (?:table|column|index|trigger)|foreign key constraint failed|syntax error|near ["'`][^"'\n`]+["'`]:? syntax error)/i)||[])[0]||null;
-    console.error(JSON.stringify({migrationFailure:{phase,migration,errorClass:sqlite||classifyRemoteFailure(raw)}}));
+    // Wrangler often wraps the useful SQLite reason after the generic SQLITE_ERROR token.
+    // Emit only a tightly allow-listed, single-line reason; never raw output, SQL, paths, or credentials.
+    const reasonPatterns=[
+      /duplicate column name:\s*[A-Za-z_][A-Za-z0-9_]*/i,
+      /(?:table|index|trigger)\s+[A-Za-z_][A-Za-z0-9_]*\s+already exists/i,
+      /no such (?:table|column|index|trigger):\s*[A-Za-z_][A-Za-z0-9_.]*/i,
+      /near ["'`][A-Za-z0-9_(),.+*\/-]{1,40}["'`]:\s*syntax error/i,
+      /foreign key constraint failed/i,
+      /not authorized/i
+    ];
+    const reason=reasonPatterns.map(pattern=>raw.match(pattern)?.[0]||null).find(Boolean)||null;
+    console.error(JSON.stringify({migrationFailure:{phase,migration,errorClass:sqlite||classifyRemoteFailure(raw),reason}}));
    }
    throw safeWranglerFailure(phase,out);
   }return out.stdout;
