@@ -182,7 +182,7 @@ async function main(){
  await verifyRemoteDatabase(input,process.env.CLOUDFLARE_API_TOKEN);
  const schemaRaw=wrangler(['d1','execute','DB','--remote','--command',remoteSchemaInspectionSql(),'--json'],'Remote schema inspection');
  const schemaPayload=parseWranglerJson(schemaRaw,'Remote schema inspection');
- const schemaObjects=wranglerRows(schemaPayload,'Remote schema inspection');
+ let schemaObjects=wranglerRows(schemaPayload,'Remote schema inspection');
  const historyRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],'Remote migration history inspection');
  const historyRows=wranglerRows(parseWranglerJson(historyRaw,'Remote migration history inspection'),'Remote migration history inspection');
  const appliedNames=migrationHistoryNames(historyRows);
@@ -220,8 +220,13 @@ async function main(){
   const trackingSql=safeTrackingReconciliationSql([{migration,action:'reconcile'}],localNames,trackedApplied);
   if(!trackingSql)throw new Error('Expected a verified migration tracking mutation.');
   wrangler(['d1','execute','DB','--remote','--command',trackingSql],`Verified migration tracking ${migration}`);
-  trackedApplied=[...trackedApplied,migration];
+  const verifyHistoryRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],`Post-tracking history verification ${migration}`);
+  const verifiedHistory=migrationHistoryNames(wranglerRows(parseWranglerJson(verifyHistoryRaw,`Post-tracking history verification ${migration}`),`Post-tracking history verification ${migration}`));
+  const expectedTracked=[...trackedApplied,migration];
+  if(verifiedHistory.length!==expectedTracked.length||verifiedHistory.some((name,index)=>name!==expectedTracked[index]))throw new Error('Remote migration history did not exactly match the verified contiguous state. Refusing to continue.');
+  trackedApplied=verifiedHistory;
   pendingMigrationNames(localNames,trackedApplied);
+  schemaObjects=verifyObjects;
  }
  try{await writeFile(secretPath,JSON.stringify({ACCOUNT_SESSION_KEY:process.env.ACCOUNT_SESSION_KEY,FIREBASE_WEB_API_KEY:firebase.apiKey}),{mode:0o600});wrangler(['deploy','--secrets-file',secretPath],'Account staging deployment');}finally{await rm(secretPath,{force:true});}
  const response=await fetch(input.origin+'/api/v1/health',{redirect:'error',signal:AbortSignal.timeout(15000)}),health=await response.json();
