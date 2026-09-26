@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames,safeTrackingReconciliationSql,baselineColumnParity,reconciledMigrationColumns} from './deploy-account-staging.mjs';
+import {classifyRemoteFailure,safeWranglerFailure,reconciliationDecision,pendingMigrationNames,wranglerRows,migrationHistoryNames,safeTrackingReconciliationSql,baselineColumnParity,reconciledMigrationColumns,verifiedTrackedMigrationColumns} from './deploy-account-staging.mjs';
 
 test('classifies remote D1 permission failures without exposing provider output',()=>{
  const secret='cf-secret-token-value';
@@ -108,4 +108,22 @@ test('unreconciled migration columns remain drift and malformed allowlists fail 
  const rows=[{table_name:'usage_reservations',name:'request_hash'}];
  assert.ok(baselineColumnParity(rows,[]).some(x=>x.table==='usage_reservations'&&x.extra.includes('request_hash')));
  assert.throws(()=>baselineColumnParity([],['bad']),/Allowed migration column metadata is malformed/);
+});
+
+
+test('tracked migration columns remain allowed after reconciliation is recorded',()=>{
+ const objects=[
+  {type:'table',name:'provider_price_snapshots',sql:'CREATE TABLE provider_price_snapshots (valid_until TEXT)'},
+  {type:'table',name:'usage_reservations',sql:'CREATE TABLE usage_reservations (request_hash TEXT, price_snapshot_id TEXT, input_token_limit INTEGER, output_token_limit INTEGER, input_tokens INTEGER, output_tokens INTEGER, global_cost_ceiling INTEGER, provider_state TEXT, provider_request_id TEXT, failure_code TEXT, expires_at TEXT)'},
+  {type:'table',name:'chat_billing_policy',sql:'CREATE TABLE chat_billing_policy (id INTEGER)'},
+  ...['idx_usage_active','idx_usage_time','idx_usage_settled_time','idx_usage_owner_settled','idx_chat_ledger_event'].map(name=>({type:'index',name})),
+  ...['chat_reservation_guard','chat_reservation_hold','chat_reservation_transition','chat_reservation_finish','chat_reservation_no_delete','usage_ledger_no_update','usage_ledger_no_delete','price_snapshot_no_change','price_snapshot_no_delete','billing_account_guard'].map(name=>({type:'trigger',name}))
+ ];
+ const allowed=verifiedTrackedMigrationColumns(['0001_atomic_chat_billing.sql'],objects);
+ assert.ok(allowed.some(([table,column])=>table==='usage_reservations'&&column==='request_hash'));
+ assert.ok(allowed.some(([table,column])=>table==='provider_price_snapshots'&&column==='valid_until'));
+});
+
+test('tracked migration fingerprint mismatch fails closed',()=>{
+ assert.throws(()=>verifiedTrackedMigrationColumns(['0001_atomic_chat_billing.sql'],[]),/Tracked migration schema fingerprint mismatch/);
 });
