@@ -84,17 +84,14 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-d1-'));const mf=new (await import('miniflare')).Miniflare({workers:[{name:'migration-chain',modules:true,script:'export default {fetch(){return new Response("ok");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'staging-migration-chain'}}]});
  try{
   const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
-  // Mirror the already-proven billing test parser: SQLite itself recognizes complete statements,
-  // including trigger bodies, while the parser database evolves through the exact ordered chain.
-  const parser=new DatabaseSync(':memory:');const statements=[];let pending='';
-  try{for(const file of (await readdir(migrations)).sort())for(const line of (await readFile(join(migrations,file),'utf8')).split('\\n')){
-   if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;
-   try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}
-   const complete=pending;pending='';if(!complete.trim().startsWith('PRAGMA'))statements.push({file,sql:complete});
-  }assert.equal(pending,'');}finally{parser.close();}
-  assert.ok(statements.some(x=>/CREATE TABLE account_sessions/i.test(x.sql)),'parser omitted account_sessions CREATE TABLE; files='+[...new Set(statements.map(x=>x.file))].join(',')+'; count='+statements.length);
-  for(let i=0;i<statements.length;i++){const item=statements[i];try{await DB.prepare(item.sql).run();}catch(error){throw new Error('D1 migration '+item.file+' statement '+(i+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}}
-  const session=await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='account_sessions'").first();assert.equal(session?.name,'account_sessions');
+  const ordered=(await readdir(migrations)).sort();assert.deepEqual(ordered,['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql']);
+  const sql=(await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')))).join('\\n');
+  // Exact proven parser pattern from verify-d1-billing.test.mjs.
+  const parser=new DatabaseSync(':memory:');let pending='';const queries=[];
+  try{for(const line of sql.split('\\n')){if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw error;}if(!pending.trim().startsWith('PRAGMA'))queries.push(pending);pending='';}assert.equal(pending,'');}finally{parser.close();}
+  assert.ok(queries.some(sql=>/CREATE TABLE account_sessions/i.test(sql)),'proven parser omitted account_sessions');
+  await DB.batch(queries.map(sql=>DB.prepare(sql)));
+  assert.equal((await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='account_sessions'").first())?.name,'account_sessions');
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
 });
 
