@@ -141,7 +141,8 @@ export function safeTrackingReconciliationSql(decisions=[],localNames=[],applied
  const expected=localNames.slice(firstMissing,firstMissing+reconcile.length);
  if(expected.length!==reconcile.length||expected.some((x,i)=>x!==reconcile[i]))throw new Error('Reconciliation is not a contiguous migration prefix. Refusing tracking mutation.');
  const q=s=>"'"+s.replaceAll("'","''")+"'";
- return 'BEGIN IMMEDIATE; '+reconcile.map(name=>`INSERT INTO d1_migrations (name, applied_at) SELECT ${q(name)}, datetime('now') WHERE NOT EXISTS (SELECT 1 FROM d1_migrations WHERE name=${q(name)});`).join(' ')+' COMMIT;';
+ if(reconcile.length!==1)throw new Error('Remote migration tracking reconciliation must advance exactly one verified migration at a time.');
+ return `INSERT INTO d1_migrations (name, applied_at) SELECT ${q(reconcile[0])}, datetime('now') WHERE NOT EXISTS (SELECT 1 FROM d1_migrations WHERE name=${q(reconcile[0])});`;
 }
 async function main(){
  const remote=process.argv.includes('--remote');if(!remote){await buildStaging();console.log('Build only. Remote deployment requires --remote and configured credentials.');return;}
