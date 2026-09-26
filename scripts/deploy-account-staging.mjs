@@ -127,7 +127,7 @@ async function main(){
  const historyRaw=wrangler(['d1','execute','DB','--remote','--command',remoteMigrationHistorySql(),'--json'],'Remote migration history inspection');
  const historyRows=wranglerRows(parseWranglerJson(historyRaw,'Remote migration history inspection'),'Remote migration history inspection');
  const appliedNames=migrationHistoryNames(historyRows);
- const localNames=(await readdir(resolve(dir,'migrations'))).filter(x=>/^\\d+_.+\\.sql$/.test(x)).sort();
+ const localNames=(await readdir(resolve(dir,'migrations'))).filter(x=>/^\d+_.+\.sql$/.test(x)).sort();
  const pending=pendingMigrationNames(localNames,appliedNames);
  const decisions=reconciliationDecision({pending,objects:schemaObjects});
  const reconciliationSql=safeTrackingReconciliationSql(decisions,localNames,appliedNames);
