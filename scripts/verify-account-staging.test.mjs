@@ -130,6 +130,15 @@ test('real migration artifacts exactly satisfy fail-closed reconciliation finger
  }finally{sql.close();}
 });
 
+test('deployment health verification never parses HTML as JSON and retries transient responses',async()=>{
+ const source=await readFile(resolve(root,'scripts/deploy-account-staging.mjs'),'utf8');
+ assert.match(source,/content-type/);
+ assert.match(source,/non-json response/);
+ assert.match(source,/attempt=1;attempt<=3/);
+ assert.match(source,/response bodies were suppressed/);
+ assert.doesNotMatch(source,/health=await response\.json\(\)/);
+});
+
 test('remote deploy uses verified file import for trigger migrations and never tracked apply',async()=>{
  const source=await readFile(resolve(root,'scripts/deploy-account-staging.mjs'),'utf8');
  assert.match(source,/\['d1','execute','DB','--remote','--file',migrationPath\]/);
