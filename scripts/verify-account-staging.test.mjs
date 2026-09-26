@@ -84,14 +84,18 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-d1-'));const mf=new (await import('miniflare')).Miniflare({workers:[{name:'migration-chain',modules:true,script:'export default {fetch(){return new Response("ok");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'staging-migration-chain'}}]});
  try{
   const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
-  for(const file of (await readdir(migrations)).sort()){
-   const sql=await readFile(join(migrations,file),'utf8');
-   // Use SQLite's parser to preserve trigger bodies while producing individual complete statements for D1.
-   const parser=new DatabaseSync(':memory:');let pending='';const statements=[];
-   try{for(const line of sql.split('\\n')){if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;try{parser.exec(pending);statements.push(pending);pending='';}catch(error){const message=String(error.message);if(message.includes('incomplete input'))continue;/* Missing schema objects can be valid syntax; use SQLite complete() behavior via a savepoint parser below. */if(/no such (?:table|column)/i.test(message)){statements.push(pending);pending='';continue;}throw error;}}}finally{parser.close();}
-   assert.equal(pending.trim(),'','incomplete SQL in '+file);
-   try{for(let i=0;i<statements.length;i++)await DB.prepare(statements[i]).run();}catch(error){throw new Error('D1 migration '+file+' statement '+(statements.findIndex((_,i)=>i>=0)+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}
-  }
+  // Reuse the repository's proven SQLite completeness parser, but parse the whole ordered chain
+  // so schema-dependent statements are recognized against the schema created before them.
+  const parser=new DatabaseSync(':memory:');const statements=[];let pending='';
+  try{
+   for(const file of (await readdir(migrations)).sort())for(const line of (await readFile(join(migrations,file),'utf8')).split('\\n')){
+    if(!line.trim()||line.trim().startsWith('--'))continue;pending+=line+'\\n';if(!line.trim().endsWith(';'))continue;
+    try{parser.exec(pending);}catch(error){if(String(error.message).includes('incomplete input'))continue;throw new Error('SQLite completeness parser failed: '+String(error.message));}
+    statements.push({file,sql:pending});pending='';
+   }
+   assert.equal(pending.trim(),'','incomplete ordered migration SQL');
+  }finally{parser.close();}
+  for(let i=0;i<statements.length;i++){const item=statements[i];try{await DB.prepare(item.sql).run();}catch(error){throw new Error('D1 migration '+item.file+' statement '+(i+1)+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}}
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM account_sessions').first()).n,0);
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
 });
