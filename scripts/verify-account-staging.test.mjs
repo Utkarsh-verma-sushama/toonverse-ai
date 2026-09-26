@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 import staging,{stagingEnvironment} from '../backend/staging-worker.mjs';
 import {accountDatabase,accountEnv,accountHeaders,identityService} from './account-fixtures.mjs';
 import {buildStaging} from './prepare-account-staging.mjs';
-import {deploymentInputs,requireStagingDatabase,verifyRemoteDatabase} from './deploy-account-staging.mjs';
+import {deploymentInputs,requireStagingDatabase,verifyRemoteDatabase,reconciliationDecision} from './deploy-account-staging.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const origin='https://uvenaro-account-staging.test.workers.dev',previousFetch=globalThis.fetch;let db,provider,env,jar,token;
 beforeEach(async()=>{db=accountDatabase();provider=await identityService();globalThis.fetch=provider.fetch;jar='';token='';env={...accountEnv,...db,ENVIRONMENT:'staging',STAGING_ORIGIN:origin,STAGING_ALLOWED_EMAILS:'alice@example.com',ASSETS:{fetch:async()=>new Response('<h1>account</h1>',{headers:{'content-type':'text/html'}})}};});
@@ -111,6 +111,24 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
 });
 
+
+test('real migration artifacts exactly satisfy fail-closed reconciliation fingerprints',async()=>{
+ const sql=new DatabaseSync(':memory:');
+ try{
+  sql.exec(await readFile(resolve(root,'backend/schema.sql'),'utf8'));
+  for(const migration of ['0001_atomic_chat_billing.sql','0002_account_sessions.sql']){
+   sql.exec(await readFile(resolve(root,'backend/migrations',migration),'utf8'));
+   const objects=sql.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger') AND name NOT LIKE 'sqlite_%' ORDER BY type,name").all();
+   assert.deepEqual(reconciliationDecision({pending:[migration],objects}),[{migration,action:'reconcile'}]);
+   const fingerprinted=objects.filter(x=>x.name!=='sqlite_sequence');
+   let provedPartial=false;
+   for(const object of fingerprinted){
+    try{reconciliationDecision({pending:[migration],objects:objects.filter(x=>x.name!==object.name)});}catch(error){if(/Partial staging schema/.test(String(error.message))){provedPartial=true;break;}}
+   }
+   assert.equal(provedPartial,true,migration+' fingerprint must reject a partial schema');
+  }
+ }finally{sql.close();}
+});
 
 test('remote deploy uses verified file import for trigger migrations and never tracked apply',async()=>{
  const source=await readFile(resolve(root,'scripts/deploy-account-staging.mjs'),'utf8');
