@@ -86,7 +86,9 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
   const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
   for(const file of (await readdir(migrations)).sort()){
    const sql=await readFile(join(migrations,file),'utf8');
-   try{await DB.exec(sql);}catch(error){throw new Error('D1 migration '+file+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}
+   // D1 exec treats leading comment-only chunks differently from SQLite; strip only full-line comments.
+   const executable=sql.split('\\n').filter(line=>!line.trim().startsWith('--')).join('\\n').trim();
+   try{await DB.exec(executable);}catch(error){throw new Error('D1 migration '+file+' failed: '+String(error?.message||error).replace(/[\\r\\n]+/g,' ').slice(0,240));}
   }
   assert.equal((await DB.prepare('SELECT COUNT(*) n FROM account_sessions').first()).n,0);
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
