@@ -1,6 +1,6 @@
 import test,{beforeEach,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
+import {mkdtemp,readFile,readdir,rm,writeFile,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
@@ -118,6 +118,21 @@ test('generated staging migrations pass the same Wrangler tracked-migration engi
   const out=spawnSync(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),'d1','migrations','apply','DB','--local','--persist-to',persist,'--config',configPath],{cwd:root,encoding:'utf8',env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'},timeout:120000});
   assert.equal(out.status,0,'Wrangler local tracked migration failed: '+[out.stderr,out.stdout].filter(Boolean).join('\\n').slice(-1500));
   assert.match(out.stdout+out.stderr,/0002_account_sessions\.sql/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('Wrangler local tracked migrations succeed from the remote-equivalent baseline state',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'uvenaro-wrangler-baseline-'));
+ try{
+  const {migrations}=await buildStaging(dir);const configPath=join(dir,'wrangler.json'),persist=join(dir,'state');
+  await writeFile(configPath,JSON.stringify({name:'uvenaro-migration-baseline-parity',main:'worker.mjs',compatibility_date:'2026-08-06',d1_databases:[{binding:'DB',database_name:'uvenaro-migration-baseline-parity',database_id:'local-baseline-parity',migrations_dir:migrations}]}));
+  await writeFile(join(dir,'worker.mjs'),'export default {fetch(){return new Response("ok")}}');
+  const run=args=>spawnSync(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),...args,'--config',configPath],{cwd:root,encoding:'utf8',env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'},timeout:120000});
+  const first=run(['d1','migrations','apply','DB','--local','--persist-to',persist]);assert.equal(first.status,0,'initial Wrangler migration failed');
+  const stateConfig=JSON.parse(await readFile(configPath,'utf8'));stateConfig.d1_databases[0].migrations_dir=join(dir,'baseline-only');await mkdir(stateConfig.d1_databases[0].migrations_dir,{recursive:true});await writeFile(join(stateConfig.d1_databases[0].migrations_dir,'0000_baseline.sql'),await readFile(join(migrations,'0000_baseline.sql'),'utf8'));await writeFile(configPath,JSON.stringify(stateConfig));
+  const fresh=join(dir,'fresh-state');const baseline=run(['d1','migrations','apply','DB','--local','--persist-to',fresh]);assert.equal(baseline.status,0,'baseline setup failed');
+  stateConfig.d1_databases[0].migrations_dir=migrations;await writeFile(configPath,JSON.stringify(stateConfig));
+  const pending=run(['d1','migrations','apply','DB','--local','--persist-to',fresh]);assert.equal(pending.status,0,'remote-equivalent pending migration failed: '+[pending.stderr,pending.stdout].filter(Boolean).join('\\n').slice(-1500));assert.match(pending.stdout+pending.stderr,/0002_account_sessions\.sql/);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 
