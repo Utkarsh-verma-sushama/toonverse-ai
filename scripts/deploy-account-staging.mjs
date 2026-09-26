@@ -150,7 +150,11 @@ async function main(){
       /not authorized/i
     ];
     const reason=reasonPatterns.map(pattern=>raw.match(pattern)?.[0]||null).find(Boolean)||null;
-    console.error(JSON.stringify({migrationFailure:{phase,migration,errorClass:sqlite||classifyRemoteFailure(raw),reason}}));
+    const exitStatus=Number.isInteger(out.status)?out.status:null;
+    const signal=typeof out.signal==='string'?out.signal:null;
+    const stderrPresent=typeof out.stderr==='string'&&out.stderr.trim().length>0;
+    const stdoutPresent=typeof out.stdout==='string'&&out.stdout.trim().length>0;
+    console.error(JSON.stringify({migrationFailure:{phase,migration,errorClass:sqlite||classifyRemoteFailure(raw),reason,exitStatus,signal,stderrPresent,stdoutPresent}}));
    }
    throw safeWranglerFailure(phase,out);
   }return out.stdout;
