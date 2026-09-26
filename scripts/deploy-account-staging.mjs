@@ -39,6 +39,17 @@ export function safeWranglerFailure(phase,out={}){
 }
 
 const reconciliationFingerprints={
+ '0001_atomic_chat_billing.sql':{
+  columns:[
+   ['provider_price_snapshots','valid_until'],
+   ['usage_reservations','request_hash'],['usage_reservations','price_snapshot_id'],['usage_reservations','input_token_limit'],['usage_reservations','output_token_limit'],
+   ['usage_reservations','input_tokens'],['usage_reservations','output_tokens'],['usage_reservations','global_cost_ceiling'],['usage_reservations','provider_state'],
+   ['usage_reservations','provider_request_id'],['usage_reservations','failure_code'],['usage_reservations','expires_at']
+  ],
+  tables:['chat_billing_policy'],
+  indexes:['idx_usage_active','idx_usage_time','idx_usage_settled_time','idx_usage_owner_settled','idx_chat_ledger_event'],
+  triggers:['chat_reservation_guard','chat_reservation_hold','chat_reservation_transition','chat_reservation_finish','chat_reservation_no_delete']
+ },
  '0002_account_sessions.sql':{
   tables:['account_profiles','account_sessions','account_access_tokens','account_refresh_tokens','account_security_events','account_rate_limits','account_challenges','account_deletion_requests'],
   indexes:['idx_account_sessions_owner','idx_account_access_expiry','idx_account_refresh_session','idx_account_security_owner','idx_account_rate_expiry','idx_account_deletion_pending'],
@@ -47,13 +58,18 @@ const reconciliationFingerprints={
 };
 export function reconciliationDecision({pending=[],objects=[]}={}){
  const names=new Set(objects.map(x=>x?.name).filter(Boolean));
+ const sqlByTable=new Map(objects.filter(x=>x?.type==='table'&&typeof x?.sql==='string').map(x=>[x.name,x.sql]));
  const decisions=[];
  for(const migration of pending){
   const fp=reconciliationFingerprints[migration];
   if(!fp){decisions.push({migration,action:'apply'});continue;}
-  const expected=[...fp.tables,...fp.indexes,...fp.triggers],present=expected.filter(x=>names.has(x));
-  if(present.length===0){decisions.push({migration,action:'apply'});continue;}
-  if(present.length!==expected.length)throw new Error('Partial staging schema detected. Refusing automatic migration-state reconciliation.');
+  const expected=[...(fp.tables||[]),...(fp.indexes||[]),...(fp.triggers||[])],present=expected.filter(x=>names.has(x));
+  const columns=fp.columns||[],presentColumns=columns.filter(([table,column])=>{
+   const sql=sqlByTable.get(table);return typeof sql==='string'&&new RegExp('(?:^|[^A-Za-z0-9_])'+column+'(?:[^A-Za-z0-9_]|$)','i').test(sql);
+  });
+  const total=expected.length+columns.length,presentTotal=present.length+presentColumns.length;
+  if(presentTotal===0){decisions.push({migration,action:'apply'});continue;}
+  if(presentTotal!==total)throw new Error('Partial staging schema detected. Refusing automatic migration-state reconciliation.');
   decisions.push({migration,action:'reconcile'});
  }
  return decisions;
