@@ -1,14 +1,17 @@
 import test,{beforeEach,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,readdir,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import staging,{stagingEnvironment} from '../backend/staging-worker.mjs';
 import {accountDatabase,accountEnv,accountHeaders,identityService} from './account-fixtures.mjs';
 import {buildStaging} from './prepare-account-staging.mjs';
 import {deploymentInputs,requireStagingDatabase,verifyRemoteDatabase} from './deploy-account-staging.mjs';
+const root=fileURLToPath(new URL('../',import.meta.url));
 const origin='https://uvenaro-account-staging.test.workers.dev',previousFetch=globalThis.fetch;let db,provider,env,jar,token;
 beforeEach(async()=>{db=accountDatabase();provider=await identityService();globalThis.fetch=provider.fetch;jar='';token='';env={...accountEnv,...db,ENVIRONMENT:'staging',STAGING_ORIGIN:origin,STAGING_ALLOWED_EMAILS:'alice@example.com',ASSETS:{fetch:async()=>new Response('<h1>account</h1>',{headers:{'content-type':'text/html'}})}};});
 afterEach(()=>{globalThis.fetch=previousFetch;db.sql.close();});
@@ -104,6 +107,18 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
   await DB.batch(queries.map(sql=>DB.prepare(sql)));
   assert.equal((await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='account_sessions'").first())?.name,'account_sessions');
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
+});
+
+test('generated staging migrations pass the same Wrangler tracked-migration engine locally',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'uvenaro-wrangler-local-'));
+ try{
+  const {migrations}=await buildStaging(dir);const configPath=join(dir,'wrangler.json'),persist=join(dir,'state');
+  await writeFile(configPath,JSON.stringify({name:'uvenaro-migration-parity',main:'worker.mjs',compatibility_date:'2026-08-06',d1_databases:[{binding:'DB',database_name:'uvenaro-migration-parity',database_id:'local-parity',migrations_dir:migrations}]}));
+  await writeFile(join(dir,'worker.mjs'),'export default {fetch(){return new Response("ok")}}');
+  const out=spawnSync(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),'d1','migrations','apply','DB','--local','--persist-to',persist,'--config',configPath],{cwd:root,encoding:'utf8',env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'},timeout:120000});
+  assert.equal(out.status,0,'Wrangler local tracked migration failed: '+[out.stderr,out.stdout].filter(Boolean).join('\\n').slice(-1500));
+  assert.match(out.stdout+out.stderr,/0002_account_sessions\.sql/);
+ }finally{await rm(dir,{recursive:true,force:true});}
 });
 
 test('staging artifact includes only reviewed browser assets and fresh tracked migrations',async()=>{
