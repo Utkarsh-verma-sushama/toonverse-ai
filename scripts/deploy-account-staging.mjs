@@ -147,6 +147,8 @@ async function main(){
  const pending=pendingMigrationNames(localNames,appliedNames);
  const decisions=reconciliationDecision({pending,objects:schemaObjects});
  console.log(JSON.stringify({migrationPreflight:{local:localNames,applied:appliedNames,pending,decisions,schemaObjects:schemaObjects.map(x=>({type:x.type,name:x.name,tbl_name:x.tbl_name}))}}));
+ // Cloudflare's tracked migration runner is authoritative for pending migrations.
+ // Reconciliation is reserved only for a fully verified pre-existing migration fingerprint.
  const reconciliationSql=safeTrackingReconciliationSql(decisions,localNames,appliedNames);
  if(reconciliationSql){
   wrangler(['d1','execute','DB','--remote','--command',reconciliationSql],'Remote migration tracking reconciliation');
