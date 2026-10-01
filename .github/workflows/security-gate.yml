@@ -35,3 +35,4 @@ jobs:
           node --check backend/replay-guard.mjs
           node --check backend/chat-billing.mjs
           node --check backend/chat-execution.mjs
+          node --check backend/chat-activation.mjs
