@@ -36,3 +36,4 @@ jobs:
           node --check backend/chat-billing.mjs
           node --check backend/chat-execution.mjs
           node --check backend/chat-activation.mjs
+          node --check backend/chat-reconciliation.mjs
