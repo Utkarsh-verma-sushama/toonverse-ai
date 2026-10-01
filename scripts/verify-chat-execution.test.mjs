@@ -12,7 +12,7 @@ const completed=(request,changes={})=>({id:'provider-'+request.request_id,reques
 beforeEach(async()=>{
  db=fixture();await seedManaged(db.sql,validToken);calls=0;gateway=async request=>Response.json(completed(request));const identity=mockIdentity();
  globalThis.fetch=async(url,options)=>{
-  if(String(url).startsWith('https://metered.example.invalid/')){calls++;assert.equal(options.redirect,'error');assert.equal(options.headers.authorization,'Bearer server-test-secret');return gateway(JSON.parse(options.body),options);}
+  if(String(url).startsWith('https://metered.example.invalid/')){calls++;assert.equal(options.redirect,'manual');assert.equal(options.headers.authorization,'Bearer server-test-secret');return gateway(JSON.parse(options.body),options);}
   return identity.fetch(url,options);
  };
 });
@@ -54,6 +54,13 @@ test('network failure keeps a durable hold; retry cannot invoke upstream again',
  gateway=async()=>{throw new Error('connection lost');};let response=await send();assert.equal(response.status,503);assert.equal((await response.json()).code,'RECONCILIATION_REQUIRED');
  assert.equal(balance(db).reserved,15);assert.equal(balance(db).included,20);response=await send();assert.equal(response.status,409);assert.equal(calls,1);
  const receipt=await (await status()).json();assert.equal(receipt.reconciliationRequired,true);assert.equal(receipt.credits,null);
+});
+test('provider redirect cannot forward the API key or release an uncertain billing hold',async()=>{
+ gateway=async()=>new Response('private upstream body',{status:307,headers:{location:'https://untrusted.invalid/receive-key'}});
+ const response=await send();assert.equal(response.status,503);const payload=await response.json();assert.equal(payload.code,'RECONCILIATION_REQUIRED');
+ assert.doesNotMatch(JSON.stringify(payload),/receive-key|private upstream|server-test-secret/);
+ assert.equal(calls,1);assert.equal(balance(db).reserved,15);assert.equal(balance(db).included,20);
+ assert.equal((await send()).status,409);assert.equal(calls,1);
 });
 test('real timeout aborts upstream and keeps credits reserved rather than refunded',async()=>{
  gateway=async(request,options)=>new Promise((resolve,reject)=>{options.signal.addEventListener('abort',()=>reject(new DOMException('Timed out','AbortError')),{once:true});});

@@ -1,4 +1,5 @@
 import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,stopBilling,whole} from './chat-billing.mjs';
+import {fetchWithoutRedirect} from './safe-fetch.mjs';
 const json=(value,status=200)=>Response.json(value,{status,headers:{'cache-control':'no-store'}});
 const fail=(code,status)=>Object.assign(new Error(code),{code,status});
 function setting(env,name,fallback,min,max){
@@ -69,7 +70,7 @@ export async function executeChat(request,env,user,readBody){
  request.signal.addEventListener('abort',cancel,{once:true});if(request.signal.aborted)cancel();
  const timer=setTimeout(cancel,cfg.timeoutMs);let payload,upstream;
  try{
-  upstream=await fetch(cfg.url,{method:'POST',redirect:'error',signal:controller.signal,headers:{
+  upstream=await fetchWithoutRedirect(cfg.url,{method:'POST',signal:controller.signal,headers:{
    authorization:`Bearer ${env.CHAT_PROVIDER_API_KEY}`,'content-type':'application/json','idempotency-key':reservation.id},
    body:JSON.stringify({protocol:'metered-v1',request_id:reservation.id,model:cfg.model,messages,
     max_input_tokens:cfg.maxInputTokens,max_output_tokens:cfg.maxOutputTokens,tools:[],store:false})});

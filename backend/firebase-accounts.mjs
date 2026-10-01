@@ -1,4 +1,5 @@
 import {AccountError} from './account-common.mjs';
+import {fetchWithoutRedirect} from './safe-fetch.mjs';
 export class FirebaseAccountError extends AccountError {
  constructor(code){super('IDENTITY_OPERATION_FAILED',400);this.providerCode=code;}
 }
@@ -6,7 +7,7 @@ export async function firebaseCall(env,method,body,{refresh=false,v2=false}={}){
  const origin=refresh?'https://securetoken.googleapis.com/v1/token':`https://identitytoolkit.googleapis.com/${v2?'v2':'v1'}/${method}`;
  let response,payload;
  try{
-  response=await fetch(`${origin}?key=${encodeURIComponent(env.FIREBASE_WEB_API_KEY)}`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),
+  response=await fetchWithoutRedirect(`${origin}?key=${encodeURIComponent(env.FIREBASE_WEB_API_KEY)}`,{method:'POST',signal:AbortSignal.timeout(10000),
    headers:{'content-type':refresh?'application/x-www-form-urlencoded':'application/json'},body:refresh?new URLSearchParams(body).toString():JSON.stringify(body)});
   const reader=response.body?.getReader();if(!reader)throw new Error();const chunks=[];let size=0;
   try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>131072){await reader.cancel();throw new Error();}chunks.push(value);}}
