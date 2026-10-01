@@ -43,7 +43,7 @@ Closed reservations, quote terms and ledger events are immutable to ordinary upd
 
 `GET /v1/chat/requests/{requestKey}` returns only the authenticated owner's status and credit receipt. It does not invoke a provider or reveal prompt/output content.
 
-Before any paid activation, `backend/chat-activation.mjs` performs a read-only, fail-closed audit of the execution flag, metered route configuration, D1 billing policy, current immutable price snapshot and unresolved reservations. It never changes configuration, calls a provider or prints a secret. An unresolved hold blocks activation until authoritative reconciliation is complete.
+Before any paid activation, `backend/chat-activation.mjs` performs a read-only, fail-closed audit of the execution flag, metered route configuration, D1 billing policy, current immutable price snapshot and unresolved reservations. It never changes configuration, calls a provider or prints a secret. An unresolved hold blocks activation until authoritative reconciliation is complete. `backend/chat-reconciliation.mjs` is the internal reconciliation boundary: it lists only started/unknown holds and accepts only authoritative provider record IDs plus measured usage or explicit no-charge evidence. It is not exposed as a client endpoint.
 
 The chat client persists a pending request's original key and body before execution. A page reload, double tap or retry reuses that key. It prevents a different request or clearing the pending history until the outcome is checked. Local chat/pending keys are scoped to the signed-in account. Storage persistence failure stops execution before a provider call.
 
@@ -88,7 +88,7 @@ An old Worker using the legacy billing path must not be restored over this migra
 
 The five-minute scheduled sweep processes at most 100 expired **never-dispatched** holds per run. It never automatically refunds started/unknown requests.
 
-For a started/unknown request, obtain authoritative provider evidence using its durable request ID. Internal `settleChat()` can settle verified measured usage, or `releaseChat()` can release after confirmed zero billable usage. These functions are not exposed as client-controlled refund endpoints. No automated provider reconciliation adapter or operator reconciliation UI is implemented yet. Keep such holds and global budgets visible to operations before launch; never instruct users to repeatedly create fresh keys.
+For a started/unknown request, obtain authoritative provider evidence using its durable request ID. The internal reconciliation boundary calls `settleChat()` for verified measured usage, or `releaseChat()` after confirmed zero billable usage. These functions are not exposed as client-controlled refund endpoints. Keep such holds and global budgets visible to operations before launch; never instruct users to repeatedly create fresh keys.
 
 ## Verification
 
