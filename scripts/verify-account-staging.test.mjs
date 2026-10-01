@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 import staging,{stagingEnvironment} from '../backend/staging-worker.mjs';
 import {accountDatabase,accountEnv,accountHeaders,identityService} from './account-fixtures.mjs';
 import {buildStaging} from './prepare-account-staging.mjs';
-import {deploymentInputs,requireStagingDatabase,verifyRemoteDatabase,reconciliationDecision} from './deploy-account-staging.mjs';
+import {deploymentInputs,requireStagingDatabase,verifyRemoteDatabase,reconciliationDecision,verifiedTrackedMigrationColumns,baselineColumnParity,remoteBaselineColumnsSql} from './deploy-account-staging.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const origin='https://uvenaro-account-staging.test.workers.dev',previousFetch=globalThis.fetch;let db,provider,env,jar,token;
 beforeEach(async()=>{db=accountDatabase();provider=await identityService();globalThis.fetch=provider.fetch;jar='';token='';env={...accountEnv,...db,ENVIRONMENT:'staging',STAGING_ORIGIN:origin,STAGING_ALLOWED_EMAILS:'alice@example.com',ASSETS:{fetch:async()=>new Response('<h1>account</h1>',{headers:{'content-type':'text/html'}})}};});
@@ -87,7 +87,7 @@ test('staging migration chain is D1-compatible in Miniflare, not only SQLite',as
  const dir=await mkdtemp(join(tmpdir(),'uvenaro-staging-d1-'));const mf=new (await import('miniflare')).Miniflare({workers:[{name:'migration-chain',modules:true,script:'export default {fetch(){return new Response("ok");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'staging-migration-chain'}}]});
  try{
   const {migrations}=await buildStaging(dir);const DB=await mf.getD1Database('DB');
-  const ordered=(await readdir(migrations)).sort();assert.deepEqual(ordered,['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql']);
+  const ordered=(await readdir(migrations)).sort();assert.deepEqual(ordered,['0000_baseline.sql','0001_atomic_chat_billing.sql','0002_account_sessions.sql','0003_abuse_spend_hardening.sql','0004_request_replay_guard.sql','0005_agent_abuse_hardening.sql','0006_agent_audit_trail.sql','0007_bind_agent_approval_to_step.sql']);
   const artifacts=await Promise.all(ordered.map(file=>readFile(join(migrations,file),'utf8')));
   for(let i=0;i<artifacts.length;i++)assert.equal(artifacts[i].includes('\r'),false,ordered[i]+' must use LF-only line endings for remote D1 trigger migrations');
   const sql=artifacts.join('\n');
@@ -116,10 +116,15 @@ test('real migration artifacts exactly satisfy fail-closed reconciliation finger
  const sql=new DatabaseSync(':memory:');
  try{
   sql.exec(await readFile(resolve(root,'backend/schema.sql'),'utf8'));
-  for(const migration of ['0001_atomic_chat_billing.sql','0002_account_sessions.sql']){
+  const tracked=[];
+  for(const migration of (await readdir(resolve(root,'backend/migrations'))).filter(x=>/^\d{4}_.+\.sql$/.test(x)).sort()){
+   const before=sql.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master").all();
+   assert.deepEqual(reconciliationDecision({pending:[migration],objects:before}),[{migration,action:'apply'}],migration+' must not mistake a shared older trigger for a partial migration');
    sql.exec(await readFile(resolve(root,'backend/migrations',migration),'utf8'));
    const objects=sql.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger') AND name NOT LIKE 'sqlite_%' ORDER BY type,name").all();
    assert.deepEqual(reconciliationDecision({pending:[migration],objects}),[{migration,action:'reconcile'}]);
+   tracked.push(migration);
+   assert.deepEqual(baselineColumnParity(sql.prepare(remoteBaselineColumnsSql()).all(),verifiedTrackedMigrationColumns(tracked,objects)),[],migration+' must remain deployable after tracking');
    const fingerprinted=objects.filter(x=>x.name!=='sqlite_sequence');
    let provedPartial=false;
    for(const object of fingerprinted){

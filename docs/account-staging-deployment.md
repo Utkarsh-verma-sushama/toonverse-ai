@@ -1,5 +1,50 @@
 # Account staging deployment
 
+## Verified resume state — 1 October 2026
+
+This update supersedes the historical access/deployment status below. Deployment
+[run 19](https://github.com/Utkarsh-verma-sushama/toonverse-ai/actions/runs/36248425262)
+succeeded on `50a4086af6ff6af6d4e62f1dd2dca11533eb0f6e` on 26 September.
+The live same-origin transport/security check passed again on 1 October with
+`accountReady:true`; real sign-in and email delivery remain unverified.
+
+- Google's public project configuration responds successfully and identifies project
+  number `594612167862`, matching this app. No API key is printed in this record.
+- The public `authorizedDomains` list does **not** include
+  `uvenaro-account-staging.uv7398.workers.dev`. Add exactly that hostname through
+  Firebase Authentication settings before testing verification/reset continuation links.
+- One random, nonexistent reserved-domain email/password sign-in probe returned
+  `INVALID_LOGIN_CREDENTIALS`, rather than a disabled-provider/configuration error.
+  This establishes credential-validation reachability only. No account was created,
+  no email sent, and no real user's password used. It does not prove account creation,
+  a successful session, email delivery, Firebase plan, or per-user restrictions.
+- The assistant browser reached a Google sign-in redirect but received a 502 connection
+  error, including on one retry. Console settings and current billing plans could not
+  be verified or changed. Use `uv7398@gmail.com` for the Firebase console;
+  `support@uvenaro.com` is the support mailbox, not this console identity.
+- Keep paid services and production AI/cloud/payment flags disabled. Staging continues
+  to force AI, agent, model-routing, and new TOTP enrollment off.
+
+Next owner-only action: confirm Email/Password Enabled and Spark in the console,
+add the exact staging authorized hostname, then perform the invited account test.
+Do not use the Google administrator password as the application-test password.
+The original signup error is not diagnosed merely by finding a missing authorized
+hostname: preserve the next failing API status/code for targeted diagnosis.
+
+Security integration includes migrations 0003–0007. Deployment fingerprints each
+new migration and recognizes its columns after tracking, so repeated deployment
+will not confuse security columns with schema drift. App Check verification uses
+numeric `FIREBASE_PROJECT_NUMBER`, separately from Auth's `FIREBASE_PROJECT_ID`.
+Source integration is not deployment or production activation.
+
+Local integration validation on 1 October: 332 behavioral tests passed with no
+skips, 10 staging Chromium tests passed, the Worker dry-run build passed, and the
+production dependency audit reported zero vulnerabilities. Firebase emulator and
+native build gates are also required in CI before merging. These local tests use
+fixtures/emulators and do not replace the owner’s real sign-in acceptance test.
+
+## Historical preparation record — 24 September 2026
+
 Date: 2026-09-24. Status: source, deployment preflight, bundle and local tests completed; **not deployed**. Continues the [account backend checkpoint](account-backend-checkpoint.md).
 
 ## Current access blocker

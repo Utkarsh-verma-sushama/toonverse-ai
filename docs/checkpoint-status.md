@@ -1,11 +1,26 @@
 # UVENARO — Checkpoint Resume Record
 
-Last updated: 2026-09-24
+Last updated: 2026-10-01
 
 Current locked checkpoint: 43
 
 Exact next checkpoint: 44
 Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
+
+## Current resume point — 1 October 2026
+
+Account staging deploy run 19 succeeded on 26 September at main `50a4086`.
+Cloud Runtime, Native Build and Pages succeeded on that same commit. Live staging
+transport/security checks passed on 1 October; account creation, real login and
+email delivery are still not validated. The next account step is Firebase console
+configuration and the invited-account acceptance test. The staging authorized
+hostname is missing; see [evidence and owner-only steps](account-staging-deployment.md).
+
+This change integrates the previously separate security-hardening track with the latest
+staging fixes. App Check, replay defense, spending guards and agent authorization
+remain subject to validation and activation gates. This does not activate providers.
+Earlier “locked” foundation checkpoints do not prove external provider, physical-device,
+store-release or all-ecosystem operational readiness.
 
 ## Latest engineering checkpoint — 24 September 2026
 
@@ -77,4 +92,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The exact next owner action is legal entity registration, followed by organization developer accounts. In parallel, assistant-controlled engineering may continue only on truthful pre-production hardening; production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The immediate owner action is the Firebase configuration and invited-account test recorded above. Legal entity registration and organization developer accounts remain later release gates. In parallel, assistant-controlled engineering may continue only on truthful pre-production hardening; production AI/cloud/payment flags stay disabled until their documented release gates pass.

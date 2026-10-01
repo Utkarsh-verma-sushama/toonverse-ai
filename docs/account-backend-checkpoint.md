@@ -1,5 +1,11 @@
 # Account backend — 24 September 2026
 
+**Resume update, 1 October 2026:** staging was deployed on 26 September (run 19),
+and live transport checks passed again. Real account acceptance remains pending;
+the staging hostname is absent from Firebase authorized domains. See the current
+[staging resume record](account-staging-deployment.md). The activation boundaries
+below still apply.
+
 Status: implemented and locally verified email/password account backend; production activation remains disabled. This change builds on the identity-security and atomic-billing changes. It does not complete every future provider or the product launch.
 
 ## Delivered

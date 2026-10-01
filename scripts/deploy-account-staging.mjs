@@ -54,6 +54,24 @@ const reconciliationFingerprints={
   tables:['account_profiles','account_sessions','account_access_tokens','account_refresh_tokens','account_security_events','account_rate_limits','account_challenges','account_deletion_requests'],
   indexes:['idx_account_sessions_owner','idx_account_access_expiry','idx_account_refresh_session','idx_account_security_owner','idx_account_rate_expiry','idx_account_deletion_pending'],
   triggers:['account_security_no_update']
+ },
+ '0003_abuse_spend_hardening.sql':{
+  columns:[['usage_limits','max_concurrent_requests'],['usage_limits','hourly_cost_limit_microusd']],
+  requiredSql:[['chat_reservation_guard','CONCURRENCY_LIMIT_REACHED'],['chat_reservation_guard','HOURLY_SPEND_LIMIT_REACHED']]
+ },
+ '0004_request_replay_guard.sql':{
+  tables:['request_nonces'],indexes:['idx_request_nonces_expiry'],triggers:['request_nonce_guard','request_nonce_immutable']
+ },
+ '0005_agent_abuse_hardening.sql':{
+  triggers:['agent_runs_active_cap_insert','agent_runs_active_cap_update']
+ },
+ '0006_agent_audit_trail.sql':{
+  tables:['agent_audit_events'],indexes:['idx_agent_audit_run_created','idx_agent_audit_owner_created'],
+  triggers:['agent_audit_events_no_update','agent_audit_events_no_delete','agent_runs_audit_status','agent_approvals_audit_decision']
+ },
+ '0007_bind_agent_approval_to_step.sql':{
+  columns:[['agent_approvals','step_id'],['agent_approvals','input_hash']],indexes:['idx_agent_approvals_step_binding'],
+  triggers:['trg_agent_approval_binding_insert','trg_agent_approval_binding_update']
  }
 };
 export function reconciliationDecision({pending=[],objects=[]}={}){
@@ -70,6 +88,10 @@ export function reconciliationDecision({pending=[],objects=[]}={}){
   const total=expected.length+columns.length,presentTotal=present.length+presentColumns.length;
   if(presentTotal===0){decisions.push({migration,action:'apply'});continue;}
   if(presentTotal!==total)throw new Error('Partial staging schema detected. Refusing automatic migration-state reconciliation.');
+  for(const [object,marker] of fp.requiredSql||[]){
+   if(!objects.some(x=>x.name===object&&typeof x.sql==='string'&&x.sql.includes(marker)))
+    throw new Error('Partial staging schema detected. Required security constraint is missing. Refusing reconciliation.');
+  }
   decisions.push({migration,action:'reconcile'});
  }
  return decisions;
