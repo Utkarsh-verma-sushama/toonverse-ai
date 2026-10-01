@@ -1,7 +1,7 @@
 import {prepareAgentExecution} from './agent-runtime.mjs';
 import { IdentityError } from "./firebase-auth.mjs";
 import { AttestationError, verifyAppCheckRequest } from "./app-check.mjs";
-import { ReplayError, consumeReplayNonce } from "./replay-guard.mjs";
+import { ReplayError, consumeReplayNonce, cleanupReplayNonces } from "./replay-guard.mjs";
 import { BillingError, getChatReceipt, expireUndispatched } from "./chat-billing.mjs";
 import { executeChat } from "./chat-execution.mjs";
 import { accountRoute } from "./account-api.mjs";

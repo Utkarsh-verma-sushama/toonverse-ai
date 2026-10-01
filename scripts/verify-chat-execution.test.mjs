@@ -1,5 +1,6 @@
 import test,{beforeEach,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import worker from '../backend/worker.mjs';
 import {env as identityEnv,token,mockIdentity,claims} from './security-fixtures.mjs';
 import {fixture,balance,invariant,d1} from './billing-fixtures.mjs';
@@ -17,9 +18,9 @@ beforeEach(async()=>{
  };
 });
 afterEach(()=>{globalThis.fetch=originalFetch;invariant(db);db.sql.close();});
-async function send({key='one',input={message:'Hello'},bindings={},signal,value=validToken}={}){
+async function send({key='one',input={message:'Hello'},bindings={},signal,value=validToken,nonce}={}){
  value=await seedManaged(db.sql,value,JSON.parse(Buffer.from(value.split('.')[1],'base64url')).sub);
- const request=new Request('https://api.example.invalid/v1/chat/responses',{method:'POST',headers:{authorization:`Bearer ${value}`,'content-type':'application/json','idempotency-key':key},body:JSON.stringify(input),signal});
+ const request=new Request('https://api.example.invalid/v1/chat/responses',{method:'POST',headers:{authorization:`Bearer ${value}`,'content-type':'application/json','idempotency-key':key,...(nonce?{'x-uvenaro-nonce':nonce}:{})},body:JSON.stringify(input),signal});
  return worker.fetch(request,{...base,...db,...bindings});
 }
 async function status(key='one',value=validToken){value=await seedManaged(db.sql,value,JSON.parse(Buffer.from(value.split('.')[1],'base64url')).sub);return worker.fetch(new Request('https://api.example.invalid/v1/chat/requests/'+key,{headers:{authorization:`Bearer ${value}`}}),{...base,...db});}
@@ -84,6 +85,46 @@ for(const [name,change] of Object.entries({
 });
 test('malformed or oversized provider JSON never becomes a successful response',async()=>{
  gateway=async()=>new Response('x'.repeat(262145));const response=await send();assert.equal(response.status,503);assert.equal(balance(db).reserved,15);
+ assert.equal(db.sql.prepare('SELECT enabled FROM chat_billing_policy').get().enabled,0);
+});
+
+test('malformed JSON trips the spending stop and cannot leak the provider response',async()=>{
+ gateway=async()=>new Response('{private-provider-data');const response=await send();assert.equal(response.status,503);
+ assert.doesNotMatch(await response.text(),/private-provider/);assert.equal(db.sql.prepare('SELECT enabled FROM chat_billing_policy').get().enabled,0);
+ assert.equal(balance(db).reserved,15);assert.equal((await send({key:'next'})).status,503);assert.equal(calls,1);
+});
+test('cancellation during reservation releases the never-dispatched hold exactly once',async()=>{
+ const controller=new AbortController();const DB=d1(db.sql,{afterRun(query){if(query.includes('INSERT INTO usage_reservations'))controller.abort();}});
+ const response=await send({signal:controller.signal,bindings:{DB}});assert.equal(response.status,499);assert.equal(calls,0);
+ assert.equal(balance(db).reserved,0);assert.equal(balance(db).included,20);
+ assert.equal((await status()).status,200);assert.equal((await (await status()).json()).status,'released');
+ assert.equal((await send()).status,409);assert.equal(calls,0);
+ assert.equal(db.sql.prepare("SELECT COUNT(*) n FROM usage_ledger WHERE event_type='release'").get().n,1);
+});
+test('cancellation after dispatch aborts upstream but never refunds an uncertain charge',async()=>{
+ const controller=new AbortController();let aborted=false;
+ gateway=async(request,options)=>new Promise((resolve,reject)=>{
+  options.signal.addEventListener('abort',()=>{aborted=true;reject(new DOMException('Stopped','AbortError'));},{once:true});controller.abort();
+ });
+ const response=await send({signal:controller.signal});assert.equal(response.status,503);assert.equal(aborted,true);
+ assert.equal(balance(db).reserved,15);assert.equal(balance(db).included,20);
+ const receipt=await (await status()).json();assert.equal(receipt.reconciliationRequired,true);assert.equal(receipt.credits,null);
+ assert.equal((await send()).status,409);assert.equal(calls,1);
+});
+test('deadline cancels a stalled provider response body without an endless reservation handler',{timeout:5000},async()=>{
+ let cancelled=false;gateway=async()=>new Response(new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('{'));},cancel(){cancelled=true;}}));
+ const response=await send({bindings:{CHAT_TIMEOUT_MS:'1000'}});assert.equal(response.status,503);assert.equal(cancelled,true);
+ assert.equal(balance(db).reserved,15);assert.equal((await (await status()).json()).reconciliationRequired,true);
+ assert.equal(db.sql.prepare('SELECT enabled FROM chat_billing_policy').get().enabled,1);
+});
+test('nonce-enforced retry changes the transport nonce but still cannot duplicate model work',async()=>{
+ db.sql.exec(readFileSync(new URL('../backend/migrations/0004_request_replay_guard.sql',import.meta.url),'utf8'));
+ const nonce=crypto.randomUUID(),bindings={REPLAY_PROTECTION_ENABLED:'true'};
+ assert.equal((await send({bindings})).status,400);assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+ assert.equal((await send({bindings,nonce})).status,200);
+ const replay=await send({bindings,nonce});assert.equal(replay.status,409);assert.equal((await replay.json()).code,'REQUEST_REPLAY_DETECTED');
+ const retry=await send({bindings,nonce:crypto.randomUUID()});assert.equal(retry.status,409);assert.equal((await retry.json()).code,'IDEMPOTENCY_REPLAY');
+ assert.equal(calls,1);assert.equal(balance(db).included,18);
 });
 test('settlement DB failure never triggers a refund after completed provider work',async()=>{
  gateway=async request=>{
