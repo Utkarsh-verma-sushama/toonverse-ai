@@ -13,9 +13,28 @@ concurrency:
   group: uvenaro-account-staging-deploy
   cancel-in-progress: false
 jobs:
+  require-ci:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+      - run: node scripts/check-release-ci.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
   deploy:
+    needs: require-ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
     environment: uvenaro-account-staging
     env:
       WRANGLER_SEND_METRICS: 'false'
@@ -37,5 +56,9 @@ jobs:
       - run: npm run verify:all
       - run: npm run verify:account-staging-ui
       - run: npm run verify:account-staging-build
+      - name: Recheck main and all three CI workflows before remote changes
+        run: node scripts/check-release-ci.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: npm run deploy:account-staging
       - run: npm run check:account-staging

@@ -29,7 +29,7 @@ async function harness(t,{appCheck=false}={}){
  const provider=await identityService(),calls=[];
  const state={redirectPath:'',redirectStatus:307};
  const mf=new Miniflare({modules:true,scriptPath,compatibilityDate:'2026-08-06',
-  bindings:{...accountEnv,ENVIRONMENT:'staging',STAGING_ORIGIN:origin,STAGING_ALLOWED_EMAILS:'alice@example.com',
+  bindings:{...accountEnv,ENVIRONMENT:'staging',STAGING_ORIGIN:origin,STAGING_ALLOWED_EMAILS:'alice@example.com,bob@example.com',
    APP_CHECK_ENFORCEMENT_ENABLED:String(appCheck),FIREBASE_PROJECT_NUMBER:'123',APP_CHECK_ALLOWED_APP_IDS:'1:123:web:allowed'},
   d1Databases:{DB:'account-workerd-regression'},
   outboundService:async request=>{
@@ -37,21 +37,24 @@ async function harness(t,{appCheck=false}={}){
    assert.ok(['identitytoolkit.googleapis.com','securetoken.googleapis.com','www.googleapis.com','firebaseappcheck.googleapis.com'].includes(url.hostname),'credentials must never reach a redirect target');
    if(state.redirectPath&&url.pathname.includes(state.redirectPath))return new Response('private upstream body',{status:state.redirectStatus,headers:{location:'https://redirect.invalid/credential-sink'}});
    if(url.hostname==='firebaseappcheck.googleapis.com')return Response.json({keys:[jwk]});
+   if(state.beforeProvider)await state.beforeProvider(url);
    return provider.fetch(request.url,{headers:Object.fromEntries(request.headers),body:await request.text()});
   }});
  t.after(()=>mf.dispose());
  const DB=await mf.getD1Database('DB');await DB.batch(queries.map(query=>DB.prepare(query)));
  let cookie='',access='',attestation='';
  if(appCheck){const now=seconds();attestation=await token({iss:'https://firebaseappcheck.googleapis.com/123',aud:['projects/123'],sub:'1:123:web:allowed',iat:now-1,exp:now+300},{alg:'RS256',typ:'JWT',kid:jwk.kid});}
- async function call(path,{body={},method='POST'}={}){
+ async function call(path,{body={},method='POST',session}={}){
+  const chosen=session||{cookie,accessToken:access};
   const response=await mf.dispatchFetch(origin+path,{method,headers:{...accountHeaders,origin,
-   ...(cookie?{cookie}:{}),...(access?{authorization:'Bearer '+access}:{}),...(attestation?{'x-firebase-appcheck':attestation}:{})},
+   ...(chosen.cookie?{cookie:chosen.cookie}:{}),...(chosen.accessToken?{authorization:'Bearer '+chosen.accessToken}:{}),...(attestation?{'x-firebase-appcheck':attestation}:{})},
    ...(method==='POST'?{body:JSON.stringify(body)}:{})});
-  const data=await response.json();if(response.headers.has('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];
-  if(data.accessToken)access=data.accessToken;
-  return {response,data,cookie};
+  const data=await response.json();
+  const nextCookie=response.headers.has('set-cookie')?response.headers.get('set-cookie').split(';')[0]:chosen.cookie;
+  if(!session){cookie=nextCookie;if(data.accessToken)access=data.accessToken;}
+  return {response,data,cookie:nextCookie,accessToken:data.accessToken||chosen.accessToken};
  }
- const login=()=>call('/api/v1/auth/sign-in',{body:{email:'alice@example.com',password:'fixture-only-password'}});
+ const login=(uid='alice')=>call('/api/v1/auth/sign-in',{body:{email:uid+'@example.com',password:'fixture-only-password'}});
  return {provider,state,calls,DB,call,login};
 }
 
@@ -98,4 +101,46 @@ test('Workers refuses a refresh redirect and never forwards the refresh token',a
  const h=await harness(t);assert.equal((await h.login()).response.status,200);
  h.state.redirectPath='/v1/token';const before=h.calls.length;
  const out=await h.call('/api/v1/auth/refresh');assert.equal(out.response.status,503);assert.equal(h.calls.length,before+1);
+});
+
+for(const mode of ['current','others','all'])test(`Workers enforces ${mode} logout against old access and refresh credentials`,async t=>{
+ const h=await harness(t),first=await h.login(),second=await h.login(),bob=await h.login('bob');
+ const path=mode==='others'?'/api/v1/auth/sessions/revoke-others':'/api/v1/auth/sign-out';
+ const result=await h.call(path,{session:first,body:{allDevices:mode==='all'}});assert.equal(result.response.status,200);
+ const revoked=mode==='current'?[first]:mode==='others'?[second]:[first,second];
+ const before=h.calls.length;
+ for(const session of revoked){
+  for(const endpoint of ['/api/v1/account/profile','/api/v1/auth/sessions','/api/v1/auth/security/events','/api/v1/account/deletion'])assert.equal((await h.call(endpoint,{method:'GET',session})).response.status,401);
+  assert.equal((await h.call('/api/v1/account/export',{session})).response.status,401);
+  assert.equal((await h.call('/api/v1/auth/refresh',{session:{...session,accessToken:''}})).response.status,401);
+ }
+ assert.equal(h.calls.length,before,'revoked sessions stop before any identity/provider work');
+ if(mode!=='all')assert.equal((await h.call('/api/v1/account/profile',{method:'GET',session:mode==='current'?second:first})).response.status,200);
+ assert.equal((await h.call('/api/v1/account/profile',{method:'GET',session:bob})).data.user.id,'bob');
+});
+
+test('Workers scopes session lists, revocation and export to the authenticated owner',async t=>{
+ const h=await harness(t),alice=await h.login(),bob=await h.login('bob');
+ const aliceId=(await h.call('/api/v1/auth/sessions',{method:'GET',session:alice})).data.sessions[0].id;
+ const bobList=await h.call('/api/v1/auth/sessions',{method:'GET',session:bob});
+ assert.equal(bobList.data.sessions.length,1);assert.notEqual(bobList.data.sessions[0].id,aliceId);
+ assert.equal((await h.call('/api/v1/auth/sessions/'+aliceId,{method:'DELETE',session:bob})).response.status,404);
+ const exported=await h.call('/api/v1/account/export',{session:bob,body:{resource:'sessions',owner_id:'alice'}});
+ assert.equal(exported.response.status,200);assert.equal(exported.data.user.id,'bob');assert.equal(exported.data.records.length,1);
+ assert.doesNotMatch(JSON.stringify(exported.data),new RegExp(aliceId+'|credentials_cipher|refresh-alice|token_hash'));
+ assert.equal((await h.call('/api/v1/account/profile',{method:'GET',session:alice})).response.status,200);
+});
+
+test('Workers logout wins over an in-flight refresh without resurrecting the session',async t=>{
+ const h=await harness(t),signed=await h.login();let release,entered;
+ const held=new Promise(resolve=>{release=resolve;}),started=new Promise(resolve=>{entered=resolve;});
+ h.state.beforeProvider=async url=>{if(url.hostname==='securetoken.googleapis.com'){entered();await held;}};
+ const refreshing=h.call('/api/v1/auth/refresh',{session:{...signed,accessToken:''}});
+ try{
+  await started;
+  assert.equal((await h.call('/api/v1/auth/sign-out',{session:signed})).response.status,200);
+ }finally{release();}
+ const result=await refreshing;assert.equal(result.response.status,401);assert.equal(result.data.accessToken,undefined);
+ assert.equal((await h.call('/api/v1/account/profile',{method:'GET',session:signed})).response.status,401);
+ const row=await h.DB.prepare('SELECT revoked_at,credentials_cipher FROM account_sessions').first();assert.ok(row.revoked_at);assert.equal(row.credentials_cipher,null);
 });

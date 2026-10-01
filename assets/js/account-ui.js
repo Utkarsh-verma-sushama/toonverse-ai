@@ -31,7 +31,7 @@
   await step('Confirm your identity',[{name:'password',label:'Current password',type:'password',autocomplete:'current-password'}],async v=>{try{return await auth.reauthenticate(v.password);}catch(error){if(error.code!=='MFA_REQUIRED')throw error;challenge=error;}});
   if(challenge)await mfa(challenge,true);return action();
  }
- async function run(button,action,success){button.disabled=true;try{await action();if(success)notice(success,true);await loadDashboard();}catch(error){if(error.code!=='UI_CANCELLED')notice(error.message);}finally{button.disabled=false;updateControls();}}
+ async function run(button,action,success){button.disabled=true;try{await action();if(success)notice(success,true);await loadDashboard();}catch(error){if(!['UI_CANCELLED','AUTH_CANCELLED'].includes(error.code))notice(error.message);}finally{button.disabled=false;updateControls();}}
  function row(title,detail,action,callback){const el=document.createElement('div');el.className='data-row';const text=document.createElement('div'),strong=document.createElement('strong'),small=document.createElement('span');strong.textContent=title;small.className='data-meta';small.textContent=detail;text.append(strong,small);el.append(text);if(action){const button=document.createElement('button');button.type='button';button.className='security-action';button.textContent=action;button.onclick=()=>run(button,callback);el.append(button);}return el;}
  function list(id,values,renderer,empty){$(id).replaceChildren(...(values.length?values.map(renderer):[row(empty,'')]));}
  function updateControls(){
@@ -42,19 +42,19 @@
  }
  async function loadDashboard(){
   const version=++loading,snapshot=auth.getState();updateControls();if(snapshot.status!=='signed-in'){dashboard.hidden=true;return;}
-  dashboard.hidden=false;
   try{
    const [user,sessions,events,connections,security,deletion]=await Promise.all([auth.getProfile(),auth.listSessions(),auth.listSecurityEvents(),auth.listConnections(),auth.getSecurityOverview(),auth.getDeletionStatus()]);
    if(version!==loading||auth.getState().user?.id!==snapshot.user.id)return;
    $('profile-name').textContent=user.name||'Uvenaro user';$('profile-email').textContent=user.email;$('profile-avatar').textContent=(user.name||user.email).slice(0,2).toUpperCase();
    $('profile-security').textContent=(user.emailVerified?'Email verified':'Email verification needed')+' · '+(user.mfaEnabled?'Authenticator enabled':'Authenticator not enabled');
    $('verify-email').disabled=user.emailVerified;$('edit-name').value=user.name;$('edit-locale').value=user.locale;$('edit-timezone').value=user.timezone;
-   list('session-list',sessions,s=>row(s.deviceName+(s.current?' (current)':''),'Last active '+date(s.lastActiveAt),s.current?'':'Sign out',()=>auth.revokeSession(s.id)),'No active sessions.');
+   list('session-list',sessions,s=>row(s.deviceName+(s.current?' (current)':''),'Last active '+date(s.lastActiveAt),s.current?'':'Sign out',()=>sensitive(()=>auth.revokeSession(s.id))),'No active sessions.');
    list('activity-list',events,e=>row(e.type.replaceAll('_',' '),date(e.createdAt)),'No security events.');
    list('connection-list',connections,c=>row(c.label,c.status),'No external sign-in methods.');
    list('mfa-methods',security.mfaMethods||[],m=>row(m.name,'Authenticator method','Remove',()=>sensitive(()=>auth.removeMfa(m.id))),'No authenticator enrolled.');
    $('deletion-status').textContent=deletion.request?'Deletion requested on '+date(deletion.request.requestedAt)+'. Awaiting review; your data has not yet been deleted.':'';
    $('cancel-deletion').hidden=!deletion.request;
+   dashboard.hidden=false;
   }catch(error){if(version===loading)notice(error.message);}
  }
  async function downloadExport(){
@@ -97,9 +97,17 @@
    const setup=await sensitive(()=>auth.beginTotpEnrollment());
    await step('Connect your authenticator',[{name:'code',label:'Code from your authenticator app',inputmode:'numeric',pattern:'[0-9]{6,8}',max:8,autocomplete:'one-time-code'}],v=>auth.confirmTotpEnrollment(setup.challengeId,v.code),`Add this setup key to your authenticator app: ${setup.secret}. Algorithm ${setup.algorithm}, ${setup.codeLength} digits, interval ${setup.period} seconds. Keep the key private.`);
    notice('Authenticator added. Sign in again with your password and authenticator.',true);
-  }else if(action==='export-data')await downloadExport();else if(action==='signout-others'){await auth.signOutOtherDevices();notice('Other sessions signed out.',true);}else await loadDashboard();
+  }else if(action==='export-data')await downloadExport();else if(action==='signout-others'){await sensitive(()=>auth.signOutOtherDevices());notice('Other sessions signed out.',true);}else await loadDashboard();
  });
- auth.subscribe(snapshot=>{if(snapshot.status!=='signed-in'){loading++;dashboard.hidden=true;}updateControls();});
+ auth.subscribe(snapshot=>{
+  if(snapshot.status!=='signed-in'){
+   loading++;dashboard.hidden=true;
+   for(const id of ['profile-name','profile-email','profile-avatar','profile-security','session-list','activity-list','connection-list','mfa-methods','deletion-status'])$(id).replaceChildren();
+   for(const id of ['edit-name','edit-locale','edit-timezone'])$(id).value='';
+   $('cancel-deletion').hidden=true;
+  }
+  updateControls();
+ });
  async function init(){
   if(!auth.getState().backendConnected){updateControls();return;}
   try{

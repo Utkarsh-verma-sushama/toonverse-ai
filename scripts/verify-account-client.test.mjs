@@ -71,3 +71,35 @@ test('revoked protected requests immediately clear the visible account',async()=
  const a=app({fetch:async url=>url.endsWith('/sign-in')?Response.json(session()):Response.json({code:'SESSION_EXPIRED'},{status:401})});
  await a.auth.signInWithEmail('alice@example.com','password');await assert.rejects(a.auth.getProfile());assert.equal(a.auth.getState().status,'signed-out');assert.equal(a.auth.getState().user,null);
 });
+
+test('late unauthorized response from a previous account cannot sign out a new account',async()=>{
+ let finish;
+ const a=app({fetch:async(url,options)=>{
+  if(url.endsWith('/sign-in'))return Response.json(session(JSON.parse(options.body).email.split('@')[0]));
+  if(url.endsWith('/profile'))return new Promise(resolve=>{finish=resolve;});
+  return Response.json({ok:true});
+ }});
+ await a.auth.signInWithEmail('alice@example.com','password');
+ const pending=a.auth.getProfile();const rejected=assert.rejects(pending,e=>e.code==='AUTH_CANCELLED');
+ await new Promise(resolve=>setImmediate(resolve));
+ await a.auth.signOut();await a.auth.signInWithEmail('bob@example.com','password');
+ finish(Response.json({code:'SESSION_EXPIRED'},{status:401}));await rejected;
+ assert.equal(a.auth.getState().status,'signed-in');assert.equal(a.auth.getState().user.id,'bob');
+});
+
+test('late private export response is discarded after logout or account switching',async()=>{
+ for(const switchAccount of [false,true]){
+  let finish;
+  const a=app({fetch:async(url,options)=>{
+   if(url.endsWith('/sign-in'))return Response.json(session(JSON.parse(options.body).email.split('@')[0]));
+   if(url.endsWith('/export'))return new Promise(resolve=>{finish=resolve;});
+   return Response.json({ok:true});
+  }});
+  await a.auth.signInWithEmail('alice@example.com','password');
+  const pending=a.auth.requestDataExport();const rejected=assert.rejects(pending,e=>e.code==='AUTH_CANCELLED');
+  await new Promise(resolve=>setImmediate(resolve));await a.auth.signOut();
+  if(switchAccount)await a.auth.signInWithEmail('bob@example.com','password');
+  finish(Response.json({user:{id:'alice'},records:[{private:'alice-only'}]}));await rejected;
+  assert.equal(a.auth.getState().user?.id,switchAccount?'bob':undefined);
+ }
+});
