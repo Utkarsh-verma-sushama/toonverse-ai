@@ -54,6 +54,30 @@ test('session restores after reload and logout prevents silent restoration',asyn
  await page.reload();await page.waitForFunction(()=>Boolean(window.UvenaroAuth));assert.equal(await page.locator('#account-dashboard').isHidden(),true);
  assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM account_sessions WHERE revoked_at IS NULL').get().n,0);
 });
+
+test('logout clears private dashboard fields and session controls from the DOM',async()=>{
+ await login();
+ assert.equal(await page.locator('#profile-email').textContent(),'alice@example.com');
+ await page.locator('#sign-out').click();await page.locator('#account-dashboard').waitFor({state:'hidden'});
+ for(const id of ['profile-name','profile-email','profile-avatar','profile-security','session-list','activity-list','connection-list','mfa-methods','deletion-status'])assert.equal(await page.locator('#'+id).textContent(),'');
+ for(const id of ['edit-name','edit-locale','edit-timezone'])assert.equal(await page.locator('#'+id).inputValue(),'');
+});
+
+for(const selected of [false,true])test((selected?'selected-device':'other-devices')+' logout can reauthenticate after the recent-login window expires',async()=>{
+ await login();
+ // A second real backend session, without replacing this browser's session.
+ const second=await worker.fetch(new Request(origin+'/v1/auth/sign-in',{method:'POST',headers:{origin,'content-type':'application/json','x-uvenaro-csrf':'1','x-uvenaro-device':'second-test-device-0001'},body:JSON.stringify({email:'alice@example.com',password:'a long test password'})}),{...accountEnv,...db,ALLOWED_ORIGINS:origin});
+ assert.equal(second.status,200);await page.locator('#refresh-dashboard').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#session-list .data-row').length===2);
+ db.sql.exec('UPDATE account_sessions SET authenticated_at=0');
+ await page.locator(selected?'#session-list button':'[data-security-action="signout-others"]').click();
+ await page.waitForFunction(()=>document.getElementById('step-title').textContent==='Confirm your identity');
+ assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM account_sessions WHERE revoked_at IS NULL').get().n,2);
+ await page.locator('#step-password').fill('a long test password');await page.locator('#step-submit').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#session-list .data-row').length===1);
+ assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM account_sessions WHERE revoked_at IS NULL').get().n,1);
+ assert.equal(await page.evaluate(()=>window.UvenaroAuth.getState().status),'signed-in');
+});
 test('password reset dialog requests recovery and shows a generic result',async()=>{
  await open();await page.locator('#forgot-password').click();await page.locator('#step-email').fill('alice@example.com');await page.locator('#step-submit').click();
  await page.waitForFunction(()=>document.getElementById('service-status').textContent.includes('eligible'));assert.equal(provider.calls.at(-1).input.requestType,'PASSWORD_RESET');

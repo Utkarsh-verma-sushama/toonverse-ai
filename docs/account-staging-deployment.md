@@ -2,6 +2,32 @@
 
 ## Verified resume state — 1 October 2026
 
+### Latest manual acceptance and release audit
+
+Deployment [run 21](https://github.com/Utkarsh-verma-sushama/toonverse-ai/actions/runs/36826078398)
+succeeded on `92706cc803fba2505b7f55ba568e69b81692da32`. All three required CI
+workflows passed on that same commit. The owner subsequently reported successful
+signup, email verification, repeat login, persistence on reload/reopen, password
+reset with rejection of the old password, current-device logout, other-device
+logout retaining the caller, and all-device logout. This supersedes the earlier
+pending manual-account statements below. It is user-reported live acceptance,
+not an assistant-run live password test. No SMS OTP acceptance is claimed.
+
+Read-only live transport checks passed again during the follow-up audit:
+`accountReady:true`, exact-origin handling and disabled creative routes. The
+[release audit](account-release-audit-20261001.md) records fixes and local
+Workers/D1 isolation tests. Its source changes require their own successful CI
+and staging deployment; run 21 does not contain subsequent changes.
+
+The manual deployment workflow now requires current `main` and all three CI
+workflows to be successful for the selected SHA. It checks before granting the
+deployment job access to the staging environment and again immediately before
+remote changes. Missing evidence, API errors, skipped/failed/pending checks or
+a moved main branch stop deployment. This does not configure GitHub branch
+protection or prove production readiness.
+
+### Earlier resume evidence (superseded where noted above)
+
 This update supersedes the historical access/deployment status below. Deployment
 [run 19](https://github.com/Utkarsh-verma-sushama/toonverse-ai/actions/runs/36248425262)
 succeeded on `50a4086af6ff6af6d4e62f1dd2dca11533eb0f6e` on 26 September.
@@ -27,8 +53,8 @@ and email delivery remain unverified. This health result does not test Firebase.
 - Keep paid services and production AI/cloud/payment flags disabled. Staging continues
   to force AI, agent, model-routing, and new TOTP enrollment off.
 
-Next owner-only action after the runtime fix is deployed: perform the invited
-account test using the already configured test mailbox.
+The invited account acceptance below was pending at this earlier record; it is
+now complete as recorded above.
 Do not use the Google administrator password as the application-test password.
 The original signup error is not diagnosed merely by finding a missing authorized
 hostname: preserve the next failing API status/code for targeted diagnosis.

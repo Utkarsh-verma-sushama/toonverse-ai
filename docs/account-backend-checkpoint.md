@@ -1,10 +1,14 @@
 # Account backend — 24 September 2026
 
-**Resume update, 1 October 2026:** staging was deployed on 26 September (run 19),
-and live transport checks passed again. Real account acceptance remains pending;
-the staging hostname is absent from Firebase authorized domains. See the current
-[staging resume record](account-staging-deployment.md). The activation boundaries
-below still apply.
+**Resume update, 1 October 2026:** staging deployment run 21 succeeded on
+`92706cc803fba2505b7f55ba568e69b81692da32`; Security policy, Cloud runtime and
+Native build workflows passed on the same commit. The owner reports successful
+signup, email verification, login persistence, password reset/old-password
+rejection and current/other/all-device logout. These manual checks are complete;
+do not ask the owner to repeat them without a specific regression. SMS OTP is not
+part of this acceptance. See the [release audit](account-release-audit-20261001.md)
+and [staging record](account-staging-deployment.md). Production activation and
+the remaining capability boundaries below still apply.
 
 Status: implemented and locally verified email/password account backend; production activation remains disabled. This change builds on the identity-security and atomic-billing changes. It does not complete every future provider or the product launch.
 
@@ -25,7 +29,7 @@ Status: implemented and locally verified email/password account backend; product
 
 | Capability | Current status |
 | --- | --- |
-| Email/password and account/session controls | Source implemented; staging and production configuration required |
+| Email/password and account/session controls | Staging main manual acceptance passed; production activation and listed release checks remain gated |
 | Authenticator TOTP | Source and mocked protocol tests implemented; Identity Platform configuration and real authenticator validation required |
 | Google/Apple/Microsoft/Facebook/LinkedIn/X/GitHub, linking | Planned; adapters absent; capabilities and controls unavailable |
 | Passkeys, phone/email OTP, MFA recovery codes | Planned; not implemented or advertised |

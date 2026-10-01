@@ -36,13 +36,18 @@
   const url=new URL(base+path,location.href);if(url.protocol!=='https:')throw error('ACCOUNT_NOT_CONFIGURED');return url.href;
  }
  async function request(path,{body,method='POST',authenticated=false,token=accessToken}={}){
+  const version=epoch;
   if(authenticated)token=await getAccessToken();
+  if(authenticated&&version!==epoch)throw error('AUTH_CANCELLED');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
   try{
    let response;try{response=await fetch(endpoint(path),{method,credentials:'include',cache:'no-store',redirect:'error',signal:controller.signal,
     headers:{accept:'application/json','x-uvenaro-device':device(),'x-uvenaro-csrf':'1',...(method==='POST'?{'content-type':'application/json'}:{}),...(token?{authorization:`Bearer ${token}`}:{})},
     ...(method==='POST'?{body:JSON.stringify(body||{})}:{})});}catch(e){if(e.code)throw e;throw error('NETWORK_ERROR');}
    const payload=await response.json().catch(()=>({}));
+   // Logout/account changes invalidate in-flight private reads as well as
+   // session refreshes. An old 401 must not clear a newer account's session.
+   if(authenticated&&version!==epoch)throw error('AUTH_CANCELLED');
    if(!response.ok){if(authenticated&&['UNAUTHORIZED','SESSION_EXPIRED'].includes(payload.code))clear(payload.code);throw error(payload.code||'ACCOUNT_SERVICE_UNAVAILABLE',{challengeId:payload.challengeId,methods:payload.methods,retryAfter:payload.retryAfter});}
    return payload;
   }finally{clearTimeout(timer);}

@@ -9,12 +9,20 @@ Resume instruction: When Utkarsh Prakash Verma says “आगे काम श�
 
 ## Current resume point — 1 October 2026
 
-Account staging deploy run 19 succeeded on 26 September at main `50a4086`.
-Cloud Runtime, Native Build and Pages succeeded on that same commit. Live staging
-transport/security checks passed on 1 October; account creation, real login and
-email delivery are still not validated. The next account step is Firebase console
-configuration and the invited-account acceptance test. The staging authorized
-hostname is missing; see [evidence and owner-only steps](account-staging-deployment.md).
+Account staging deploy run 21 succeeded on 1 October at main `92706cc`.
+Security policy, Cloud runtime and Native build all succeeded on that exact commit.
+Firebase's staging authorized hostname and Email/Password configuration have been
+confirmed. The owner completed signup, email verification, repeat login, reload
+persistence, password reset/old-password rejection, and current/other/all-device
+logout. **Staging account main manual testing passed.** Do not repeat these tests
+without a verified regression; they do not prove SMS OTP or production activation.
+
+The [1 October account security/release audit](account-release-audit-20261001.md)
+adds actual Workers tests for token revocation and cross-owner isolation, fixes
+late private responses/account UI cleanup and expired recent-login recovery,
+and requires all three CI workflows on current main before staging deployment.
+Next: verify/integrate this audit revision, deploy the tested staging update, then
+continue the V1 chatbot gateway with providers/payment/background AI disabled.
 
 This change integrates the previously separate security-hardening track with the latest
 staging fixes. App Check, replay defense, spending guards and agent authorization
@@ -92,4 +100,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The immediate owner action is the Firebase configuration and invited-account test recorded above. Legal entity registration and organization developer accounts remain later release gates. In parallel, assistant-controlled engineering may continue only on truthful pre-production hardening; production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The immediate work is the account security/release audit recorded above; the owner's main account acceptance tests have passed. Legal entity registration and organization developer accounts remain later release gates. Assistant-controlled engineering may continue on pre-production hardening and the V1 chatbot gateway; production AI/cloud/payment flags stay disabled until their documented release gates pass.
