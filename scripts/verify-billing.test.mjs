@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {setTimeout as delay} from 'node:timers/promises';
-import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,getChatReceipt,expireUndispatched,usageCost} from '../backend/chat-billing.mjs';
-import {fixture,balance,invariant,d1,seedUser,schema,migration,alice,cfg,messages} from './billing-fixtures.mjs';
+import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,getChatReceipt,expireUndispatched,stopBilling,usageCost} from '../backend/chat-billing.mjs';
+import {fixture,balance,invariant,d1,seedUser,schema,migration,abuseMigration,alice,cfg,messages} from './billing-fixtures.mjs';
 const fails=code=>error=>error.code===code;
 async function reserved(db,key='key-1',user=alice,options=cfg){return reserveChat(db,user,key,messages,options);}
 async function billed(db,key='key-1',usage={inputTokens:100,outputTokens:50}){const row=await reserved(db,key);await beginDispatch(db,alice,row);return settleChat(db,alice,row,usage,'provider-'+key);}
@@ -37,7 +37,7 @@ test('concurrent duplicate keys reserve once, while different payloads conflict'
  }finally{done(db);}
 });
 test('concurrent distinct requests cannot overdraw available credits',async()=>{
- const db=fixture();try{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
  const results=await Promise.allSettled(Array.from({length:20},(_,i)=>reserved(db,'key-'+i)));
  assert.equal(results.filter(x=>x.status==='fulfilled').length,6);assert.equal(balance(db).reserved,90);
  assert.ok(results.filter(x=>x.status==='rejected').every(x=>x.reason.code==='INSUFFICIENT_CREDITS'));
@@ -51,6 +51,19 @@ for(const [name,query,code] of [
 ])test(`${name} includes concurrent in-flight reservations`,async()=>{
  const db=fixture();try{db.sql.exec(query);const results=await Promise.allSettled([reserved(db,'one'),reserved(db,'two')]);
  assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal(results.find(x=>x.status==='rejected').reason.code,code);
+ }finally{done(db);}
+});
+test('concurrency guard blocks parallel expensive work before another hold is created',async()=>{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=1');await reserved(db,'one');
+ await assert.rejects(reserved(db,'two'),fails('CONCURRENCY_LIMIT_REACHED'));
+ assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations WHERE status='reserved'").get().n,1);assert.equal(balance(db).reserved,15);
+ }finally{done(db);}
+});
+test('hourly spend velocity includes settled usage and open reservations',async()=>{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET hourly_cost_limit_microusd=160');
+ await billed(db,'first',{inputTokens:10,outputTokens:5});
+ await assert.rejects(reserved(db,'second'),fails('HOURLY_SPEND_LIMIT_REACHED'));
+ assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_reservations").get().n,1);
  }finally{done(db);}
 });
 test('global budget applies across users',async()=>{
@@ -92,24 +105,26 @@ test('settlement uses its immutable original quote after that quote is retired',
 });
 test('repeated and concurrent settlement charges only once',async()=>{
  const db=fixture();try{const row=await reserved(db);await beginDispatch(db,alice,row);
- const results=await Promise.all(Array.from({length:10},()=>settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-1')));
- assert.ok(results.every(x=>x.credits===2));assert.equal(balance(db).included,18);
+ const results=await Promise.allSettled(Array.from({length:10},()=>settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-1')));
+ assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal(results.find(x=>x.status==='fulfilled').value.credits,2);
+ assert.ok(results.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));assert.equal(balance(db).included,18);
  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE event_type='settle'").get().n,1);
  await assert.rejects(settleChat(db,alice,row,{inputTokens:20,outputTokens:5},'provider-1'),fails('RESERVATION_FINALIZED'));
  }finally{done(db);}
 });
 test('multiple concurrent settlements consume included then prepaid without dropping a debit',async()=>{
- const db=fixture();try{const rows=await Promise.all(Array.from({length:6},(_,i)=>reserved(db,'k'+i)));
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');const rows=await Promise.all(Array.from({length:6},(_,i)=>reserved(db,'k'+i)));
  await Promise.all(rows.map(row=>beginDispatch(db,alice,row)));
  await Promise.all(rows.map(row=>settleChat(db,alice,row,{inputTokens:100,outputTokens:50},'p'+row.id)));
  assert.deepEqual({...balance(db)},{included:0,prepaid:10,reserved:0});
  }finally{done(db);}
 });
-test('release is idempotent and cannot undo a settled request',async()=>{
- const db=fixture();try{const row=await reserved(db);await Promise.all([releaseChat(db,alice,row),releaseChat(db,alice,row)]);
+test('release is terminal and cannot undo a settled request',async()=>{
+ const db=fixture();try{const row=await reserved(db);const releases=await Promise.allSettled([releaseChat(db,alice,row),releaseChat(db,alice,row)]);
+ assert.equal(releases.filter(x=>x.status==='fulfilled').length,1);assert.ok(releases.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));
  assert.deepEqual({...balance(db)},{included:20,prepaid:80,reserved:0});assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE event_type='release'").get().n,1);
  const other=await reserved(db,'other');await beginDispatch(db,alice,other);await settleChat(db,alice,other,{inputTokens:10,outputTokens:5},'p');
- await assert.rejects(releaseChat(db,alice,other,{confirmedNotBilled:true,providerRequestId:'p'}),fails('RECONCILIATION_REQUIRED'));
+ await assert.rejects(releaseChat(db,alice,other,{confirmedNotBilled:true,providerRequestId:'p'}),fails('RESERVATION_FINALIZED'));
  assert.equal(balance(db).included,18);
  }finally{done(db);}
 });
@@ -177,6 +192,32 @@ test('billing kill switch is checked again immediately before dispatch',async()=
  await releaseChat(db,alice,row);assert.equal(balance(db).reserved,0);
  }finally{done(db);}
 });
+test('emergency billing shutdown blocks new paid work but preserves started reconciliation',async()=>{
+ const db=fixture();try{
+  db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
+  const started=await reserved(db,'shutdown-started');await beginDispatch(db,alice,started);await markUnknown(db,alice,started,'NETWORK_AFTER_DISPATCH');
+  const undispatched=await reserved(db,'shutdown-undispatched');
+  await stopBilling(db);
+  await assert.rejects(reserved(db,'shutdown-new'),fails('BILLING_DISABLED'));
+  await assert.rejects(beginDispatch(db,alice,undispatched),fails('DISPATCH_NOT_ALLOWED'));
+  await releaseChat(db,alice,undispatched);
+  await assert.rejects(releaseChat(db,alice,started),fails('RECONCILIATION_REQUIRED'));
+  const settled=await settleChat(db,alice,started,{inputTokens:10,outputTokens:5},'provider-shutdown-started');
+  assert.equal(settled.status,'settled');assert.equal(settled.reconciliationRequired,false);invariant(db);
+ }finally{done(db);}
+});
+
+test('emergency shutdown never converts uncertain provider work into a free release',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'shutdown-unknown');await beginDispatch(db,alice,row);await markUnknown(db,alice,row,'TIMEOUT_AFTER_DISPATCH');
+  await stopBilling(db);await expireUndispatched(db);
+  const receipt=await getChatReceipt(db,alice,'shutdown-unknown');assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);
+  await assert.rejects(releaseChat(db,alice,row),fails('RECONCILIATION_REQUIRED'));
+  const released=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-shutdown-no-charge'});
+  assert.equal(released.status,'released');assert.equal(released.reconciliationRequired,false);invariant(db);
+ }finally{done(db);}
+});
+
 test('integer arithmetic rounds money and credits up without floating point drift',()=>{
  assert.deepEqual(usageCost(1,1,{inputRate:1,outputRate:1,creditValue:10}),{cost:1,credits:1});
  assert.deepEqual(usageCost(12000,8000,{inputRate:1e9,outputRate:1e9,creditValue:7}),{cost:20000000,credits:2857143});
@@ -188,7 +229,7 @@ test('missing migration fails closed',async()=>{
 test('legacy holds survive migration and count against available credits',async()=>{
  const sql=new DatabaseSync(':memory:');sql.exec(schema);seedUser(sql);const date=new Date(Date.now()-3*86400000).toISOString();
  sql.prepare('INSERT INTO usage_reservations (id,owner_id,idempotency_key,feature,estimated_credits,estimated_cost_microusd,status,created_at) VALUES (?,?,?,?,?,?,?,?)').run('legacy','alice','old-key','chat',90,900,'reserved',date);
- sql.exec('UPDATE billing_accounts SET reserved_credits=90');sql.exec('BEGIN;'+migration+'COMMIT;');
+ sql.exec('UPDATE billing_accounts SET reserved_credits=90');sql.exec('BEGIN;'+migration+abuseMigration+'COMMIT;');
  const db={sql,DB:d1(sql)};try{sql.prepare('INSERT INTO chat_billing_policy VALUES (?,?,?,?)').run('chat',1,100000,date);
  sql.prepare('INSERT INTO provider_price_snapshots VALUES (?,?,?,?,?,?,?,?,?)').run('price',cfg.provider,cfg.model,1000000,1000000,10,date,null,'2099-01-01');
  await assert.rejects(reserved(db),fails('INSUFFICIENT_CREDITS'));assert.equal(balance(db).reserved,90);
@@ -199,6 +240,7 @@ test('separate concurrent database connections obey credits and idempotency atom
  const {Worker}=await import('node:worker_threads');const {mkdtemp,rm}=await import('node:fs/promises');const {tmpdir}=await import('node:os');const {join}=await import('node:path');
  for(const duplicate of [false,true]){
   const dir=await mkdtemp(join(tmpdir(),'uvenaro-billing-')),file=join(dir,'test.db'),db=fixture(file),barrier=new SharedArrayBuffer(4);
+  db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
   const workers=[],ready=[],finished=[];
   try{
    for(let index=0;index<4;index++){
@@ -215,7 +257,7 @@ test('separate concurrent database connections obey credits and idempotency atom
 });
 
 test('expiry sweep releases only never-dispatched holds, preserving started and unknown work',async()=>{
- const db=fixture();try{
+ const db=fixture();try{db.sql.exec('UPDATE usage_limits SET max_concurrent_requests=16');
   const row=await reserved(db,'original');
   const copy=db.sql.prepare(`INSERT INTO usage_reservations
    (id,owner_id,idempotency_key,feature,estimated_credits,estimated_cost_microusd,status,created_at,request_hash,price_snapshot_id,input_token_limit,output_token_limit,global_cost_ceiling,expires_at)
@@ -240,5 +282,70 @@ test('legacy inconsistent hold counters block all new reservations until reconci
 test('quota windows parse ISO dates correctly and include already settled spend',async()=>{
  const db=fixture();try{db.sql.exec('UPDATE usage_limits SET daily_credit_limit=16');await billed(db,'first',{inputTokens:10,outputTokens:5});
   await assert.rejects(reserved(db,'second'),fails('DAILY_QUOTA_REACHED'));
+ }finally{done(db);}
+});
+
+test('started or unknown provider work cannot be released without confirmed non-billing evidence',async()=>{
+ const db=fixture();try{
+  for(const state of ['started','unknown']){
+   const key='reconcile-'+state,row=await reserved(db,key);
+   await beginDispatch(db,alice,row);if(state==='unknown')await markUnknown(db,alice,row);
+   await assert.rejects(releaseChat(db,alice,row),fails('RECONCILIATION_REQUIRED'));
+   let receipt=await getChatReceipt(db,alice,key);assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);
+   const providerRequestId='provider-'+state;
+   receipt=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId});
+   assert.equal(receipt.status,'released');assert.equal(receipt.reconciliationRequired,false);
+  }
+  invariant(db);
+ }finally{done(db);}
+});
+
+test('confirmed non-billing release requires bounded provider evidence',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'evidence-required');await beginDispatch(db,alice,row);
+  for(const providerRequestId of [null,'','x'.repeat(201)])
+   await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId}),fails('RECONCILIATION_REQUIRED'));
+  const receipt=await getChatReceipt(db,alice,'evidence-required');
+  assert.equal(receipt.status,'reserved');assert.equal(receipt.reconciliationRequired,true);invariant(db);
+ }finally{done(db);}
+});
+
+test('unknown provider outcome cannot be settled or released twice',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'unknown-terminal');await beginDispatch(db,alice,row);await markUnknown(db,alice,row,'NETWORK_AFTER_DISPATCH');
+  const settled=await settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-unknown-terminal');
+  assert.equal(settled.status,'settled');assert.equal(settled.reconciliationRequired,false);
+  await assert.rejects(settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-unknown-terminal'),fails('RESERVATION_FINALIZED'));
+  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-unknown-terminal'}),fails('RESERVATION_FINALIZED'));
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type='settle'").get(row.id).n,1);
+  invariant(db);
+ }finally{done(db);}
+});
+
+test('settle versus confirmed-not-billed release has exactly one terminal winner',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'settle-release-race');await beginDispatch(db,alice,row);await markUnknown(db,alice,row);
+  const outcomes=await Promise.allSettled([
+   settleChat(db,alice,row,{inputTokens:10,outputTokens:5},'provider-settle-release-race'),
+   releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-settle-release-race'})
+  ]);
+  assert.equal(outcomes.filter(x=>x.status==='fulfilled').length,1);
+  assert.ok(outcomes.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));
+  const receipt=await getChatReceipt(db,alice,'settle-release-race');assert.ok(['settled','released'].includes(receipt.status));
+  assert.equal(receipt.reconciliationRequired,false);
+  const ledger=db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type IN ('settle','release')").get(row.id).n;
+  assert.equal(ledger,1);invariant(db);
+ }finally{done(db);}
+});
+
+test('confirmed-not-billed reconciliation is terminal and cannot later settle',async()=>{
+ const db=fixture();try{
+  const row=await reserved(db,'release-terminal');await beginDispatch(db,alice,row);await markUnknown(db,alice,row);
+  const released=await releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'});
+  assert.equal(released.status,'released');
+  await assert.rejects(settleChat(db,alice,row,{inputTokens:1,outputTokens:1},'provider-release-terminal'),fails('RESERVATION_FINALIZED'));
+  await assert.rejects(releaseChat(db,alice,row,{confirmedNotBilled:true,providerRequestId:'provider-release-terminal'}),fails('RESERVATION_FINALIZED'));
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE reservation_id=? AND event_type='release'").get(row.id).n,1);
+  invariant(db);
  }finally{done(db);}
 });

@@ -1,10 +1,12 @@
 import {AccountError,context,random,encrypt,decrypt,now,event,rateLimit} from './account-common.mjs';
-import {firebaseCall,credentials} from './firebase-accounts.mjs';
+import {firebaseCall,credentials,FirebaseAccountError} from './firebase-accounts.mjs';
 import {issueSession,verifyCredentials,requireRecent,revokeAll} from './account-sessions.mjs';
 export async function saveChallenge(request,env,kind,payload,user){
- const ctx=await context(request,env),id=random();
+ const ctx=await context(request,env),id=random(),at=now();
+ // Supersede older live challenges for the same authenticated account and operation.
+ if(user?.sub)await env.DB.prepare("UPDATE account_challenges SET consumed_at=? WHERE owner_id=? AND kind=? AND consumed_at IS NULL AND expires_at>?").bind(at,user.sub,kind,at).run();
  await env.DB.prepare(`INSERT INTO account_challenges (id,kind,owner_id,session_id,device_hash,origin,payload_cipher,expires_at)
-  VALUES (?,?,?,?,?,?,?,?)`).bind(id,kind,user?.sub||null,user?.session.id||null,ctx.deviceHash,ctx.origin,await encrypt(env,payload,'challenge:'+id),now()+300000).run();
+  VALUES (?,?,?,?,?,?,?,?)`).bind(id,kind,user?.sub||null,user?.session.id||null,ctx.deviceHash,ctx.origin,await encrypt(env,payload,'challenge:'+id),at+300000).run();
  return id;
 }
 export async function challenge(request,env,id,kind,user){
@@ -20,6 +22,12 @@ async function consume(env,id){
  const result=await env.DB.prepare('UPDATE account_challenges SET consumed_at=?,payload_cipher=? WHERE id=? AND consumed_at IS NULL RETURNING id').bind(now(),'consumed',id).first();
  if(!result)throw new AccountError('INVALID_CHALLENGE',401);
 }
+async function exhaustAfterFailedVerification(env,row,error){
+ if(row.attempts>=5&&error instanceof FirebaseAccountError){
+  await env.DB.prepare("UPDATE account_challenges SET consumed_at=?,payload_cipher='attempts_exhausted' WHERE id=? AND consumed_at IS NULL").bind(now(),row.id).run();
+ }
+ throw error;
+}
 export async function mfaRequired(request,env,payload,user){
  const methods=(payload.mfaInfo||[]).filter(m=>m.totpInfo&&typeof m.mfaEnrollmentId==='string').map(m=>({id:m.mfaEnrollmentId,name:m.displayName||'Authenticator'}));
  if(!methods.length)throw new AccountError('MFA_METHOD_UNAVAILABLE',503);
@@ -31,7 +39,9 @@ export async function finishMfa(request,env,input,user){
  await rateLimit(env,request,'mfa',input.challengeId,10);
  const {row,payload}=await challenge(request,env,input.challengeId,user?'reauth_mfa':'mfa_signin',user);
  if(!payload.methods.some(m=>m.id===input.methodId))throw new AccountError('INVALID_CHALLENGE',401);
- const creds=credentials(await firebaseCall(env,'accounts/mfaSignIn:finalize',{mfaPendingCredential:payload.pending,mfaEnrollmentId:input.methodId,totpVerificationInfo:{verificationCode:input.code}},{v2:true}));
+ let result;try{result=await firebaseCall(env,'accounts/mfaSignIn:finalize',{mfaPendingCredential:payload.pending,mfaEnrollmentId:input.methodId,totpVerificationInfo:{verificationCode:input.code}},{v2:true});}
+ catch(error){return exhaustAfterFailedVerification(env,row,error);}
+ const creds=credentials(result);
  const identity=await verifyCredentials(env,creds);if(user&&identity.sub!==user.sub)throw new AccountError('UNAUTHORIZED',401);
  await consume(env,row.id);
  if(user){await updateReauth(env,user,creds,identity);return {ok:true};}
@@ -57,6 +67,7 @@ export async function beginEnrollment(request,env,user){
 export async function finishEnrollment(request,env,user,input){
  requireRecent(user);if(!/^\d{6,8}$/.test(input.code||''))throw new AccountError('INVALID_VERIFICATION_CODE',401);
  const {row,payload}=await challenge(request,env,input.challengeId,'mfa_enroll',user);
- await firebaseCall(env,'accounts/mfaEnrollment:finalize',{idToken:user.credentials.idToken,displayName:'Uvenaro authenticator',totpVerificationInfo:{sessionInfo:payload.sessionInfo,verificationCode:input.code}},{v2:true});
+ try{await firebaseCall(env,'accounts/mfaEnrollment:finalize',{idToken:user.credentials.idToken,displayName:'Uvenaro authenticator',totpVerificationInfo:{sessionInfo:payload.sessionInfo,verificationCode:input.code}},{v2:true});}
+ catch(error){return exhaustAfterFailedVerification(env,row,error);}
  await consume(env,row.id);await revokeAll(env,user.sub,'mfa_enrolled');return {ok:true,signInRequired:true};
 }

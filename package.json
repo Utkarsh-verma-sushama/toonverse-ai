@@ -12,7 +12,7 @@
     "native:ios": "npm run native:sync && cap open ios",
     "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs",
     "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing && npm run verify:accounts && npm run verify:account-staging",
-    "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs",
+    "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs scripts/verify-app-check.test.mjs scripts/verify-replay-guard.test.mjs",
     "verify:rules": "firebase emulators:exec --only firestore,storage --project demo-uvenaro-security \"node --test scripts/verify-rules.test.mjs\"",
     "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-d1-billing.test.mjs",
     "verify:accounts": "node --test scripts/verify-accounts.test.mjs scripts/verify-account-client.test.mjs",

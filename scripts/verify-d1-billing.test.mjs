@@ -36,10 +36,14 @@ test('Cloudflare local D1 applies migration and atomically reserves, settles and
   assert.equal(attempts.filter(x=>x.status==='fulfilled').length,1);
   assert.ok(attempts.filter(x=>x.status==='rejected').every(x=>x.reason.code==='REQUEST_ALREADY_EXISTS'));
   const row=attempts.find(x=>x.status==='fulfilled').value;await beginDispatch(env,alice,row);
-  await Promise.all(Array.from({length:4},()=>settleChat(env,alice,row,{inputTokens:10,outputTokens:5},'provider-1')));
+  const settlements=await Promise.allSettled(Array.from({length:4},()=>settleChat(env,alice,row,{inputTokens:10,outputTokens:5},'provider-1')));
+  assert.equal(settlements.filter(x=>x.status==='fulfilled').length,1);
+  assert.ok(settlements.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));
   const account=await DB.prepare('SELECT * FROM billing_accounts').first();assert.equal(account.included_credits,18);assert.equal(account.reserved_credits,0);
   assert.equal((await DB.prepare("SELECT COUNT(*) AS n FROM usage_ledger WHERE event_type='settle'").first()).n,1);
-  const second=await reserveChat(env,alice,'release-key',messages,cfg);await Promise.all([releaseChat(env,alice,second),releaseChat(env,alice,second)]);
+  const second=await reserveChat(env,alice,'release-key',messages,cfg);const releases=await Promise.allSettled([releaseChat(env,alice,second),releaseChat(env,alice,second)]);
+  assert.equal(releases.filter(x=>x.status==='fulfilled').length,1);
+  assert.ok(releases.filter(x=>x.status==='rejected').every(x=>x.reason.code==='RESERVATION_FINALIZED'));
   assert.equal((await DB.prepare('SELECT reserved_credits AS n FROM billing_accounts').first()).n,0);
   await DB.prepare("CREATE TRIGGER fail_ledger BEFORE INSERT ON usage_ledger BEGIN SELECT RAISE(ABORT,'simulated failure'); END;").run();
   await assert.rejects(reserveChat(env,alice,'rollback-key',messages,cfg),e=>e.code==='BILLING_UNAVAILABLE');
