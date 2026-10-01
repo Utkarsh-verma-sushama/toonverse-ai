@@ -1,4 +1,5 @@
 // Firebase ID tokens only. No request header or environment flag can supply a UID.
+import {fetchWithoutRedirect} from './safe-fetch.mjs';
 const KEYS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const LOOKUP_URL = "https://identitytoolkit.googleapis.com/v1/accounts:lookup";
 const encoder = new TextEncoder();
@@ -27,7 +28,7 @@ export function createFirebaseAuthenticator({ fetch: fetcher = (...args) => fetc
 
   async function fetchJson(url, options = {}) {
     try {
-      const response = await fetcher(url, { ...options, redirect: "error", signal: AbortSignal.timeout(5000) });
+      const response = await fetchWithoutRedirect(url, { ...options, signal: AbortSignal.timeout(5000) }, fetcher);
       const payload = await response.json();
       return { response, payload };
     } catch { throw unavailable(); }

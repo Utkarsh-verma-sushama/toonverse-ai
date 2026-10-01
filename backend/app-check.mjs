@@ -1,4 +1,5 @@
 // Firebase App Check verification for protected production API requests.
+import {fetchWithoutRedirect} from './safe-fetch.mjs';
 // Fail-closed in production when APP_CHECK_ENFORCEMENT_ENABLED=true.
 // This verifies issuer/audience/signature and bounds key refreshes. High-cost
 // endpoints should additionally use replay-resistant limited-use tokens.
@@ -20,7 +21,7 @@ export function createAppCheckVerifier({fetch:fetcher=(...a)=>fetch(...a),now=Da
  let keys=new Map(),expires=0,refreshAfter=0,pending;
  async function refresh(){
   if(pending)return pending;if(now()<refreshAfter)throw unavailable();refreshAfter=now()+30000;
-  pending=(async()=>{let r,p;try{r=await fetcher(KEYS_URL,{headers:{accept:"application/json"},redirect:"error",signal:AbortSignal.timeout(5000)});p=await readKeys(r);}catch{throw unavailable();}
+  pending=(async()=>{let r,p;try{r=await fetchWithoutRedirect(KEYS_URL,{headers:{accept:"application/json"},signal:AbortSignal.timeout(5000)},fetcher);p=await readKeys(r);}catch{throw unavailable();}
    if(!r.ok||!Array.isArray(p?.keys)||!p.keys.length||p.keys.length>20)throw unavailable();
    const next=new Map();for(const jwk of p.keys){if(!jwk||jwk.kty!=="RSA"||jwk.alg!=="RS256"||jwk.use!=="sig"||typeof jwk.kid!=="string"||!jwk.kid||jwk.kid.length>256)continue;if(next.has(jwk.kid))throw unavailable();try{next.set(jwk.kid,await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]));}catch{throw unavailable();}}
    if(!next.size)throw unavailable();const ttl=Number(r.headers.get("cache-control")?.match(/(?:^|[,\s])max-age=(\d+)/)?.[1]??300);keys=next;expires=now()+Math.min(ttl,21600)*1000;

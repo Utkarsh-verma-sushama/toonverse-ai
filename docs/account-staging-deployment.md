@@ -5,31 +5,55 @@
 This update supersedes the historical access/deployment status below. Deployment
 [run 19](https://github.com/Utkarsh-verma-sushama/toonverse-ai/actions/runs/36248425262)
 succeeded on `50a4086af6ff6af6d4e62f1dd2dca11533eb0f6e` on 26 September.
-The live same-origin transport/security check passed again on 1 October with
-`accountReady:true`; real sign-in and email delivery remain unverified.
+Deployment [run 20](https://github.com/Utkarsh-verma-sushama/toonverse-ai/actions/runs/36823577001)
+succeeded on `d8e09fa87edccdeec86bc4b1c7f6617cee3e3473` on 1 October. The live
+same-origin transport/security check passed with `accountReady:true`; real sign-in
+and email delivery remain unverified. This health result does not test Firebase.
 
 - Google's public project configuration responds successfully and identifies project
   number `594612167862`, matching this app. No API key is printed in this record.
-- The public `authorizedDomains` list does **not** include
-  `uvenaro-account-staging.uv7398.workers.dev`. Add exactly that hostname through
-  Firebase Authentication settings before testing verification/reset continuation links.
+- Owner screenshots confirm Email/Password Enabled and the Spark plan. The owner
+  added `uvenaro-account-staging.uv7398.workers.dev`; Google's public project
+  configuration now independently confirms this exact authorized hostname.
 - One random, nonexistent reserved-domain email/password sign-in probe returned
   `INVALID_LOGIN_CREDENTIALS`, rather than a disabled-provider/configuration error.
   This establishes credential-validation reachability only. No account was created,
   no email sent, and no real user's password used. It does not prove account creation,
   a successful session, email delivery, Firebase plan, or per-user restrictions.
 - The assistant browser reached a Google sign-in redirect but received a 502 connection
-  error, including on one retry. Console settings and current billing plans could not
-  be verified or changed. Use `uv7398@gmail.com` for the Firebase console;
+  error, including on one retry. Firebase console state was therefore confirmed from
+  the owner's screenshots. Use `uv7398@gmail.com` for the Firebase console;
   `support@uvenaro.com` is the support mailbox, not this console identity.
 - Keep paid services and production AI/cloud/payment flags disabled. Staging continues
   to force AI, agent, model-routing, and new TOTP enrollment off.
 
-Next owner-only action: confirm Email/Password Enabled and Spark in the console,
-add the exact staging authorized hostname, then perform the invited account test.
+Next owner-only action after the runtime fix is deployed: perform the invited
+account test using the already configured test mailbox.
 Do not use the Google administrator password as the application-test password.
 The original signup error is not diagnosed merely by finding a missing authorized
 hostname: preserve the next failing API status/code for targeted diagnosis.
+
+### Firebase 503 root cause and runtime regression
+
+After run 20, an invalid-password diagnostic for the invited mailbox still returned
+`IDENTITY_UNAVAILABLE` (503), while a direct Firebase request returned the expected
+`INVALID_LOGIN_CREDENTIALS`. No actual password was used and no account or email
+was created. The support mailbox is not currently in the staging invite list.
+
+Reproduction in workerd found the concrete incompatibility: `redirect:'error'`
+throws a TypeError before sending a request. Workerd accepts only `manual` and
+`follow`. Node-only fetch mocks had hidden this difference. The shared server
+fetch helper now uses `manual` and rejects every 3xx response without forwarding
+credentials or exposing upstream bodies or redirect locations. Firebase account
+operations, identity lookup, signing keys, App Check and disabled provider paths
+use the same guard. Browser and Node CLI redirect modes remain unchanged.
+
+`verify:accounts` now runs the actual staging Worker in Miniflare/workerd with a
+local D1 database and fictional identity responses. It covers successful sign-in,
+signed-key validation, account lookup, refresh and App Check; rejected credentials;
+and redirects on account, key, lookup and refresh calls. All outbound traffic in
+these tests is intercepted. This regression is separate from the owner's real
+signup, email verification and password-reset acceptance tests, which remain open.
 
 Security integration includes migrations 0003–0007. Deployment fingerprints each
 new migration and recognizes its columns after tracking, so repeated deployment

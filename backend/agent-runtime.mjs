@@ -1,4 +1,5 @@
 import {reserveChat,beginDispatch,settleChat,releaseChat,markUnknown,stopBilling,whole} from './chat-billing.mjs';
+import {fetchWithoutRedirect} from './safe-fetch.mjs';
 
 const fail=(code,status=503)=>Object.assign(new Error(code),{code,status});
 const integer=(env,name,fallback,min,max)=>{
@@ -131,7 +132,7 @@ export async function prepareAgentExecution(env,runId,owner){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),cfg.maxRuntimeMs);
   let upstream,payload;
   try{
-   upstream=await fetch(cfg.url,{method:'POST',redirect:'error',signal:controller.signal,headers:{
+   upstream=await fetchWithoutRedirect(cfg.url,{method:'POST',signal:controller.signal,headers:{
     authorization:`Bearer ${env.AGENT_PROVIDER_API_KEY}`,'content-type':'application/json','idempotency-key':reservation.id},
     body:JSON.stringify({protocol:'metered-v1',request_id:reservation.id,model:cfg.model,objective:run.objective,
      max_steps:cfg.maxSteps,max_input_tokens:cfg.maxInputTokens,max_output_tokens:cfg.maxOutputTokens,
