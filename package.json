@@ -25,6 +25,6 @@
     "verify:account-staging-ui": "UVENARO_UI_STAGING=true node --test scripts/verify-account-ui.test.mjs",
     "verify:account-staging-build": "npm run build:account-staging && wrangler deploy --dry-run --config deploy/account-staging/wrangler.json --outdir .account-staging/bundle"
   },
-  "dependencies": {"@capacitor/android":"8.5.1","@capacitor/app":"8.0.0","@capacitor/core":"8.5.1","@capacitor/ios":"8.5.1"},
+  "dependencies": {"@capacitor/android":"8.5.2","@capacitor/app":"8.1.1","@capacitor/core":"8.5.2","@capacitor/ios":"8.5.2"},
   "devDependencies": {"@capacitor/cli":"8.5.2","@firebase/rules-unit-testing":"5.0.2","@sparticuz/chromium":"153.0.0","firebase":"12.19.0","firebase-tools":"15.31.0","miniflare":"4.20260730.0","playwright":"1.62.1","wrangler":"4.137.0"}
 }
