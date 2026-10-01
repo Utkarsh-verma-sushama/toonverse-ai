@@ -43,6 +43,8 @@ Closed reservations, quote terms and ledger events are immutable to ordinary upd
 
 `GET /v1/chat/requests/{requestKey}` returns only the authenticated owner's status and credit receipt. It does not invoke a provider or reveal prompt/output content.
 
+Before any paid activation, `backend/chat-activation.mjs` performs a read-only, fail-closed audit of the execution flag, metered route configuration, D1 billing policy, current immutable price snapshot and unresolved reservations. It never changes configuration, calls a provider or prints a secret. An unresolved hold blocks activation until authoritative reconciliation is complete.
+
 The chat client persists a pending request's original key and body before execution. A page reload, double tap or retry reuses that key. It prevents a different request or clearing the pending history until the outcome is checked. Local chat/pending keys are scoped to the signed-in account. Storage persistence failure stops execution before a provider call.
 
 The page has **Check last request** and **Retry last request** controls. If the original reply was lost after successful settlement, its credit receipt can be recovered. The answer itself is not stored on the server in this checkpoint and cannot be replayed. The UI explicitly reports that limitation instead of starting another paid request.
