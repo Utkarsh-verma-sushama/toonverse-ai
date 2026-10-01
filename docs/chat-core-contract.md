@@ -27,6 +27,12 @@ Fair-use and safety controls apply throughout, including prepaid usage. Subscrip
 - Prompt-injection, tool-permission and data-exfiltration defenses
 - Encryption, short retention, export and deletion controls
 - Streaming cancellation and upstream cancellation where supported
+- A user-visible “Stop waiting” action aborts the client transport while preserving
+  the original idempotency key and pending receipt. After dispatch, cancellation
+  never refunds an uncertain provider outcome; the user must check the receipt.
+- Each transport attempt uses a one-time replay nonce. A retry keeps the durable
+  billing key and rotates only that nonce, so replay protection and billing
+  idempotency work together.
 - Usage dashboard, low-balance alerts and transparent credit receipts
 - Reconciliation, refund, fraud, tax and payment-failure handling
 - Load, outage, concurrency, double-spend, security and billing tests

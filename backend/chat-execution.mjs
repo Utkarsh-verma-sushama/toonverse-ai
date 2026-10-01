@@ -31,11 +31,19 @@ export function normalizeMessages(input){
  if(messages.reduce((size,item)=>size+item.content.length,0)>12000)throw fail('CONVERSATION_LIMIT_EXCEEDED',413);
  return messages;
 }
-async function boundedJson(response){
+async function boundedJson(response,signal){
  if(!response.body)throw fail('INVALID_PROVIDER_RESPONSE',502);
  const reader=response.body.getReader(),chunks=[];let size=0;
- try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>262144){await reader.cancel();throw fail('INVALID_PROVIDER_RESPONSE',502);}chunks.push(value);}}
- finally{reader.releaseLock();}
+ // Cover stalled response bodies as well as the initial fetch. Cancellation of
+ // the network request alone does not guarantee an already-returned stream ends.
+ const cancel=()=>{void reader.cancel().catch(()=>{});};
+ signal.addEventListener('abort',cancel,{once:true});
+ try{while(true){
+  if(signal.aborted)throw fail('PROVIDER_READ_CANCELLED',503);
+  const {done,value}=await reader.read();
+  if(signal.aborted)throw fail('PROVIDER_READ_CANCELLED',503);
+  if(done)break;size+=value.byteLength;if(size>262144){await reader.cancel();throw fail('INVALID_PROVIDER_RESPONSE',502);}chunks.push(value);
+ }}finally{signal.removeEventListener('abort',cancel);reader.releaseLock();}
  const data=new Uint8Array(size);let offset=0;for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.length;}
  try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(data));}catch{throw fail('INVALID_PROVIDER_RESPONSE',502);}
 }
@@ -74,9 +82,12 @@ export async function executeChat(request,env,user,readBody){
    authorization:`Bearer ${env.CHAT_PROVIDER_API_KEY}`,'content-type':'application/json','idempotency-key':reservation.id},
    body:JSON.stringify({protocol:'metered-v1',request_id:reservation.id,model:cfg.model,messages,
     max_input_tokens:cfg.maxInputTokens,max_output_tokens:cfg.maxOutputTokens,tools:[],store:false})});
-  payload=await boundedJson(upstream);
+  payload=await boundedJson(upstream,controller.signal);
  }catch(error){
-  await holdUnknown(env,user,reservation,controller.signal.aborted?'PROVIDER_TIMEOUT_OR_CANCEL':'PROVIDER_OUTCOME_UNKNOWN');
+  if(error.code==='INVALID_PROVIDER_RESPONSE'){
+   try{await stopBilling(env);}catch{console.error('CHAT_BILLING_STOP_FAILED',reservation.id);}
+  }
+  await holdUnknown(env,user,reservation,controller.signal.aborted?'PROVIDER_TIMEOUT_OR_CANCEL':error.code==='INVALID_PROVIDER_RESPONSE'?'PROVIDER_CONTRACT_VIOLATION':'PROVIDER_OUTCOME_UNKNOWN');
   return json({code:'RECONCILIATION_REQUIRED',reservationId:reservation.id,message:'Request outcome is being checked. Credits remain reserved and have not been charged.'},503);
  }finally{clearTimeout(timer);request.signal.removeEventListener('abort',cancel);}
  if(validEnvelope(payload,reservation,cfg)&&payload.status==='rejected'&&payload.billable===false&&payload.usage?.input_tokens===0&&payload.usage?.output_tokens===0){

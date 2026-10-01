@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../assets/js/chat-core.js',import.meta.url),'utf8');
 function app({data=new Map(),fetch=async()=>{throw new Error('offline');},uid='alice',connected=true,failSave=false}={}){
  const auth={uid};const config={services:{apiBaseUrl:'https://api.example.invalid'},features:{chatCore:connected}};
- const window={UvenaroConfig:config,UvenaroAuth:{getState:()=>({user:auth.uid?{id:auth.uid}:null}),getAccessToken:async()=> 'fake-test-token'}};
+ const window=Object.assign(new EventTarget(),{UvenaroConfig:config,UvenaroAuth:{getState:()=>({user:auth.uid?{id:auth.uid}:null}),getAccessToken:async()=> 'fake-test-token'}});
  vm.runInNewContext(source,{window,localStorage:{getItem:key=>data.get(key)||null,setItem:(key,value)=>{if(failSave)throw new Error('disk full');data.set(key,value);}},fetch,crypto,AbortController,setTimeout,clearTimeout,console});
  return {chat:window.UvenaroChat,data,auth,config,window};
 }
@@ -74,4 +74,61 @@ test('explicit quota rejection clears pending without pretending credits were ch
 test('account switch during token refresh prevents a request under the wrong account',async()=>{
  let calls=0;const a=app({fetch:async()=>{calls++;return ok();}});a.window.UvenaroAuth.getAccessToken=async()=>{a.auth.uid='bob';return 'bob-token';};
  await assert.rejects(a.chat.send('Alice private message'),e=>e.code==='ACCOUNT_CHANGED');assert.equal(calls,0);
+});
+
+test('stop while waiting for a token prevents any model request',async()=>{
+ let finish,calls=0;const a=app({fetch:async()=>{calls++;return ok();}});
+ a.window.UvenaroAuth.getAccessToken=()=>new Promise(resolve=>{finish=resolve;});
+ const sent=a.chat.send('Hello');assert.equal(a.chat.cancel(),true);finish('test-token');
+ await assert.rejects(sent,e=>e.code==='REQUEST_STOPPED');assert.equal(calls,0);assert.equal(a.chat.pending(),true);
+});
+test('stop during restore prevents sending and duplicate clicks during restore stay locked',async()=>{
+ let finish,calls=0;const a=app({fetch:async()=>{calls++;return ok();}});
+ a.window.UvenaroAuth.restore=()=>new Promise(resolve=>{finish=resolve;});
+ const sent=a.chat.send('Hello');await assert.rejects(a.chat.send('Hello'),e=>e.code==='REQUEST_IN_PROGRESS');
+ assert.equal(a.chat.cancel(),true);finish();await assert.rejects(sent,e=>e.code==='REQUEST_STOPPED');
+ assert.equal(calls,0);assert.equal(a.chat.pending(),false);
+});
+test('switch during restore cannot move a private draft into the new account',async()=>{
+ let finish,calls=0;const a=app({fetch:async()=>{calls++;return ok();}});
+ a.window.UvenaroAuth.restore=()=>new Promise(resolve=>{finish=resolve;});const sent=a.chat.send('Alice private draft');
+ a.auth.uid='bob';a.window.dispatchEvent(new Event('uvenaro:auth-change'));finish();
+ await assert.rejects(sent,e=>e.code==='ACCOUNT_CHANGED');assert.equal(calls,0);assert.equal(a.chat.messages().length,0);
+});
+test('stop aborts transport, preserves the billing key across reload and rotates only the replay nonce',async()=>{
+ const data=new Map(),calls=[];const a=app({data,fetch:async(url,options)=>{
+  calls.push(options);return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Stopped','AbortError')),{once:true}));
+ }});
+ const sent=a.chat.send('Hello');await new Promise(r=>setImmediate(r));
+ assert.equal(a.chat.cancel(),true);assert.equal(a.chat.cancel(),false);
+ await assert.rejects(sent,e=>e.code==='REQUEST_STOPPED');assert.equal(calls[0].signal.aborted,true);assert.equal(a.chat.pending(),true);
+ const b=app({data,fetch:async(url,options)=>{calls.push(options);return ok();}});await b.chat.retry();
+ assert.equal(calls[0].headers['Idempotency-Key'],calls[1].headers['Idempotency-Key']);assert.equal(calls[0].body,calls[1].body);
+ for(const call of calls)assert.match(call.headers['X-Uvenaro-Nonce'],/^[A-Za-z0-9_-]{32,128}$/);
+ assert.notEqual(calls[0].headers['X-Uvenaro-Nonce'],calls[1].headers['X-Uvenaro-Nonce']);
+});
+test('late success after stop cannot clear pending state or save an unconfirmed reply',async()=>{
+ let finish;const a=app({fetch:()=>new Promise(resolve=>{finish=resolve;})});
+ const sent=a.chat.send('Hello');await new Promise(r=>setImmediate(r));a.chat.cancel();finish(ok());
+ await assert.rejects(sent,e=>e.code==='REQUEST_STOPPED');assert.equal(a.chat.pending(),true);assert.equal(a.chat.messages().length,1);
+});
+for(const backToSameUser of [false,true])test('logout invalidates a private reply even after '+(backToSameUser?'same-user login':'switching accounts'),async()=>{
+ let finish;const a=app({fetch:()=>new Promise(resolve=>{finish=resolve;})});
+ const sent=a.chat.send('Private prompt');await new Promise(r=>setImmediate(r));
+ a.auth.uid=null;a.window.dispatchEvent(new Event('uvenaro:auth-change'));
+ a.auth.uid=backToSameUser?'alice':'bob';a.window.dispatchEvent(new Event('uvenaro:auth-change'));finish(ok());
+ await assert.rejects(sent,e=>e.code==='ACCOUNT_CHANGED');
+ assert.doesNotMatch(a.data.get('uvenaro.chat.v2:alice'),/Answer/);a.auth.uid='alice';assert.equal(a.chat.pending(),true);
+});
+test('logout while receipt JSON is loading cannot mutate the previous account pending key',async()=>{
+ let finish;const a=app({fetch:async url=>{
+  if(url.includes('/requests/'))return {ok:true,status:200,json:()=>new Promise(resolve=>{finish=resolve;})};throw new Error('lost');
+ }});await assert.rejects(a.chat.send('Hello'));
+ const checked=a.chat.checkPending();await new Promise(r=>setImmediate(r));
+ a.auth.uid=null;a.window.dispatchEvent(new Event('uvenaro:auth-change'));finish({status:'settled',credits:2});
+ await assert.rejects(checked,e=>e.code==='ACCOUNT_CHANGED');a.auth.uid='alice';assert.equal(a.chat.pending(),true);
+});
+test('generic route 404 is not reported as an absent billing reservation',async()=>{
+ const a=app({fetch:async()=>Response.json({code:'NOT_FOUND'},{status:404})});await assert.rejects(a.chat.send('Hello'));
+ await assert.rejects(a.chat.checkPending());assert.equal(a.chat.pending(),true);
 });

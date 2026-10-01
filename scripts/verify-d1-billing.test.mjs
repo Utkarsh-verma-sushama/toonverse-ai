@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
 import {Miniflare} from 'miniflare';
 import {schema,migration,alice,cfg,messages} from './billing-fixtures.mjs';
 import {reserveChat,beginDispatch,settleChat,releaseChat} from '../backend/chat-billing.mjs';
@@ -64,4 +65,19 @@ test('Cloudflare local D1 supports real account migrations, session rotation and
   const old=jar;const restored=await call('/v1/auth/refresh');assert.equal(restored.status,200,JSON.stringify(restored.body));assert.notEqual(jar,old);token=restored.body.accessToken;
   assert.equal((await call('/v1/auth/sign-out')).status,200);assert.equal((await call('/v1/account/profile',{},'GET')).status,401);
  }finally{globalThis.fetch=previousFetch;await mf.dispose();}
+});
+
+test('Worker scheduled entrypoint completes all cleanup tasks against real D1',async()=>{
+ const replay=readFileSync(new URL('../backend/migrations/0004_request_replay_guard.sql',import.meta.url),'utf8');
+ const mf=new Miniflare({modules:true,script:'export default {fetch(){return new Response("test");}}',compatibilityDate:'2026-08-06',d1Databases:{DB:'scheduled-test'}});
+ try{
+  const DB=await mf.getD1Database('DB');await DB.batch(statements(accountMigration+'\n'+replay).map(sql=>DB.prepare(sql)));
+  await DB.batch(['a','b'].map(key=>DB.prepare("INSERT INTO request_nonces VALUES (?,?,'chat',strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now','+5 minutes'))").bind('alice',key.repeat(64))));
+  // Age an inserted nonce only in this disposable test database.
+  await DB.prepare('DROP TRIGGER request_nonce_immutable').run();
+  await DB.prepare("UPDATE request_nonces SET expires_at='2000-01-01T00:00:00Z' WHERE nonce_hash=?").bind('a'.repeat(64)).run();
+  const pending=[];await worker.scheduled({}, {...accountEnv,DB}, {waitUntil:promise=>pending.push(promise)});
+  assert.equal(pending.length,1);await Promise.all(pending);
+  const rows=await DB.prepare('SELECT nonce_hash FROM request_nonces').all();assert.deepEqual(rows.results.map(row=>row.nonce_hash),['b'.repeat(64)]);
+ }finally{await mf.dispose();}
 });
