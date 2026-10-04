@@ -25,6 +25,9 @@ AGENT_MAX_OUTPUT_TOKENS = "1000"
 AGENT_GLOBAL_DAILY_COST_MICROUSD = "0"
 MODEL_ROUTING_ENABLED = "false"
 CHAT_EXECUTION_ENABLED = "false"
+# Independent production confirmation. Keep empty while paid chat is disabled.
+# Enabling CHAT_EXECUTION_ENABLED alone must never authorize provider spend.
+CHAT_PAID_EXECUTION_CONFIRMATION = ""
 CHAT_PROVIDER = ""
 CHAT_MODEL = ""
 CHAT_PROVIDER_URL = ""
