@@ -22,7 +22,7 @@ export function chatConfig(env){
  // Never let the metered contract be pointed straight at a raw model vendor.
  // Production must terminate at a separately audited Uvenaro-controlled gateway.
  if(env.ENVIRONMENT==='production'){
-  const host=url.hostname.toLowerCase();
+  const host=url.hostname.toLowerCase().replace(/\.+$/,'');
   const rawVendorHosts=['api.openai.com','generativelanguage.googleapis.com','api.anthropic.com'];
   if(rawVendorHosts.includes(host))throw fail('RAW_PROVIDER_ROUTE_FORBIDDEN',503);
   if(env.CHAT_PROVIDER_GATEWAY_AUDITED!=='true')throw fail('PROVIDER_GATEWAY_AUDIT_REQUIRED',503);
