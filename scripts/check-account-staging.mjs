@@ -10,5 +10,8 @@ const caps=await get('/api/v1/auth/capabilities',{'origin':origin,'x-uvenaro-dev
 if(caps.status!==(data.accountReady?200:503))throw new Error('Capabilities do not match account readiness');
 const denied=await get('/api/v1/auth/capabilities',{'origin':'https://untrusted.invalid','x-uvenaro-device':device,'x-uvenaro-csrf':'1'});
 if(data.accountReady&&denied.status!==403)throw new Error('Untrusted origin was not rejected');
-if((await get('/api/v1/chat/responses')).status!==404)throw new Error('Staging exposed a creative execution route');
-console.log(JSON.stringify({transportChecked:true,accountReady:data.accountReady,realSignInChecked:false,emailDeliveryChecked:false}));
+const chatGet=await get('/api/v1/chat/responses');
+if(chatGet.status!==404)throw new Error('Staging exposed a creative execution route');
+const chatPost=await fetch(origin+'/api/v1/chat/responses',{method:'POST',headers:{'content-type':'application/json','origin':origin,'x-uvenaro-device':device,'x-uvenaro-csrf':'1'},body:JSON.stringify({message:'Funding Guard probe'}),redirect:'error',signal:AbortSignal.timeout(15000)});
+if(chatPost.status!==404)throw new Error('Staging exposed a billable creative execution route');
+console.log(JSON.stringify({transportChecked:true,accountReady:data.accountReady,creativeExecutionGetBlocked:true,creativeExecutionPostBlocked:true,providerSpendPossible:false,realSignInChecked:false,emailDeliveryChecked:false}));
