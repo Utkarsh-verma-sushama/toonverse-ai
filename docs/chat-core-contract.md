@@ -43,6 +43,7 @@ Prices and included credits remain unset until verified provider costs, taxes, p
 
 - Production must keep `CHAT_EXECUTION_ENABLED=false` until verified edge authentication, D1 migrations, a current provider-price snapshot, funded plans, global budget alerts and an encrypted provider secret are all present.
 - Production dispatch additionally requires the independent `CHAT_PAID_EXECUTION_CONFIRMATION`; enabling the execution flag alone is insufficient. Repository example configuration keeps this confirmation empty/safe-off.
+- Production also requires the explicit `CHAT_PROVIDER_GATEWAY_AUDITED=true` operator assertion and rejects known raw model-vendor endpoints. The assertion is a fail-closed activation precondition, not proof that an audit occurred; actual gateway audit evidence remains required before it is set.
 - Activation fails closed if the Worker budget exceeds the authoritative D1 billing-policy budget. Reservation enforcement still uses the stricter ceiling; configuration drift is not accepted as launch-ready.
 - The public client never receives provider credentials and never calls a paid provider directly.
 - Every accepted request requires a unique idempotency key and a server-side verified subject.
