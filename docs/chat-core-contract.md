@@ -42,6 +42,8 @@ Prices and included credits remain unset until verified provider costs, taxes, p
 ## Activation invariants
 
 - Production must keep `CHAT_EXECUTION_ENABLED=false` until verified edge authentication, D1 migrations, a current provider-price snapshot, funded plans, global budget alerts and an encrypted provider secret are all present.
+- Production dispatch additionally requires the independent `CHAT_PAID_EXECUTION_CONFIRMATION`; enabling the execution flag alone is insufficient. Repository example configuration keeps this confirmation empty/safe-off.
+- Activation fails closed if the Worker budget exceeds the authoritative D1 billing-policy budget. Reservation enforcement still uses the stricter ceiling; configuration drift is not accepted as launch-ready.
 - The public client never receives provider credentials and never calls a paid provider directly.
 - Every accepted request requires a unique idempotency key and a server-side verified subject.
 - Confirmed zero-cost rejection releases the reservation. Timeout, unknown provider outcome or unconfirmed settlement retains the hold for reconciliation. Successful execution settles measured usage and emits a ledger receipt.
