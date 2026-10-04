@@ -19,6 +19,14 @@ export function chatConfig(env){
  if(!env.CHAT_PROVIDER_API_KEY||!cfg.provider||!cfg.model||env.CHAT_PROVIDER_PROTOCOL!=='metered-v1')throw fail('PROVIDER_NOT_CONFIGURED',503);
  let url;try{url=new URL(cfg.url);}catch{throw fail('PROVIDER_NOT_CONFIGURED',503);}
  if(url.protocol!=='https:'||url.origin!==env.CHAT_PROVIDER_ALLOWED_ORIGIN||url.username||url.password||url.search||url.hash)throw fail('PROVIDER_ROUTE_NOT_ALLOWED',503);
+ // Never let the metered contract be pointed straight at a raw model vendor.
+ // Production must terminate at a separately audited Uvenaro-controlled gateway.
+ if(env.ENVIRONMENT==='production'){
+  const host=url.hostname.toLowerCase();
+  const rawVendorHosts=['api.openai.com','generativelanguage.googleapis.com','api.anthropic.com'];
+  if(rawVendorHosts.includes(host))throw fail('RAW_PROVIDER_ROUTE_FORBIDDEN',503);
+  if(env.CHAT_PROVIDER_GATEWAY_AUDITED!=='true')throw fail('PROVIDER_GATEWAY_AUDIT_REQUIRED',503);
+ }
  return cfg;
 }
 export function normalizeMessages(input){
