@@ -38,3 +38,13 @@ test('production activation audit explicitly reports missing gateway trust-bound
   assert.ok(out.blockers.some(x=>x.code==='CHAT_PROVIDER_APPROVED_ORIGIN_MISSING'));
   db.sql.close();
 });
+
+test('production activation requires the audited gateway assertion to be exact true',async()=>{
+  for (const audited of ['false','TRUE','1','yes']) {
+    const db=fixture();
+    const out=await inspectChatActivation({...base,...db,ENVIRONMENT:'production',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:audited,CHAT_PROVIDER_APPROVED_ORIGIN:'https://metered.example.invalid'});
+    assert.equal(out.eligible,false,audited);
+    assert.ok(out.blockers.some(x=>x.code==='PROVIDER_GATEWAY_AUDIT_REQUIRED'),audited);
+    db.sql.close();
+  }
+});
