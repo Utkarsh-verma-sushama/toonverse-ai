@@ -8,6 +8,9 @@ function db(env){if(!env.DB)throw new BillingError('DATABASE_NOT_CONNECTED');ret
 // Internal/operator boundary only. It intentionally has no Worker route and
 // never accepts owner or credit values from an end user.
 export async function listChatReconciliation(env,{limit=100}={}){
+ // The unresolved-hold queue contains owner IDs and billing metadata. Keep even
+ // read access behind the same production operator boundary as mutation.
+ if(env.ENVIRONMENT==='production'&&env.CHAT_RECONCILIATION_CONFIRMATION!=='UVENARO_RECONCILE_PAID_CHAT')throw new BillingError('RECONCILIATION_NOT_AUTHORIZED');
  const size=Number.isSafeInteger(limit)?Math.max(1,Math.min(100,limit)):100;
  try{
   const rows=await db(env).prepare(`SELECT r.id,r.owner_id AS ownerId,r.idempotency_key AS idempotencyKey,p.provider,p.model,
