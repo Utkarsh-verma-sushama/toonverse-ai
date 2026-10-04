@@ -28,6 +28,9 @@ CHAT_EXECUTION_ENABLED = "false"
 # Independent production confirmation. Keep empty while paid chat is disabled.
 # Enabling CHAT_EXECUTION_ENABLED alone must never authorize provider spend.
 CHAT_PAID_EXECUTION_CONFIRMATION = ""
+# Privileged internal reconciliation is independently safe-off in production.
+# Never expose this value to clients; configure it only in an audited operator path.
+CHAT_RECONCILIATION_CONFIRMATION = ""
 CHAT_PROVIDER = ""
 CHAT_MODEL = ""
 CHAT_PROVIDER_URL = ""
