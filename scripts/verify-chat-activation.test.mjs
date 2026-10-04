@@ -56,3 +56,18 @@ test('production activation rejects provider allowed-origin drift even when the 
   assert.ok(out.blockers.some(x=>x.code==='PROVIDER_ROUTE_NOT_ALLOWED'));
   db.sql.close();
 });
+
+test('production activation rejects provider URL path credentials query and fragment before becoming eligible',async()=>{
+  const invalid=[
+    'https://user:pass@metered.example.invalid/responses',
+    'https://metered.example.invalid/responses?debug=1',
+    'https://metered.example.invalid/responses#fragment'
+  ];
+  for (const url of invalid) {
+    const db=fixture();
+    const out=await inspectChatActivation({...base,...db,ENVIRONMENT:'production',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_PROVIDER_APPROVED_ORIGIN:'https://metered.example.invalid',CHAT_PROVIDER_URL:url});
+    assert.equal(out.eligible,false,url);
+    assert.ok(out.blockers.some(x=>x.code==='PROVIDER_ROUTE_NOT_ALLOWED'),url);
+    db.sql.close();
+  }
+});
