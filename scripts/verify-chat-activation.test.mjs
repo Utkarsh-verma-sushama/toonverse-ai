@@ -48,3 +48,11 @@ test('production activation requires the audited gateway assertion to be exact t
     db.sql.close();
   }
 });
+
+test('production activation rejects provider allowed-origin drift even when the provider URL stays pinned',async()=>{
+  const db=fixture();
+  const out=await inspectChatActivation({...base,...db,ENVIRONMENT:'production',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_PROVIDER_APPROVED_ORIGIN:'https://metered.example.invalid',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://alternate.example.invalid'});
+  assert.equal(out.eligible,false);
+  assert.ok(out.blockers.some(x=>x.code==='PROVIDER_ROUTE_NOT_ALLOWED'));
+  db.sql.close();
+});
