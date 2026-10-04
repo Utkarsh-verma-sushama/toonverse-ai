@@ -28,3 +28,13 @@ test('reconciliation rejects client-shaped usage and foreign references',async()
   await assert.rejects(reconcileChat(db,'foreign',{outcome:'not_billed',providerRequestId:'record'}),fails('RESERVATION_NOT_FOUND'));
  }finally{db.sql.close();}
 });
+
+test('production reconciliation requires independent privileged confirmation',async()=>{
+ const base=fixture();
+ const env={...base,ENVIRONMENT:'production'};
+ try{const row=await reserveChat(env,alice,'recon-prod-auth',messages,cfg);await beginDispatch(env,alice,row);await markUnknown(env,alice,row);
+  await assert.rejects(reconcileChat(env,row.id,{outcome:'not_billed',providerRequestId:'authoritative-record'}),fails('RECONCILIATION_NOT_AUTHORIZED'));
+  env.CHAT_RECONCILIATION_CONFIRMATION='UVENARO_RECONCILE_PAID_CHAT';
+  const receipt=await reconcileChat(env,row.id,{outcome:'not_billed',providerRequestId:'authoritative-record'});assert.equal(receipt.status,'released');assert.equal(balance(env).reserved,0);
+ }finally{base.sql.close();}
+});
