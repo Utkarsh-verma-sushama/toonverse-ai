@@ -43,7 +43,7 @@ Closed reservations, quote terms and ledger events are immutable to ordinary upd
 
 `GET /v1/chat/requests/{requestKey}` returns only the authenticated owner's status and credit receipt. It does not invoke a provider or reveal prompt/output content.
 
-Before any paid activation, `backend/chat-activation.mjs` performs a read-only, fail-closed audit of the execution flag, metered route configuration, D1 billing policy, current immutable price snapshot and unresolved reservations. It never changes configuration, calls a provider or prints a secret. An unresolved hold blocks activation until authoritative reconciliation is complete. `backend/chat-reconciliation.mjs` is the internal reconciliation boundary: it lists only started/unknown holds and accepts only authoritative provider record IDs plus measured usage or explicit no-charge evidence. It is not exposed as a client endpoint.
+Before any paid activation, `backend/chat-activation.mjs` performs a read-only, fail-closed audit of the execution flag, independent production paid-execution confirmation, metered route configuration, D1 billing policy, Worker-vs-D1 budget consistency, current immutable price snapshot and unresolved reservations. It never changes configuration, calls a provider or prints a secret. An unresolved hold blocks activation until authoritative reconciliation is complete. `backend/chat-reconciliation.mjs` is the internal reconciliation boundary: it lists only started/unknown holds and accepts only authoritative provider record IDs plus measured usage or explicit no-charge evidence. It is not exposed as a client endpoint.
 
 The chat client persists a pending request's original key and body before execution. A page reload, double tap or retry reuses that key. It prevents a different request or clearing the pending history until the outcome is checked. Local chat/pending keys are scoped to the signed-in account. Storage persistence failure stops execution before a provider call.
 
@@ -80,7 +80,7 @@ No client-supplied price, model override, credit count or system-role instructio
 4. Compare each account's `reserved_credits` to the sum of its open reservation estimates. Reconcile any discrepancy with provider/ledger evidence. Do not zero counters to bypass the guard.
 5. Provision approved price snapshots with effective and expiry timestamps, usage limits, correctly funded free/paid accounts and billing cycles. Add the single `chat_billing_policy` row with a reviewed positive budget; leave `enabled=0` until staging gates pass.
 6. Connect and verify the metered provider gateway, origin, credentials, real usage/token limits, idempotency, billing behavior, privacy and reconciliation lookup. Validate authenticated staging requests and outages against the actual D1 database.
-7. Activate only after user-visible quotas/pricing, alerts, provider controls and account backend are ready. Neither this PR nor deploying the frontend enables paid AI.
+7. Activate only after user-visible quotas/pricing, alerts, provider controls and account backend are ready. Production requires both the execution flag and the independent paid-execution confirmation; the repository example leaves both safe-off. Neither this PR nor deploying the frontend enables paid AI.
 
 An old Worker using the legacy billing path must not be restored over this migrated schema. Roll back by disabling execution and restoring compatible code, while preserving the ledger and outstanding holds.
 
