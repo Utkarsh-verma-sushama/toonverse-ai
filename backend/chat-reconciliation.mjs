@@ -22,6 +22,9 @@ export async function listChatReconciliation(env,{limit=100}={}){
 }
 
 export async function reconcileChat(env,reservationId,evidence={}){
+ // Reconciliation is a privileged operator boundary. Production callers must
+ // present a server-held confirmation distinct from the public execution flag.
+ if(env.ENVIRONMENT==='production'&&env.CHAT_RECONCILIATION_CONFIRMATION!=='UVENARO_RECONCILE_PAID_CHAT')throw new BillingError('RECONCILIATION_NOT_AUTHORIZED');
  if(typeof reservationId!=='string'||!idPattern.test(reservationId))throw new BillingError('INVALID_RESERVATION');
  const row=await db(env).prepare("SELECT r.*,p.input_microusd_per_million AS inputRate,p.output_microusd_per_million AS outputRate,p.credit_value_microusd AS creditValue FROM usage_reservations r JOIN provider_price_snapshots p ON p.id=r.price_snapshot_id WHERE r.id=? AND r.feature='chat_v2' AND r.status='reserved' AND r.provider_state IN ('started','unknown')").bind(reservationId).first();
  if(!row)throw new BillingError('RESERVATION_NOT_FOUND');
