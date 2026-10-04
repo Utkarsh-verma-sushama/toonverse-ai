@@ -35,6 +35,9 @@ CHAT_PROVIDER = ""
 CHAT_MODEL = ""
 CHAT_PROVIDER_URL = ""
 CHAT_PROVIDER_ALLOWED_ORIGIN = ""
+# Separately pinned canonical HTTPS gateway origin (no path, query, fragment, credentials or trailing slash).
+# Keep empty while paid chat is disabled; never set this to a raw model-vendor origin.
+CHAT_PROVIDER_APPROVED_ORIGIN = ""
 # Explicit operator assertion required before production dispatch. Keep false until the
 # metered gateway has actually completed the required audit; this is not proof by itself.
 CHAT_PROVIDER_GATEWAY_AUDITED = "false"
