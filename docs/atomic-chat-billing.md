@@ -51,7 +51,7 @@ The page has **Check last request** and **Retry last request** controls. If the 
 
 ## Metered provider contract — required before activation
 
-`backend/chat-execution.mjs` requires an audited HTTPS gateway using protocol `metered-v1`, an exact configured allowed origin, an encrypted server API secret, disabled redirects, no tools and no routine prompt retention. **This contract is not a completed Gemini/OpenAI/other-provider adapter. Do not point it directly at a raw model API.**
+`backend/chat-execution.mjs` requires an audited HTTPS gateway using protocol `metered-v1`, an exact configured allowed origin, an encrypted server API secret, disabled redirects, no tools and no routine prompt retention. Production additionally requires the explicit `CHAT_PROVIDER_GATEWAY_AUDITED=true` operator assertion and rejects known raw model-vendor endpoints. The repository keeps that assertion `false`; setting it is only a fail-closed activation acknowledgement and does not replace actual gateway audit evidence. **This contract is not a completed Gemini/OpenAI/other-provider adapter. Do not point it directly at a raw model API.**
 
 The request contains `request_id`, `model`, `messages`, `max_input_tokens`, `max_output_tokens`, `tools: []`, and `store: false`. The same durable request ID is the upstream idempotency key. The gateway must enforce the total input limit before any billable call, enforce total output/reasoning-token limits, deduplicate calls, and report usage including all billable system/context/reasoning tokens. The reservation covers the entire configured input/output ceiling, so a small prompt may initially hold more credits than it finally uses.
 
