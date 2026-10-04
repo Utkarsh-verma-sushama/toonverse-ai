@@ -29,3 +29,12 @@ test('production activation rejects malformed, insecure or non-canonical approve
     db.sql.close();
   }
 });
+
+test('production activation audit explicitly reports missing gateway trust-boundary configuration',async()=>{
+  const db=fixture();
+  const out=await inspectChatActivation({...base,...db,ENVIRONMENT:'production',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT'});
+  assert.equal(out.eligible,false);
+  assert.ok(out.blockers.some(x=>x.code==='CHAT_PROVIDER_GATEWAY_AUDITED_MISSING'));
+  assert.ok(out.blockers.some(x=>x.code==='CHAT_PROVIDER_APPROVED_ORIGIN_MISSING'));
+  db.sql.close();
+});
