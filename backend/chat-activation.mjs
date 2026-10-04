@@ -36,6 +36,8 @@ export async function inspectChatActivation(env={}) {
   }
   if (policy?.enabled !== 1) blockers.push(blocker('BILLING_POLICY_DISABLED'));
   if (policy && (!Number.isSafeInteger(policy.globalDailyCost)||policy.globalDailyCost<1)) blockers.push(blocker('GLOBAL_BUDGET_INVALID'));
+  const envBudget=Number(env.CHAT_GLOBAL_DAILY_COST_MICROUSD);
+  if (policy && Number.isSafeInteger(envBudget) && envBudget>policy.globalDailyCost) blockers.push(blocker('ENV_BUDGET_EXCEEDS_DB_BUDGET'));
   if (cfg && !price) blockers.push(blocker('CURRENT_PRICE_SNAPSHOT_REQUIRED'));
   if (open>0) blockers.push(blocker('UNRESOLVED_RESERVATIONS',String(open)));
   return Object.freeze({eligible:blockers.length===0,safeOff:env.CHAT_EXECUTION_ENABLED!=='true',blockers,checks:Object.freeze({config:Boolean(cfg),billingPolicy:Boolean(policy?.enabled===1),currentPrice:Boolean(price),unresolvedReservations:open})});
