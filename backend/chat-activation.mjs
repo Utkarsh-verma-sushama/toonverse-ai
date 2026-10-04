@@ -4,6 +4,7 @@ import {chatConfig} from './chat-execution.mjs';
 // or exposes a secret. It is deliberately separate from request execution so an
 // operator can review every gate before enabling paid chat.
 const required = ['DB','CHAT_PROVIDER','CHAT_MODEL','CHAT_PROVIDER_URL','CHAT_PROVIDER_ALLOWED_ORIGIN','CHAT_PROVIDER_PROTOCOL','CHAT_PROVIDER_API_KEY'];
+const productionRequired = ['CHAT_PROVIDER_GATEWAY_AUDITED','CHAT_PROVIDER_APPROVED_ORIGIN'];
 const PRODUCTION_CONFIRMATION = 'UVENARO_ENABLE_PAID_CHAT';
 
 function blocker(code, detail='') { return detail ? {code,detail} : {code}; }
@@ -18,6 +19,13 @@ export async function inspectChatActivation(env={}) {
   for (const name of required) {
     if (name === 'DB') continue;
     if (!String(env[name] || '').trim()) blockers.push(blocker(`${name}_MISSING`));
+  }
+  // Surface production trust-boundary omissions explicitly in the read-only audit,
+  // in addition to chatConfig's fail-closed runtime validation.
+  if (env.ENVIRONMENT === 'production') {
+    for (const name of productionRequired) {
+      if (!String(env[name] || '').trim()) blockers.push(blocker(`${name}_MISSING`));
+    }
   }
   let cfg;
   try { cfg=chatConfig(env); } catch (error) { blockers.push(blocker(error.code)); }
