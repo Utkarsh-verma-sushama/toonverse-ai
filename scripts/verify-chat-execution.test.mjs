@@ -56,6 +56,12 @@ test('production dispatch requires a separately approved gateway origin before a
 test('production dispatch rejects a route outside the pinned approved gateway before any hold or provider call',async()=>{
  const response=await send({bindings:{CHAT_PROVIDER_URL:'https://alternate.example.invalid/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://alternate.example.invalid'}});assert.equal(response.status,503);assert.equal((await response.json()).code,'UNAPPROVED_GATEWAY_ROUTE');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
 });
+
+test('production dispatch rejects non-canonical or insecure approved gateway origins before any hold or provider call',async()=>{
+ for(const approved of ['http://metered.example.invalid','https://metered.example.invalid/path','https://user:pass@metered.example.invalid','https://metered.example.invalid?x=1','https://metered.example.invalid#fragment','https://metered.example.invalid/']){
+  const response=await send({bindings:{CHAT_PROVIDER_APPROVED_ORIGIN:approved}});assert.equal(response.status,503);assert.equal((await response.json()).code,'APPROVED_GATEWAY_ORIGIN_INVALID');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+ }
+});
 test('insufficient credits never invokes the provider',async()=>{
  db.sql.exec('UPDATE billing_accounts SET included_credits=0,prepaid_credits=0');const response=await send();assert.equal(response.status,402);assert.equal(calls,0);
 });
