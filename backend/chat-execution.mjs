@@ -9,6 +9,10 @@ function setting(env,name,fallback,min,max){
 }
 export function chatConfig(env){
  if(env.CHAT_EXECUTION_ENABLED!=='true')return {enabled:false};
+ // Production paid execution requires a second independent confirmation. Keep
+ // this inside the execution boundary (not only the read-only activation audit)
+ // so a mis-set CHAT_EXECUTION_ENABLED flag can never dispatch provider spend.
+ if(env.ENVIRONMENT==='production'&&env.CHAT_PAID_EXECUTION_CONFIRMATION!=='UVENARO_ENABLE_PAID_CHAT')throw fail('PAID_EXECUTION_CONFIRMATION_REQUIRED',503);
  const cfg={enabled:true,provider:String(env.CHAT_PROVIDER||''),model:String(env.CHAT_MODEL||''),url:String(env.CHAT_PROVIDER_URL||''),
   maxInputTokens:setting(env,'CHAT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:setting(env,'CHAT_MAX_OUTPUT_TOKENS',1000,1,8000),
   timeoutMs:setting(env,'CHAT_TIMEOUT_MS',30000,1000,120000),globalCeiling:setting(env,'CHAT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12)};
