@@ -26,6 +26,14 @@ export function chatConfig(env){
   const rawVendorHosts=['api.openai.com','generativelanguage.googleapis.com','api.anthropic.com'];
   if(rawVendorHosts.includes(host))throw fail('RAW_PROVIDER_ROUTE_FORBIDDEN',503);
   if(env.CHAT_PROVIDER_GATEWAY_AUDITED!=='true')throw fail('PROVIDER_GATEWAY_AUDIT_REQUIRED',503);
+  // Blacklists are only defense-in-depth. Production must also pin dispatch to
+  // one separately approved HTTPS gateway origin so an arbitrary host cannot be
+  // made spend-eligible by changing CHAT_PROVIDER_URL and its matching origin.
+  const approvedOrigin=String(env.CHAT_PROVIDER_APPROVED_ORIGIN||'');
+  let approved;try{approved=new URL(approvedOrigin);}catch{throw fail('APPROVED_GATEWAY_ORIGIN_REQUIRED',503);}
+  if(approved.protocol!=='https:'||approved.origin!==approvedOrigin||approved.username||approved.password||approved.pathname!=='/'||approved.search||approved.hash)
+   throw fail('APPROVED_GATEWAY_ORIGIN_INVALID',503);
+  if(url.origin!==approved.origin)throw fail('UNAPPROVED_GATEWAY_ROUTE',503);
  }
  return cfg;
 }
