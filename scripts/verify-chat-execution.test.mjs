@@ -176,3 +176,13 @@ test('client system-role injection and oversized context are rejected before bil
  assert.equal((await send({input:{message:'Hello',conversation:[{role:'user',content:'x'.repeat(12000)}]}})).status,413);
  assert.equal(calls,0);assert.equal(balance(db).reserved,0);
 });
+
+test('production dispatch rejects trailing-dot Anthropic and Gemini routes before billing',async()=>{
+ for(const [url,origin] of [
+  ['https://api.anthropic.com./v1/messages','https://api.anthropic.com.'],
+  ['https://generativelanguage.googleapis.com./v1beta/models/example:generateContent','https://generativelanguage.googleapis.com.']
+ ]){
+  const response=await send({key:'dot-'+origin,bindings:{CHAT_PROVIDER_URL:url,CHAT_PROVIDER_ALLOWED_ORIGIN:origin,CHAT_PROVIDER_APPROVED_ORIGIN:origin}});
+  assert.equal(response.status,503);assert.equal((await response.json()).code,'RAW_PROVIDER_ROUTE_FORBIDDEN');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+ }
+});
