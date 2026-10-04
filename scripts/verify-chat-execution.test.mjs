@@ -8,7 +8,7 @@ import {accountEnv,seedManaged} from './account-fixtures.mjs';
 const originalFetch=globalThis.fetch;const validToken=await token();let db,calls,gateway;
 const base={...identityEnv,...accountEnv,ENVIRONMENT:'production',CHAT_EXECUTION_ENABLED:'true',CHAT_PROVIDER:'test-gateway',CHAT_MODEL:'test-text',
  CHAT_PROVIDER_URL:'https://metered.example.invalid/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://metered.example.invalid',CHAT_PROVIDER_PROTOCOL:'metered-v1',
- CHAT_PROVIDER_API_KEY:'server-test-secret',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_MAX_INPUT_TOKENS:'100',CHAT_MAX_OUTPUT_TOKENS:'50',CHAT_GLOBAL_DAILY_COST_MICROUSD:'100000'};
+ CHAT_PROVIDER_API_KEY:'server-test-secret',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_MAX_INPUT_TOKENS:'100',CHAT_MAX_OUTPUT_TOKENS:'50',CHAT_GLOBAL_DAILY_COST_MICROUSD:'100000'};
 const completed=(request,changes={})=>({id:'provider-'+request.request_id,request_id:request.request_id,model:request.model,status:'completed',output:'Verified answer',usage:{input_tokens:10,output_tokens:5},...changes});
 beforeEach(async()=>{
  db=fixture();await seedManaged(db.sql,validToken);calls=0;gateway=async request=>Response.json(completed(request));const identity=mockIdentity();
