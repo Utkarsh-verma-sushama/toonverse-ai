@@ -186,3 +186,8 @@ test('production dispatch rejects trailing-dot Anthropic and Gemini routes befor
   assert.equal(response.status,503);assert.equal((await response.json()).code,'RAW_PROVIDER_ROUTE_FORBIDDEN');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
  }
 });
+
+test('production dispatch rejects multiple trailing dots on raw vendor hostname before billing',async()=>{
+ const response=await send({bindings:{CHAT_PROVIDER_URL:'https://api.openai.com../v1/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://api.openai.com..',CHAT_PROVIDER_APPROVED_ORIGIN:'https://api.openai.com..'}});
+ assert.equal(response.status,503);assert.equal((await response.json()).code,'RAW_PROVIDER_ROUTE_FORBIDDEN');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+});
