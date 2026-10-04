@@ -87,3 +87,17 @@ test('production activation rejects a provider route with an unparseable URL bef
   assert.ok(out.blockers.some(x=>x.code==='PROVIDER_NOT_CONFIGURED'));
   db.sql.close();
 });
+
+test('production activation rejects raw Anthropic and Gemini vendor routes as defense in depth',async()=>{
+  const routes=[
+    ['https://api.anthropic.com/v1/messages','https://api.anthropic.com'],
+    ['https://generativelanguage.googleapis.com/v1beta/models/example:generateContent','https://generativelanguage.googleapis.com']
+  ];
+  for (const [url,origin] of routes) {
+    const db=fixture();
+    const out=await inspectChatActivation({...base,...db,ENVIRONMENT:'production',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_PROVIDER_APPROVED_ORIGIN:origin,CHAT_PROVIDER_URL:url,CHAT_PROVIDER_ALLOWED_ORIGIN:origin});
+    assert.equal(out.eligible,false,url);
+    assert.ok(out.blockers.some(x=>x.code==='RAW_PROVIDER_ROUTE_FORBIDDEN'),url);
+    db.sql.close();
+  }
+});
