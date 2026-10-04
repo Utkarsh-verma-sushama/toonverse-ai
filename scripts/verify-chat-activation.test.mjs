@@ -117,3 +117,11 @@ test('production activation rejects a raw vendor route with an explicit default 
   assert.ok(out.blockers.some(x=>x.code==='RAW_PROVIDER_ROUTE_FORBIDDEN'));
   db.sql.close();
 });
+
+test('production activation rejects a raw vendor route with an explicit non-default HTTPS port',async()=>{
+  const db=fixture();
+  const out=await inspectChatActivation({...base,...db,ENVIRONMENT:'production',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_PROVIDER_APPROVED_ORIGIN:'https://api.openai.com:8443',CHAT_PROVIDER_URL:'https://api.openai.com:8443/v1/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://api.openai.com:8443'});
+  assert.equal(out.eligible,false);
+  assert.ok(out.blockers.some(x=>x.code==='RAW_PROVIDER_ROUTE_FORBIDDEN'));
+  db.sql.close();
+});
