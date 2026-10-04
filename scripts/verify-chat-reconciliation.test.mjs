@@ -38,3 +38,12 @@ test('production reconciliation requires independent privileged confirmation',as
   const receipt=await reconcileChat(env,row.id,{outcome:'not_billed',providerRequestId:'authoritative-record'});assert.equal(receipt.status,'released');assert.equal(balance(env).reserved,0);
  }finally{base.sql.close();}
 });
+
+test('production reconciliation queue is not readable without privileged confirmation',async()=>{
+ const base=fixture();const env={...base,ENVIRONMENT:'production'};
+ try{const row=await reserveChat(env,alice,'recon-prod-read',messages,cfg);await beginDispatch(env,alice,row);await markUnknown(env,alice,row);
+  await assert.rejects(listChatReconciliation(env),fails('RECONCILIATION_NOT_AUTHORIZED'));
+  env.CHAT_RECONCILIATION_CONFIRMATION='UVENARO_RECONCILE_PAID_CHAT';
+  const rows=await listChatReconciliation(env);assert.equal(rows.length,1);assert.equal(rows[0].id,row.id);
+ }finally{base.sql.close();}
+});
