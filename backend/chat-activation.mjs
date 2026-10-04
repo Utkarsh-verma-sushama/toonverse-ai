@@ -4,12 +4,17 @@ import {chatConfig} from './chat-execution.mjs';
 // or exposes a secret. It is deliberately separate from request execution so an
 // operator can review every gate before enabling paid chat.
 const required = ['DB','CHAT_PROVIDER','CHAT_MODEL','CHAT_PROVIDER_URL','CHAT_PROVIDER_ALLOWED_ORIGIN','CHAT_PROVIDER_PROTOCOL','CHAT_PROVIDER_API_KEY'];
+const PRODUCTION_CONFIRMATION = 'UVENARO_ENABLE_PAID_CHAT';
 
 function blocker(code, detail='') { return detail ? {code,detail} : {code}; }
 
 export async function inspectChatActivation(env={}) {
   const blockers=[];
   if (env.CHAT_EXECUTION_ENABLED !== 'true') blockers.push(blocker('EXECUTION_DISABLED'));
+  // Production paid execution needs an independent, explicit confirmation. This
+  // prevents a single mis-set execution flag from making provider spend eligible.
+  if (env.ENVIRONMENT === 'production' && env.CHAT_PAID_EXECUTION_CONFIRMATION !== PRODUCTION_CONFIRMATION)
+    blockers.push(blocker('PAID_EXECUTION_CONFIRMATION_REQUIRED'));
   for (const name of required) {
     if (name === 'DB') continue;
     if (!String(env[name] || '').trim()) blockers.push(blocker(`${name}_MISSING`));
