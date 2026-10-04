@@ -44,6 +44,12 @@ test('same idempotency key with changed conversation conflicts without another c
 test('production dispatch requires independent paid-execution confirmation before any hold or provider call',async()=>{
  const response=await send({bindings:{CHAT_PAID_EXECUTION_CONFIRMATION:''}});assert.equal(response.status,503);assert.equal((await response.json()).code,'PAID_EXECUTION_CONFIRMATION_REQUIRED');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
 });
+test('production dispatch requires explicit audited-gateway assertion before any hold or provider call',async()=>{
+ const response=await send({bindings:{CHAT_PROVIDER_GATEWAY_AUDITED:'false'}});assert.equal(response.status,503);assert.equal((await response.json()).code,'PROVIDER_GATEWAY_AUDIT_REQUIRED');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+});
+test('production dispatch rejects direct raw model-vendor route before any hold or provider call',async()=>{
+ const response=await send({bindings:{CHAT_PROVIDER_URL:'https://api.openai.com/v1/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://api.openai.com'}});assert.equal(response.status,503);assert.equal((await response.json()).code,'RAW_PROVIDER_ROUTE_FORBIDDEN');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+});
 test('insufficient credits never invokes the provider',async()=>{
  db.sql.exec('UPDATE billing_accounts SET included_credits=0,prepaid_credits=0');const response=await send();assert.equal(response.status,402);assert.equal(calls,0);
 });
