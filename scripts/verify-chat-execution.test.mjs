@@ -8,7 +8,7 @@ import {accountEnv,seedManaged} from './account-fixtures.mjs';
 const originalFetch=globalThis.fetch;const validToken=await token();let db,calls,gateway;
 const base={...identityEnv,...accountEnv,ENVIRONMENT:'production',CHAT_EXECUTION_ENABLED:'true',CHAT_PROVIDER:'test-gateway',CHAT_MODEL:'test-text',
  CHAT_PROVIDER_URL:'https://metered.example.invalid/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://metered.example.invalid',CHAT_PROVIDER_PROTOCOL:'metered-v1',
- CHAT_PROVIDER_API_KEY:'server-test-secret',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_MAX_INPUT_TOKENS:'100',CHAT_MAX_OUTPUT_TOKENS:'50',CHAT_GLOBAL_DAILY_COST_MICROUSD:'100000'};
+ CHAT_PROVIDER_API_KEY:'server-test-secret',CHAT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_CHAT',CHAT_PROVIDER_GATEWAY_AUDITED:'true',CHAT_PROVIDER_APPROVED_ORIGIN:'https://metered.example.invalid',CHAT_MAX_INPUT_TOKENS:'100',CHAT_MAX_OUTPUT_TOKENS:'50',CHAT_GLOBAL_DAILY_COST_MICROUSD:'100000'};
 const completed=(request,changes={})=>({id:'provider-'+request.request_id,request_id:request.request_id,model:request.model,status:'completed',output:'Verified answer',usage:{input_tokens:10,output_tokens:5},...changes});
 beforeEach(async()=>{
  db=fixture();await seedManaged(db.sql,validToken);calls=0;gateway=async request=>Response.json(completed(request));const identity=mockIdentity();
@@ -49,6 +49,12 @@ test('production dispatch requires explicit audited-gateway assertion before any
 });
 test('production dispatch rejects direct raw model-vendor route before any hold or provider call',async()=>{
  const response=await send({bindings:{CHAT_PROVIDER_URL:'https://api.openai.com/v1/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://api.openai.com'}});assert.equal(response.status,503);assert.equal((await response.json()).code,'RAW_PROVIDER_ROUTE_FORBIDDEN');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+});
+test('production dispatch requires a separately approved gateway origin before any hold or provider call',async()=>{
+ const response=await send({bindings:{CHAT_PROVIDER_APPROVED_ORIGIN:''}});assert.equal(response.status,503);assert.equal((await response.json()).code,'APPROVED_GATEWAY_ORIGIN_REQUIRED');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
+});
+test('production dispatch rejects a route outside the pinned approved gateway before any hold or provider call',async()=>{
+ const response=await send({bindings:{CHAT_PROVIDER_URL:'https://alternate.example.invalid/responses',CHAT_PROVIDER_ALLOWED_ORIGIN:'https://alternate.example.invalid'}});assert.equal(response.status,503);assert.equal((await response.json()).code,'UNAPPROVED_GATEWAY_ROUTE');assert.equal(calls,0);assert.equal(balance(db).reserved,0);
 });
 test('insufficient credits never invokes the provider',async()=>{
  db.sql.exec('UPDATE billing_accounts SET included_credits=0,prepaid_credits=0');const response=await send();assert.equal(response.status,402);assert.equal(calls,0);
