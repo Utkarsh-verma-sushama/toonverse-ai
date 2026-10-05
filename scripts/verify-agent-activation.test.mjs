@@ -16,7 +16,7 @@ test('agent unknown hold blocks activation until privileged authoritative reconc
   const {reserveChat,beginDispatch,markUnknown}=await import('../backend/chat-billing.mjs');
   const {reconcileAgent}=await import('../backend/agent-reconciliation.mjs');
   const user={sub:'alice',verified:true};
-  const row=await reserveChat(db,user,'agent-lifecycle-hold',[{role:'user',content:'Hello'}],cfg);
+  const row=await reserveChat(db,user,'agent_lifecycle_hold',[{role:'user',content:'Hello'}],cfg);
   await beginDispatch(db,user,row);await markUnknown(db,user,row,'AGENT_PROVIDER_OUTCOME_UNKNOWN');
   let out=await inspectAgentActivation({...base,...db});
   assert.equal(out.eligible,false);assert.equal(out.checks.unresolvedReservations,1);
