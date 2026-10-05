@@ -3,6 +3,9 @@ import fs from 'node:fs';
 const path=new URL('../backend/wrangler.toml.example',import.meta.url);
 const source=fs.readFileSync(path,'utf8');
 const required=[
+ ['AGENT_EXECUTION_ENABLED','false'],
+ ['AGENT_PAID_EXECUTION_CONFIRMATION',''],
+ ['AGENT_PROVIDER_DISPATCH_ENABLED','false'],
  ['CHAT_EXECUTION_ENABLED','false'],
  ['CHAT_PAID_EXECUTION_CONFIRMATION',''],
  ['CHAT_RECONCILIATION_CONFIRMATION',''],
