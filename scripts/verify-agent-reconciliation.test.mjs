@@ -36,3 +36,16 @@ test('production agent reconciliation requires independent exact confirmation fo
   assert.equal((await reconcileAgent(env,row.id,{outcome:'not_billed',providerRequestId:'record'})).status,'released');
  }finally{base.sql.close();}
 });
+
+test('ambiguous or malformed agent evidence preserves the unresolved hold',async()=>{
+ const db=fixture();try{const row=await unresolved(db);
+  const before=balance(db).reserved;
+  for(const evidence of [
+   {},{outcome:'unknown',providerRequestId:'record'},
+   {outcome:'charged',providerRequestId:'record',inputTokens:-1,outputTokens:1},
+   {outcome:'charged',providerRequestId:'record',inputTokens:1,outputTokens:1.5}
+  ])await assert.rejects(reconcileAgent(db,row.id,evidence));
+  const held=db.sql.prepare("SELECT status,provider_state FROM usage_reservations WHERE id=?").get(row.id);
+  assert.equal(held.status,'reserved');assert.equal(held.provider_state,'unknown');assert.equal(balance(db).reserved,before);
+ }finally{db.sql.close();}
+});
