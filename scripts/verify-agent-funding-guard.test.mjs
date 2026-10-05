@@ -82,3 +82,17 @@ test('agent reconciliation hold persistence failure is fail-closed',async()=>{
  const source=(await import('node:fs')).readFileSync(new URL('../backend/agent-runtime.mjs',import.meta.url),'utf8');
  assert.match(source,/catch\(error\)\{console\.error\('AGENT_RECONCILIATION_WRITE_FAILED',[\s\S]*?throw fail\('AGENT_RECONCILIATION_HOLD_FAILED',503\)/);
 });
+
+test('deployment template keeps agent paid and reconciliation confirmations safe-off',async()=>{
+ const source=(await import('node:fs')).readFileSync(new URL('../backend/wrangler.toml.example',import.meta.url),'utf8');
+ assert.match(source,/AGENT_PAID_EXECUTION_CONFIRMATION\s*=\s*""/);
+ assert.match(source,/AGENT_RECONCILIATION_CONFIRMATION\s*=\s*""/);
+ assert.doesNotMatch(source,/AGENT_PAID_EXECUTION_CONFIRMATION\s*=\s*"UVENARO_ENABLE_PAID_AGENT"/);
+ assert.doesNotMatch(source,/AGENT_RECONCILIATION_CONFIRMATION\s*=\s*"UVENARO_RECONCILE_PAID_AGENT"/);
+});
+
+test('agent activation and reconciliation remain internal with no public worker route',async()=>{
+ const source=(await import('node:fs')).readFileSync(new URL('../backend/worker.mjs',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/inspectAgentActivation|listAgentReconciliation|reconcileAgent/);
+ assert.doesNotMatch(source,/\/v1\/agents\/activation|\/v1\/agents\/reconciliation/);
+});
