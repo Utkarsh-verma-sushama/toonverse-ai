@@ -110,7 +110,7 @@ export async function reserveAgentBudget(env,run,cfg=agentConfig(env)){
  if(!cfg.provider||!cfg.model||!cfg.globalCeiling)throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
  const key=`agent_${run.id}`;
  const reservation=await reserveChat(env,{sub:run.owner_id,verified:true},key,[{role:'user',content:run.objective}],{
-  provider:cfg.provider,model:cfg.model,maxInputTokens:cfg.maxInputTokens,maxOutputTokens:cfg.maxOutputTokens,globalCeiling:cfg.globalCeiling});
+  provider:cfg.provider,model:cfg.model,maxInputTokens:cfg.maxInputTokens,maxOutputTokens:cfg.maxOutputTokens,globalCeiling:cfg.globalCeiling},{feature:'agent_v1'});
  return reservation;
 }
 async function boundedProviderJson(response){
