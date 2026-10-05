@@ -71,7 +71,7 @@ export async function reserveChat(env,user,key,messages,cfg,{feature='chat_v2'}=
       await db.prepare(`INSERT INTO usage_reservations
         (id,owner_id,idempotency_key,feature,estimated_credits,estimated_cost_microusd,status,created_at,
          request_hash,price_snapshot_id,input_token_limit,output_token_limit,global_cost_ceiling,expires_at)
-        VALUES (?,?,?,?,?,?,'reserved',strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now','+5 minutes'))`)
+        VALUES (?,?,?,?,? ,?,'reserved',strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now','+5 minutes'))`)
         .bind(id,user.sub,key,feature,Math.max(1,estimate.credits),estimate.cost,hash,price.id,cfg.maxInputTokens,cfg.maxOutputTokens,cfg.globalCeiling).run();
     } catch(error) {
       // A concurrent duplicate or lost write response must never cause another provider call.
