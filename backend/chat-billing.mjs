@@ -51,8 +51,9 @@ function existingRequest(row,hash) {
   if(row.request_hash!==hash)throw new BillingError('IDEMPOTENCY_CONFLICT');
   throw new BillingError(row.status==='settled'?'IDEMPOTENCY_REPLAY':'REQUEST_ALREADY_EXISTS',receipt(row));
 }
-export async function reserveChat(env,user,key,messages,cfg) {
+export async function reserveChat(env,user,key,messages,cfg,{feature='chat_v2'}={}) {
   const db=requireDb(env);
+  if(!['chat_v2','agent_v1'].includes(feature))throw new BillingError('INVALID_RESERVATION');
   if(!user?.verified||typeof user.sub!=='string'||!user.sub||!/^[A-Za-z0-9_-]{1,128}$/.test(key)||
     !whole(cfg.maxInputTokens,12000)||!cfg.maxInputTokens||!whole(cfg.maxOutputTokens,8000)||!cfg.maxOutputTokens||
     !whole(cfg.globalCeiling)||!cfg.globalCeiling)throw new BillingError('INVALID_RESERVATION');
@@ -70,8 +71,8 @@ export async function reserveChat(env,user,key,messages,cfg) {
       await db.prepare(`INSERT INTO usage_reservations
         (id,owner_id,idempotency_key,feature,estimated_credits,estimated_cost_microusd,status,created_at,
          request_hash,price_snapshot_id,input_token_limit,output_token_limit,global_cost_ceiling,expires_at)
-        VALUES (?,?,?,'chat_v2',?,?,'reserved',strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now','+5 minutes'))`)
-        .bind(id,user.sub,key,Math.max(1,estimate.credits),estimate.cost,hash,price.id,cfg.maxInputTokens,cfg.maxOutputTokens,cfg.globalCeiling).run();
+        VALUES (?,?,?,?,?,?,'reserved',strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now','+5 minutes'))`)
+        .bind(id,user.sub,key,feature,Math.max(1,estimate.credits),estimate.cost,hash,price.id,cfg.maxInputTokens,cfg.maxOutputTokens,cfg.globalCeiling).run();
     } catch(error) {
       // A concurrent duplicate or lost write response must never cause another provider call.
       const concurrent=await findByKey(db,user.sub,key);if(concurrent)existingRequest(concurrent,hash);
