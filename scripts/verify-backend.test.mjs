@@ -10,7 +10,7 @@ import {migration as billingMigration,abuseMigration,seedUser} from './billing-f
 const originalFetch=globalThis.fetch;
 before(()=>{globalThis.fetch=mockIdentity().fetch;});
 after(()=>{globalThis.fetch=originalFetch;});
-const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true'};
+const defaults={...env,...accountEnv,ENVIRONMENT:'production',ALLOWED_ORIGINS:'https://uvenaro.com',AGENT_EXECUTION_ENABLED:'true',AGENT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_AGENT'};
 const alice=await token(),bob=await token(claims({sub:'bob'}));
 function database(){
  const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../backend/schema.sql',import.meta.url),'utf8'));sql.exec(billingMigration);sql.exec(abuseMigration);sql.exec(readFileSync(new URL('../backend/migrations/0005_agent_abuse_hardening.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0006_agent_audit_trail.sql',import.meta.url),'utf8'));sql.exec(readFileSync(new URL('../backend/migrations/0007_bind_agent_approval_to_step.sql',import.meta.url),'utf8'));
