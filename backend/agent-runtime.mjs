@@ -21,6 +21,19 @@ export function agentConfig(env){
  if(env.AGENT_PROVIDER_PROTOCOL!=='metered-v1'||!env.AGENT_PROVIDER_API_KEY)throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
  let url;try{url=new URL(route);}catch{throw fail('AGENT_PROVIDER_NOT_CONFIGURED');}
  if(url.protocol!=='https:'||url.origin!==env.AGENT_PROVIDER_ALLOWED_ORIGIN||url.username||url.password||url.search||url.hash)throw fail('AGENT_PROVIDER_ROUTE_NOT_ALLOWED');
+ if(env.ENVIRONMENT==='production'){
+  // Defense in depth: production agents must terminate at an explicitly audited,
+  // separately pinned Uvenaro-controlled metered gateway, never a raw model API.
+  const host=url.hostname.toLowerCase().replace(/\.+$/,'');
+  const rawVendorHosts=['api.openai.com','generativelanguage.googleapis.com','api.anthropic.com'];
+  if(rawVendorHosts.includes(host))throw fail('AGENT_RAW_PROVIDER_ROUTE_FORBIDDEN');
+  if(env.AGENT_PROVIDER_GATEWAY_AUDITED!=='true')throw fail('AGENT_PROVIDER_GATEWAY_AUDIT_REQUIRED');
+  const approvedOrigin=String(env.AGENT_PROVIDER_APPROVED_ORIGIN||'');
+  let approved;try{approved=new URL(approvedOrigin);}catch{throw fail('AGENT_APPROVED_GATEWAY_ORIGIN_REQUIRED');}
+  if(approved.protocol!=='https:'||approved.origin!==approvedOrigin||approved.username||approved.password||approved.pathname!=='/'||approved.search||approved.hash)
+   throw fail('AGENT_APPROVED_GATEWAY_ORIGIN_INVALID');
+  if(url.origin!==approved.origin)throw fail('AGENT_UNAPPROVED_GATEWAY_ROUTE');
+ }
  return {enabled:true,maxSteps:integer(env,'AGENT_MAX_STEPS',8,1,32),maxRuntimeMs:integer(env,'AGENT_MAX_RUNTIME_MS',60000,1000,300000),
   maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),
   globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model,url:route,dispatchEnabled:true};
