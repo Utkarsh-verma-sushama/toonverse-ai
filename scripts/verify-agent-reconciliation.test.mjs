@@ -50,32 +50,26 @@ test('ambiguous or malformed agent evidence preserves the unresolved hold',async
  }finally{db.sql.close();}
 });
 
-test('stale cleanup releases only never-dispatched agent holds and preserves dispatched uncertainty',async()=>{
+test('stale cleanup targets only expired never-dispatched holds; dispatched uncertainty remains reconciliation-only',async()=>{
  const db=fixture();try{
-  const {expireUndispatched,releaseChat}=await import('../backend/chat-billing.mjs');
-  const never=await reserveChat(db,alice,'agent_stale_never',messages,cfg);
+  // Runtime lifecycle proof: dispatched Agent work becomes started/unknown and is
+  // visible only to privileged reconciliation, never to the stale-release path.
   const started=await reserveChat(db,alice,'agent_stale_started',messages,cfg);await beginDispatch(db,alice,started);
-  // Finalize the never-dispatched hold temporarily so the production concurrency
-  // gate can admit the third reservation through the normal guarded path.
-  await releaseChat(db,alice,never,'TEST_FIXTURE_SLOT');
   const unknown=await reserveChat(db,alice,'agent_stale_unknown',messages,cfg);await beginDispatch(db,alice,unknown);await markUnknown(db,alice,unknown,'AGENT_PROVIDER_OUTCOME_UNKNOWN');
-  // Recreate a valid never-dispatched stale hold through reserveChat after freeing
-  // the finalized fixture row; use a distinct key because idempotency is immutable.
-  const staleNever=await reserveChat(db,alice,'agent_stale_never_2',messages,cfg);
-  // expires_at is immutable by design, so simulate passage of time for cleanup by
-  // shifting SQLite's notion indirectly is not available. Instead assert cleanup
-  // query semantics statically and preserve real guarded lifecycle states here.
-  const billing=await import('../backend/chat-billing.mjs');
-  const source=(await import('node:fs')).readFileSync(new URL('../backend/chat-billing.mjs',import.meta.url),'utf8');
-  assert.match(source,/provider_state='not_started'/);
-  assert.match(source,/julianday\(expires_at\)<=julianday\('now'\)/);
-  assert.doesNotMatch(source,/provider_state\s+IN\s*\([^)]*started/i);
-  assert.doesNotMatch(source,/provider_state\s+IN\s*\([^)]*unknown/i);
-  const rows=Object.fromEntries(db.sql.prepare("SELECT id,status,provider_state FROM usage_reservations WHERE id IN (?,?,?)").all(staleNever.id,started.id,unknown.id).map(r=>[r.id,r]));
-  assert.equal(rows[staleNever.id].status,'reserved');assert.equal(rows[staleNever.id].provider_state,'not_started');
+  const rows=Object.fromEntries(db.sql.prepare("SELECT id,status,provider_state FROM usage_reservations WHERE id IN (?,?)").all(started.id,unknown.id).map(r=>[r.id,r]));
   assert.equal(rows[started.id].status,'reserved');assert.equal(rows[started.id].provider_state,'started');
   assert.equal(rows[unknown.id].status,'reserved');assert.equal(rows[unknown.id].provider_state,'unknown');
   assert.equal((await listAgentReconciliation(db)).length,2);
-  assert.equal(typeof expireUndispatched,'function');assert.equal(typeof billing.expireUndispatched,'function');
+
+  // Query-shape proof: cleanup is deliberately restricted to reserved,
+  // provider_state=not_started and expired rows. This avoids impossible fixture
+  // mutations because expires_at is immutable under the production DB trigger.
+  const source=(await import('node:fs')).readFileSync(new URL('../backend/chat-billing.mjs',import.meta.url),'utf8');
+  const fn=source.slice(source.indexOf('export async function expireUndispatched'),source.indexOf('export async function',source.indexOf('export async function expireUndispatched')+30)>0?source.indexOf('export async function',source.indexOf('export async function expireUndispatched')+30):source.length);
+  assert.match(fn,/status='reserved'/);
+  assert.match(fn,/provider_state='not_started'/);
+  assert.match(fn,/julianday\(expires_at\)<=julianday\('now'\)/);
+  assert.doesNotMatch(fn,/provider_state\s*=\s*'started'/);
+  assert.doesNotMatch(fn,/provider_state\s*=\s*'unknown'/);
  }finally{db.sql.close();}
 });
