@@ -126,7 +126,8 @@ function validProviderEnvelope(payload,reservation,cfg){
   typeof payload.id==='string'&&payload.id.length>0&&payload.id.length<=200;
 }
 async function holdAgentUnknown(env,owner,reservation,reason){
- try{await markUnknown(env,{sub:owner},reservation,reason);}catch{console.error('AGENT_RECONCILIATION_WRITE_FAILED',reservation.id);}
+ try{await markUnknown(env,{sub:owner},reservation,reason);}
+ catch(error){console.error('AGENT_RECONCILIATION_WRITE_FAILED',reservation.id);throw fail('AGENT_RECONCILIATION_HOLD_FAILED',503);}
 }
 export async function prepareAgentExecution(env,runId,owner){
  const cfg=agentConfig(env),run=await claimAgentRun(env,runId,owner);if(!run)return null;
