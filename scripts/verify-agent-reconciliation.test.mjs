@@ -49,3 +49,19 @@ test('ambiguous or malformed agent evidence preserves the unresolved hold',async
   assert.equal(held.status,'reserved');assert.equal(held.provider_state,'unknown');assert.equal(balance(db).reserved,before);
  }finally{db.sql.close();}
 });
+
+test('stale cleanup releases only never-dispatched agent holds and preserves dispatched uncertainty',async()=>{
+ const db=fixture();try{
+  const {expireUndispatched}=await import('../backend/chat-billing.mjs');
+  const never=await reserveChat(db,alice,'agent_stale_never',messages,cfg);
+  const started=await reserveChat(db,alice,'agent_stale_started',messages,cfg);await beginDispatch(db,alice,started);
+  const unknown=await reserveChat(db,alice,'agent_stale_unknown',messages,cfg);await beginDispatch(db,alice,unknown);await markUnknown(db,alice,unknown,'AGENT_PROVIDER_OUTCOME_UNKNOWN');
+  db.sql.exec("UPDATE usage_reservations SET expires_at='2000-01-01T00:00:00.000Z' WHERE id IN ('"+never.id+"','"+started.id+"','"+unknown.id+"')");
+  await expireUndispatched(db);
+  const rows=Object.fromEntries(db.sql.prepare("SELECT id,status,provider_state FROM usage_reservations WHERE id IN (?,?,?)").all(never.id,started.id,unknown.id).map(r=>[r.id,r]));
+  assert.equal(rows[never.id].status,'released');assert.equal(rows[never.id].provider_state,'finished');
+  assert.equal(rows[started.id].status,'reserved');assert.equal(rows[started.id].provider_state,'started');
+  assert.equal(rows[unknown.id].status,'reserved');assert.equal(rows[unknown.id].provider_state,'unknown');
+  assert.equal((await listAgentReconciliation(db)).length,2);
+ }finally{db.sql.close();}
+});
