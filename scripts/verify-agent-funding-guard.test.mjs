@@ -51,3 +51,11 @@ test('production agent approved gateway origin must be canonical HTTPS origin',(
  for(const origin of ['http://metered.example.invalid','https://metered.example.invalid/','https://user:pass@metered.example.invalid','https://metered.example.invalid/path','https://metered.example.invalid?q=1','https://metered.example.invalid#x'])
   assert.throws(()=>agentConfig({...confirmed,AGENT_PROVIDER_APPROVED_ORIGIN:origin}),error=>error?.code==='AGENT_APPROVED_GATEWAY_ORIGIN_INVALID');
 });
+
+test('production agent raw-vendor deny-list survives DNS trailing-dot variants',()=>{
+ const confirmed={...base,AGENT_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_AGENT'};
+ for(const host of ['api.openai.com.','api.openai.com..','api.anthropic.com.','api.anthropic.com..','generativelanguage.googleapis.com.','generativelanguage.googleapis.com..']){
+  const origin='https://'+host;
+  assert.throws(()=>agentConfig({...confirmed,AGENT_PROVIDER_URL:origin+'/v1/run',AGENT_PROVIDER_ALLOWED_ORIGIN:origin,AGENT_PROVIDER_APPROVED_ORIGIN:origin}),error=>error?.code==='AGENT_RAW_PROVIDER_ROUTE_FORBIDDEN');
+ }
+});
