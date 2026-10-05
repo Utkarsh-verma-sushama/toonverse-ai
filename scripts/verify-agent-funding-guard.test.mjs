@@ -96,3 +96,15 @@ test('agent activation and reconciliation remain internal with no public worker 
  assert.doesNotMatch(source,/inspectAgentActivation|listAgentReconciliation|reconcileAgent/);
  assert.doesNotMatch(source,/\/v1\/agents\/activation|\/v1\/agents\/reconciliation/);
 });
+
+test('agent cancellation paths cannot release a reservation after durable dispatch begins',async()=>{
+ const source=(await import('node:fs')).readFileSync(new URL('../backend/agent-runtime.mjs',import.meta.url),'utf8');
+ const begin=source.indexOf('await beginDispatch');
+ const after=source.slice(begin);
+ const releases=[...after.matchAll(/releaseChat\s*\(/g)].map(x=>x.index);
+ assert.ok(begin>=0,'durable dispatch boundary must exist');
+ for(const offset of releases){
+  const context=after.slice(Math.max(0,offset-220),offset+260);
+  assert.match(context,/confirmedNotBilled:true|if\(dispatched\).*holdAgentUnknown|else\{try\{await releaseChat/,'post-dispatch release requires authoritative no-bill evidence or an explicit never-dispatched branch');
+ }
+});
