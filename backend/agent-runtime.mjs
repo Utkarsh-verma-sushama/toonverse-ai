@@ -10,6 +10,11 @@ const integer=(env,name,fallback,min,max)=>{
 };
 export function agentConfig(env){
  if(env.AGENT_EXECUTION_ENABLED!=='true')return {enabled:false};
+ // Production agent execution can reach a metered provider, so enabling the
+ // feature flag alone must never authorize spend. Require an independent,
+ // exact server-owned confirmation before any provider configuration or budget
+ // reservation can become dispatch-eligible.
+ if(env.ENVIRONMENT==='production'&&env.AGENT_PAID_EXECUTION_CONFIRMATION!=='UVENARO_ENABLE_PAID_AGENT')throw fail('AGENT_PAID_EXECUTION_CONFIRMATION_REQUIRED');
  const provider=String(env.AGENT_PROVIDER||''),model=String(env.AGENT_MODEL||''),route=String(env.AGENT_PROVIDER_URL||'');
  if(!/^[A-Za-z0-9._-]{1,64}$/.test(provider)||!/^[A-Za-z0-9._:-]{1,128}$/.test(model))throw fail('AGENT_PROVIDER_NOT_CONFIGURED');
  if(env.AGENT_PROVIDER_DISPATCH_ENABLED!=='true')return {enabled:true,dispatchEnabled:false,maxSteps:integer(env,'AGENT_MAX_STEPS',8,1,32),maxRuntimeMs:integer(env,'AGENT_MAX_RUNTIME_MS',60000,1000,300000),maxInputTokens:integer(env,'AGENT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:integer(env,'AGENT_MAX_OUTPUT_TOKENS',1000,1,8000),globalCeiling:integer(env,'AGENT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12),provider,model};
