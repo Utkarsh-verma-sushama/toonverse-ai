@@ -3,7 +3,9 @@
   "version": "2.0.0",
   "private": true,
   "description": "UVENARO cross-platform web, Android and iOS application",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build:web": "node scripts/prepare-native.mjs",
     "verify:web": "node scripts/verify-native-bundle.mjs",
@@ -14,7 +16,7 @@
     "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing && npm run verify:accounts && npm run verify:account-staging",
     "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs scripts/verify-app-check.test.mjs scripts/verify-replay-guard.test.mjs",
     "verify:rules": "firebase emulators:exec --only firestore,storage --project demo-uvenaro-security \"node --test scripts/verify-rules.test.mjs\"",
-    "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-chat-workerd.test.mjs scripts/verify-chat-activation.test.mjs scripts/verify-chat-reconciliation.test.mjs scripts/verify-agent-funding-guard.test.mjs scripts/verify-agent-activation.test.mjs scripts/verify-d1-billing.test.mjs",
+    "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-chat-workerd.test.mjs scripts/verify-chat-activation.test.mjs scripts/verify-chat-reconciliation.test.mjs scripts/verify-agent-funding-guard.test.mjs scripts/verify-agent-activation.test.mjs scripts/verify-agent-reconciliation.test.mjs scripts/verify-d1-billing.test.mjs",
     "verify:chat-ui": "node --test scripts/verify-chat-ui.test.mjs",
     "verify:accounts": "node --test scripts/verify-accounts.test.mjs scripts/verify-account-client.test.mjs scripts/verify-account-workerd.test.mjs",
     "verify:account-ui": "node --test scripts/verify-account-ui.test.mjs",
@@ -26,6 +28,20 @@
     "verify:account-staging-ui": "UVENARO_UI_STAGING=true node --test scripts/verify-account-ui.test.mjs",
     "verify:account-staging-build": "npm run build:account-staging && wrangler deploy --dry-run --config deploy/account-staging/wrangler.json --outdir .account-staging/bundle"
   },
-  "dependencies": {"@capacitor/android":"8.5.1","@capacitor/app":"8.0.0","@capacitor/core":"8.5.1","@capacitor/ios":"8.5.1"},
-  "devDependencies": {"@capacitor/cli":"8.5.2","@firebase/rules-unit-testing":"5.0.2","@sparticuz/chromium":"153.0.0","firebase":"12.19.0","firebase-tools":"15.31.0","miniflare":"4.20260730.0","playwright":"1.62.1","wrangler":"4.137.0"}
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/app": "8.0.0",
+    "@capacitor/core": "8.5.1",
+    "@capacitor/ios": "8.5.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "@firebase/rules-unit-testing": "5.0.2",
+    "@sparticuz/chromium": "153.0.0",
+    "firebase": "12.19.0",
+    "firebase-tools": "15.31.0",
+    "miniflare": "4.20260730.0",
+    "playwright": "1.62.1",
+    "wrangler": "4.137.0"
+  }
 }
