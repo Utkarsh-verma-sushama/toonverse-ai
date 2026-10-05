@@ -59,3 +59,21 @@ test('production agent raw-vendor deny-list survives DNS trailing-dot variants',
   assert.throws(()=>agentConfig({...confirmed,AGENT_PROVIDER_URL:origin+'/v1/run',AGENT_PROVIDER_ALLOWED_ORIGIN:origin,AGENT_PROVIDER_APPROVED_ORIGIN:origin}),error=>error?.code==='AGENT_RAW_PROVIDER_ROUTE_FORBIDDEN');
  }
 });
+
+test('agent provider dispatch is statically ordered after reservation and durable begin-dispatch',async()=>{
+ const source=(await import('node:fs')).readFileSync(new URL('../backend/agent-runtime.mjs',import.meta.url),'utf8');
+ const reserve=source.indexOf('reservation=await reserveAgentBudget');
+ const begin=source.indexOf('await beginDispatch',reserve);
+ const fetch=source.indexOf('await fetchWithoutRedirect',begin);
+ assert.ok(reserve>=0&&begin>reserve&&fetch>begin,'provider fetch must follow reservation and beginDispatch');
+});
+
+test('agent ambiguous provider failures are held for reconciliation, never released',async()=>{
+ const source=(await import('node:fs')).readFileSync(new URL('../backend/agent-runtime.mjs',import.meta.url),'utf8');
+ const fetch=source.indexOf('await fetchWithoutRedirect');
+ const unknown=source.indexOf('await holdAgentUnknown',fetch);
+ const required=source.indexOf("error_code='AGENT_RECONCILIATION_REQUIRED'",fetch);
+ assert.ok(fetch>=0&&unknown>fetch&&required>unknown);
+ const ambiguous=source.slice(fetch,required);
+ assert.doesNotMatch(ambiguous,/releaseChat\s*\(/,'ambiguous dispatch outcome must not release reserved spend');
+});
