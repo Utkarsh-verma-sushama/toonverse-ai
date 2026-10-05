@@ -77,3 +77,8 @@ test('agent ambiguous provider failures are held for reconciliation, never relea
  const ambiguous=source.slice(fetch,required);
  assert.doesNotMatch(ambiguous,/releaseChat\s*\(/,'ambiguous dispatch outcome must not release reserved spend');
 });
+
+test('agent reconciliation hold persistence failure is fail-closed',async()=>{
+ const source=(await import('node:fs')).readFileSync(new URL('../backend/agent-runtime.mjs',import.meta.url),'utf8');
+ assert.match(source,/catch\(error\)\{console\.error\('AGENT_RECONCILIATION_WRITE_FAILED',[\s\S]*?throw fail\('AGENT_RECONCILIATION_HOLD_FAILED',503\)/);
+});
