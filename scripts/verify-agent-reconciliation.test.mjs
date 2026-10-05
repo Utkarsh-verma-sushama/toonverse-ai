@@ -55,7 +55,7 @@ test('stale cleanup releases only never-dispatched agent holds and preserves dis
   const {expireUndispatched}=await import('../backend/chat-billing.mjs');
   const never=await reserveChat(db,alice,'agent_stale_never',messages,cfg);
   const started=await reserveChat(db,alice,'agent_stale_started',messages,cfg);await beginDispatch(db,alice,started);
-  const bob={sub:'bob',verified:true};db.sql.prepare("INSERT INTO billing_accounts SELECT 'bob',plan,status,included_credits,prepaid_credits,reserved_credits,period_start,period_end,updated_at FROM billing_accounts WHERE owner_id='alice'").run();
+  const bob={sub:'bob',verified:true};db.sql.prepare("INSERT INTO billing_accounts SELECT 'bob',plan_id,status,included_credits,prepaid_credits,reserved_credits,cycle_started_at,cycle_ends_at,updated_at FROM billing_accounts WHERE owner_id='alice'").run();
   db.sql.prepare("INSERT INTO usage_limits SELECT 'bob',daily_credit_limit,monthly_credit_limit,max_request_cost_microusd,requests_per_minute,blocked_until,updated_at,max_concurrent_requests,hourly_cost_limit_microusd FROM usage_limits WHERE owner_id='alice'").run();
   const unknown=await reserveChat(db,bob,'agent_stale_unknown',messages,cfg);await beginDispatch(db,bob,unknown);await markUnknown(db,bob,unknown,'AGENT_PROVIDER_OUTCOME_UNKNOWN');
   db.sql.exec("UPDATE usage_reservations SET expires_at='2000-01-01T00:00:00.000Z' WHERE id IN ('"+never.id+"','"+started.id+"','"+unknown.id+"')");
