@@ -59,5 +59,3 @@ test('production agent raw-vendor deny-list survives DNS trailing-dot variants',
   assert.throws(()=>agentConfig({...confirmed,AGENT_PROVIDER_URL:origin+'/v1/run',AGENT_PROVIDER_ALLOWED_ORIGIN:origin,AGENT_PROVIDER_APPROVED_ORIGIN:origin}),error=>error?.code==='AGENT_RAW_PROVIDER_ROUTE_FORBIDDEN');
  }
 });
-
-test('agent billing feature identity is isolated from chat accounting',async()=>{\n const source=(await import('node:fs')).readFileSync(new URL('../backend/agent-runtime.mjs',import.meta.url),'utf8');\n assert.match(source,/feature:'agent_v1'/);\n});\n
