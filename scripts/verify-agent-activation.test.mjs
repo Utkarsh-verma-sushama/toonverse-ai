@@ -10,3 +10,20 @@ test('agent activation rejects unaudited or unpinned gateway',async()=>{for(cons
 test('agent activation rejects raw model-vendor routes including trailing dots',async()=>{for(const host of ['api.openai.com','api.openai.com..','api.anthropic.com','generativelanguage.googleapis.com.']){const db=fixture(),origin='https://'+host;const out=await inspectAgentActivation({...base,...db,AGENT_PROVIDER_URL:origin+'/v1/run',AGENT_PROVIDER_ALLOWED_ORIGIN:origin,AGENT_PROVIDER_APPROVED_ORIGIN:origin});assert.equal(out.eligible,false);assert.ok(out.blockers.some(x=>x.code==='AGENT_RAW_PROVIDER_ROUTE_FORBIDDEN'));db.sql.close();}});
 test('agent activation rejects env ceiling above authoritative DB budget',async()=>{const db=fixture();db.sql.exec("UPDATE chat_billing_policy SET global_daily_cost_microusd=99999 WHERE id='chat'");const out=await inspectAgentActivation({...base,...db});assert.equal(out.eligible,false);assert.ok(out.blockers.some(x=>x.code==='ENV_BUDGET_EXCEEDS_DB_BUDGET'));db.sql.close();});
 test('agent activation blocks unresolved reservations before new paid work',async()=>{const db=fixture();const {reserveChat}=await import('../backend/chat-billing.mjs');await reserveChat(db,{sub:'alice',verified:true},'agent-preflight-hold',[{role:'user',content:'Hello'}],cfg);const out=await inspectAgentActivation({...base,...db});assert.equal(out.eligible,false);assert.ok(out.blockers.some(x=>x.code==='UNRESOLVED_RESERVATIONS'));db.sql.close();});
+
+test('agent unknown hold blocks activation until privileged authoritative reconciliation completes',async()=>{
+ const db=fixture();try{
+  const {reserveChat,beginDispatch,markUnknown}=await import('../backend/chat-billing.mjs');
+  const {reconcileAgent}=await import('../backend/agent-reconciliation.mjs');
+  const user={sub:'alice',verified:true};
+  const row=await reserveChat(db,user,'agent-lifecycle-hold',[{role:'user',content:'Hello'}],cfg);
+  await beginDispatch(db,user,row);await markUnknown(db,user,row,'AGENT_PROVIDER_OUTCOME_UNKNOWN');
+  let out=await inspectAgentActivation({...base,...db});
+  assert.equal(out.eligible,false);assert.equal(out.checks.unresolvedReservations,1);
+  const production={...base,...db,AGENT_RECONCILIATION_CONFIRMATION:'UVENARO_RECONCILE_PAID_AGENT'};
+  const receipt=await reconcileAgent(production,row.id,{outcome:'not_billed',providerRequestId:'agent-authoritative-no-charge'});
+  assert.equal(receipt.status,'released');
+  out=await inspectAgentActivation({...base,...db});
+  assert.equal(out.eligible,true);assert.equal(out.checks.unresolvedReservations,0);
+ }finally{db.sql.close();}
+});
