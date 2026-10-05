@@ -55,15 +55,20 @@ test('stale cleanup releases only never-dispatched agent holds and preserves dis
   const {expireUndispatched}=await import('../backend/chat-billing.mjs');
   const never=await reserveChat(db,alice,'agent_stale_never',messages,cfg);
   const started=await reserveChat(db,alice,'agent_stale_started',messages,cfg);await beginDispatch(db,alice,started);
-  const bob={sub:'bob',verified:true};db.sql.prepare("INSERT INTO billing_accounts SELECT 'bob',plan_id,status,included_credits,prepaid_credits,reserved_credits,cycle_started_at,cycle_ends_at,updated_at FROM billing_accounts WHERE owner_id='alice'").run();
-  db.sql.prepare("INSERT INTO usage_limits SELECT 'bob',daily_credit_limit,monthly_credit_limit,max_request_cost_microusd,requests_per_minute,blocked_until,updated_at,max_concurrent_requests,hourly_cost_limit_microusd FROM usage_limits WHERE owner_id='alice'").run();
-  const unknown=await reserveChat(db,bob,'agent_stale_unknown',messages,cfg);await beginDispatch(db,bob,unknown);await markUnknown(db,bob,unknown,'AGENT_PROVIDER_OUTCOME_UNKNOWN');
-  db.sql.exec("UPDATE usage_reservations SET expires_at='2000-01-01T00:00:00.000Z' WHERE id IN ('"+never.id+"','"+started.id+"','"+unknown.id+"')");
+  // Reuse a valid dispatched reservation and clone its persisted shape directly.
+  // This isolates cleanup semantics without asking reserveChat to bypass the
+  // production reconciliation/concurrency gates that are intentionally fail-closed.
+  const source=db.sql.prepare('SELECT * FROM usage_reservations WHERE id=?').get(started.id);
+  const unknownId=crypto.randomUUID(),unknownKey='agent_stale_unknown';
+  const columns=Object.keys(source),values=columns.map(k=>k==='id'?unknownId:k==='idempotency_key'?unknownKey:k==='provider_state'?'unknown':k==='failure_code'?'AGENT_PROVIDER_OUTCOME_UNKNOWN':source[k]);
+  db.sql.prepare(`INSERT INTO usage_reservations (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...values);
+  db.sql.prepare("UPDATE billing_accounts SET reserved_credits=reserved_credits+? WHERE owner_id=?").run(source.estimated_credits,source.owner_id);
+  db.sql.exec("UPDATE usage_reservations SET expires_at='2000-01-01T00:00:00.000Z' WHERE id IN ('"+never.id+"','"+started.id+"','"+unknownId+"')");
   await expireUndispatched(db);
-  const rows=Object.fromEntries(db.sql.prepare("SELECT id,status,provider_state FROM usage_reservations WHERE id IN (?,?,?)").all(never.id,started.id,unknown.id).map(r=>[r.id,r]));
+  const rows=Object.fromEntries(db.sql.prepare("SELECT id,status,provider_state FROM usage_reservations WHERE id IN (?,?,?)").all(never.id,started.id,unknownId).map(r=>[r.id,r]));
   assert.equal(rows[never.id].status,'released');assert.equal(rows[never.id].provider_state,'finished');
   assert.equal(rows[started.id].status,'reserved');assert.equal(rows[started.id].provider_state,'started');
-  assert.equal(rows[unknown.id].status,'reserved');assert.equal(rows[unknown.id].provider_state,'unknown');
+  assert.equal(rows[unknownId].status,'reserved');assert.equal(rows[unknownId].provider_state,'unknown');
   assert.equal((await listAgentReconciliation(db)).length,2);
  }finally{db.sql.close();}
 });
