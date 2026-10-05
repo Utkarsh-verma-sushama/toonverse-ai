@@ -20,6 +20,7 @@ for(const rel of files){
  if((rel.startsWith('deploy/')||/wrangler/i.test(rel))&&/^\s*AGENT_PROVIDER_DISPATCH_ENABLED\s*[=:]\s*["']?true["']?\s*[,;]?\s*$/mi.test(source))violations.push(rel+': paid agent provider dispatch enabled in checked-in deployment config');
  for(const pattern of likelySecrets){pattern.lastIndex=0;if(pattern.test(source))violations.push(rel+': provider-shaped secret literal detected');}
  if(/^\s*CHAT_PROVIDER_API_KEY\s*[=:]\s*["'][^"']+["']/mi.test(source))violations.push(rel+': provider API key literal detected');
+ if(/^\s*AGENT_PROVIDER_API_KEY\s*[=:]\s*["'][^"']+["']/mi.test(source))violations.push(rel+': agent provider API key literal detected');
 }
 if(violations.length)throw new Error('Unsafe paid-provider configuration:\n'+violations.join('\n'));
 console.log('Verified deployment surfaces contain no enabled paid-chat/agent dispatch flag, raw vendor route, or provider-shaped secret.');
