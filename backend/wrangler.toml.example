@@ -18,6 +18,12 @@ AGENT_EXECUTION_ENABLED = "false"
 AGENT_PAID_EXECUTION_CONFIRMATION = ""
 # Provider dispatch remains independently safe-off until a metered gateway is configured.
 AGENT_PROVIDER_DISPATCH_ENABLED = "false"
+# Production dispatch must terminate at a separately audited, pinned metered gateway.
+AGENT_PROVIDER_ALLOWED_ORIGIN = ""
+AGENT_PROVIDER_APPROVED_ORIGIN = ""
+AGENT_PROVIDER_GATEWAY_AUDITED = "false"
+AGENT_PROVIDER_PROTOCOL = "metered-v1"
+# AGENT_PROVIDER_API_KEY must be stored as an encrypted secret, never in this file.
 # Agent execution stays fail-closed until these server-owned metering limits are
 # reviewed for the production provider/model. Clients must never supply them.
 AGENT_PROVIDER = ""
