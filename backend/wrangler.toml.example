@@ -16,6 +16,9 @@ AGENT_EXECUTION_ENABLED = "false"
 # Independent production spend confirmation. Keep empty while agents are disabled.
 # Enabling AGENT_EXECUTION_ENABLED alone must never authorize metered provider spend.
 AGENT_PAID_EXECUTION_CONFIRMATION = ""
+# Privileged Agent reconciliation is independently safe-off. Never expose this
+# value to clients; configure it only in an audited operator-only path.
+AGENT_RECONCILIATION_CONFIRMATION = ""
 # Provider dispatch remains independently safe-off until a metered gateway is configured.
 AGENT_PROVIDER_DISPATCH_ENABLED = "false"
 # Production dispatch must terminate at a separately audited, pinned metered gateway.
