@@ -1,0 +1,25 @@
+{
+ "name": "uvenaro-metered-gateway-staging",
+ "main": "../../backend/metered-gateway.mjs",
+ "compatibility_date": "2026-08-06",
+ "workers_dev": false,
+ "preview_urls": false,
+ "vars": {
+  "ENVIRONMENT": "staging",
+  "GATEWAY_GENERATION_ENABLED": "false",
+  "GATEWAY_PAID_EXECUTION_CONFIRMATION": "",
+  "GATEWAY_PROVIDER_ADAPTER_AUDITED": "false",
+  "GATEWAY_ADAPTER_PROTOCOL": "bounded-metered-v1",
+  "GATEWAY_PROVIDER": "",
+  "GATEWAY_MODEL": "",
+  "GATEWAY_TIMEOUT_MS": "30000",
+  "GATEWAY_RECOVERY_ENABLED": "false",
+  "GATEWAY_RECOVERY_CONFIRMATION": ""
+ },
+ "d1_databases": [
+  {"binding":"DB","database_name":"uvenaro-chat-staging","database_id":"SET_ISOLATED_CHAT_STAGING_D1_ID"},
+  {"binding":"GATEWAY_DB","database_name":"uvenaro-gateway-receipts-staging","database_id":"SET_ISOLATED_GATEWAY_STAGING_D1_ID"}
+ ],
+ "services": [{"binding":"PROVIDER_ADAPTER","service":"uvenaro-bounded-provider-adapter-staging"}],
+ "observability": {"enabled": false}
+}

@@ -68,8 +68,8 @@ separate agent authorization, HTTP/network failures, redirect protection, size/b
 deadline handling and concurrent single-charge ledger enforcement. Existing dispatch
 tests also exercise the extracted shared route validation.
 
-Next: implement/deploy the actual metered gateway and durable provider receipt store
-in isolated pre-production, validate provider token/cost accounting and read-only
-lookup permissions, then exercise lost responses, restart recovery and reconciliation
-end to end. Obtain and verify owner-controlled gateway/provider credentials before
-any external access or paid execution; this change creates no such credentials.
+The [gateway server and durable store](metered-gateway-server.md) are now implemented
+and tested in actual local Worker/D1, including restart and lost-response reconciliation.
+Remote staging deployment and the actual bounded vendor adapter/audit remain open.
+Validate provider token/cost accounting and read-only lookup permissions before real
+vendor access or paid execution; no credentials or production activation are created.

@@ -29,6 +29,7 @@ jobs:
       - run: npm run verify:chat-ui
       - run: npm run verify:account-staging-ui
       - run: npm run verify:account-staging-build
+      - run: npm run verify:metered-gateway-build
       - run: node --check backend/worker.mjs
       - run: node --check backend/firebase-auth.mjs
       - run: node --check backend/app-check.mjs

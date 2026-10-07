@@ -14,10 +14,12 @@ The account/Funding Guard/reconciliation phase passed its final CI on exact main
 Native #548 (Android and iOS) and Pages #548. That engineering phase is locked;
 Official Launch checkpoint 44 remains open.
 
-Next gateway work adds an internal read-only receipt lookup/reconciliation adapter;
-see [receipt integration](chat-gateway-receipts.md). Its own revision requires
-mandatory CI and Pages before reporting engineering verification complete. The
-actual metered gateway server/vendor adapter deployment remains the next dependency.
+The receipt adapter passed mandatory CI and Pages on exact main
+`b69698deda9a5648f68816506be948cdf3c6ed38`: Security #302, Cloud runtime #520,
+Native #549 and Pages #549. Current work implements the actual safe-off gateway
+server and durable receipt store; see [gateway server](metered-gateway-server.md).
+Its own revision requires mandatory CI and Pages before engineering acceptance.
+Remote staging bindings/access and the bounded vendor adapter/audit remain open.
 
 The account/Funding Guard/agent reconciliation phase underwent final readiness
 verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` had verified
@@ -123,4 +125,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase recorded above is locked; the owner's main account acceptance tests have passed. Current work is the audited V1 metered chatbot gateway integration in pre-production, beginning with the internal receipt adapter. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. Current work is the safe-off metered gateway server/durable store with local Worker/D1 verification, followed by authorized isolated remote staging and the bounded vendor adapter audit. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

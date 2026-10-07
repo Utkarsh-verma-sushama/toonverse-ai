@@ -38,3 +38,4 @@ jobs:
           node --check backend/chat-activation.mjs
           node --check backend/chat-reconciliation.mjs
           node --check backend/chat-gateway-reconciliation.mjs
+          node --check backend/metered-gateway.mjs
