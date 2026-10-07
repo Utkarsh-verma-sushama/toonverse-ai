@@ -48,6 +48,8 @@ The [current Gemini public policy/pricing review](gemini-public-policy-review-20
 It records free-tier data-use restrictions, paid-service limited retention, provider age/region conditions, dated model prices and delayed spend-cap enforcement.
 No model/key, billing change, price snapshot or provider audit assertion was enabled.
 Actual project/model/endpoint/privacy/funding acceptance and legal/signing/device/store launch gates remain open.
+The [previous-phase audit and Google project readiness record](gemini-project-readiness-20261007.md) separates the existing Firebase identity from the unverified Gemini project/tier.
+`npm run check:gemini-readiness` rechecks historical receipt consistency and current committed safe-off configuration; it does not inspect live accounts or authorize generation.
 
 The account/Funding Guard/agent reconciliation phase underwent final readiness
 verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` had verified
@@ -60,7 +62,7 @@ the exact lock procedure and explicit production boundaries. Final revision CI
 passed as recorded above. Account manual
 acceptance remains complete and need not be repeated without a verified defect.
 
-## Current resume point — 1 October 2026
+## Historical resume point — 1 October 2026 (superseded by 7 October)
 
 Account staging deploy run 21 succeeded on 1 October at main `92706cc`.
 Security policy, Cloud runtime and Native build all succeeded on that exact commit.
@@ -74,8 +76,7 @@ The [1 October account security/release audit](account-release-audit-20261001.md
 adds actual Workers tests for token revocation and cross-owner isolation, fixes
 late private responses/account UI cleanup and expired recent-login recovery,
 and requires all three CI workflows on current main before staging deployment.
-Next: verify/integrate this audit revision, deploy the tested staging update, then
-continue the V1 chatbot gateway with providers/payment/background AI disabled.
+The next step at that time was to integrate/deploy the audit and continue the safe-off chatbot gateway. Those engineering steps are complete as recorded above; this historical paragraph is not the current task.
 
 This change integrates the previously separate security-hardening track with the latest
 staging fixes. App Check, replay defense, spending guards and agent authorization
@@ -83,9 +84,9 @@ remain subject to validation and activation gates. This does not activate provid
 Earlier “locked” foundation checkpoints do not prove external provider, physical-device,
 store-release or all-ecosystem operational readiness.
 
-## Latest engineering checkpoint — 24 September 2026
+## Historical engineering checkpoint — 24 September 2026
 
-Backend source has been recovered and identity/API ownership/Firebase-rule hardening has passed 100 local behavioral/emulator tests on `codex/uvenaro-backend-security-20260924`. See [backend security checkpoint](backend-security-checkpoint.md) for verified work, activation requirements and the remaining implementation order. No production backend, AI provider, cloud sync, payment or launch activation is claimed. Atomic credit/quota enforcement and persisted client retries have now been implemented; see [Atomic Chat Billing](atomic-chat-billing.md) for verification and remaining gates. The email account/session backend is now implemented and tested; see [Account Backend](account-backend-checkpoint.md) for precise scope. Live account configuration, TOTP/native validation, additional sign-in providers, alert delivery and completed erasure remain open. The immediate next step is the [account staging deployment](account-staging-deployment.md): source and tests are ready, while Cloudflare setup/access and Firebase authorized-domain validation are still required. After the account pilot, core engineering continues with the audited V1 model gateway and provider reconciliation.
+Backend source has been recovered and identity/API ownership/Firebase-rule hardening has passed 100 local behavioral/emulator tests on `codex/uvenaro-backend-security-20260924`. See [backend security checkpoint](backend-security-checkpoint.md) for verified work, activation requirements and the remaining implementation order. No production backend, AI provider, cloud sync, payment or launch activation is claimed. Atomic credit/quota enforcement and persisted client retries have now been implemented; see [Atomic Chat Billing](atomic-chat-billing.md) for verification and remaining gates. The email account/session backend is now implemented and tested; see [Account Backend](account-backend-checkpoint.md) for precise scope. Live account configuration, TOTP/native validation, additional sign-in providers, alert delivery and completed erasure remain open. At that time, Cloudflare setup and Firebase domain validation were still required. Account staging/manual acceptance and the private provider staging phase have since completed; use the current 7 October resume point above.
 
 ## Permanent execution rule
 
@@ -143,7 +144,7 @@ Locked with final QA/polish gates, active Privacy Policy and Terms pages, versio
 
 ## Checkpoint 44 — Official Launch (in progress, not locked)
 
-Android and iOS native foundations use the stable application identifier \`ai.uvenaro.app\`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. The 12 September 2026 pre-launch audit also passed cloud runtime, native bundle, Pages deployment, complete internal route/asset integrity, safe Back navigation, draft recovery and offline-shell asset validation.
+Android and iOS native foundations use the stable application identifier `ai.uvenaro.app`. Automated CI has passed for the complete registered web bundle, Android debug APK, unsigned Android release AAB and unsigned iOS Simulator build. The 12 September 2026 pre-launch audit also passed cloud runtime, native bundle, Pages deployment, complete internal route/asset integrity, safe Back navigation, draft recovery and offline-shell asset validation.
 
 Assistant-controlled release foundation is complete. Product name **UVENARO**, domain **uvenaro.com**, domain registration/protection, custom-domain configuration, and the operational support mailbox **support@uvenaro.com** (MX, SPF, DKIM, DMARC, MFA and send/receive validation) are complete.
 
@@ -151,6 +152,10 @@ The 19 September 2026 hardening audit added a deterministic npm lockfile, `npm c
 
 Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled gates pass: registered company/legal operator identity, organization store accounts, protected Android/iOS signing credentials, production backend/provider activation, physical Android/iPhone/iPad validation, accurate screenshots from the signed release candidate, store privacy/content declarations, Google Play and Apple review approval, staged rollout, monitoring and independent public reachability validation.
 
-## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
+## Core intelligence and cross-platform foundation — added 2026-09-11
+
+Autonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.
+
+## Resume point
 
 Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. The adapter passed exact-revision CI. Token-policy inspection and owner Workers Free dashboard proof are complete. Three real isolated staging databases, full schema chains, both private Workers, secret scopes and remote fixture/recovery/restart acceptance are complete. The temporary probe is removed and provider/model restored blank. Current public policy/pricing research is complete; actual project/model/endpoint/privacy/funding acceptance remains open. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

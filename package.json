@@ -12,11 +12,11 @@
     "native:sync": "npm run build:web && cap sync",
     "native:android": "npm run native:sync && cap open android",
     "native:ios": "npm run native:sync && cap open ios",
-    "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs && node scripts/verify-chat-deployment-config.mjs && node scripts/verify-provider-config-guard.mjs",
+    "verify:core": "node scripts/verify-core-runtime.mjs && node scripts/verify-chat-runtime.mjs && node scripts/verify-chat-deployment-config.mjs && node scripts/verify-provider-config-guard.mjs && node scripts/check-gemini-readiness.mjs",
     "verify:all": "npm run build:web && npm run verify:web && npm run verify:core && npm run verify:security && npm run verify:billing && npm run verify:accounts && npm run verify:account-staging",
     "verify:security": "node --test scripts/verify-identity.test.mjs scripts/verify-backend.test.mjs scripts/verify-app-check.test.mjs scripts/verify-replay-guard.test.mjs",
     "verify:rules": "firebase emulators:exec --only firestore,storage --project demo-uvenaro-security \"node --test scripts/verify-rules.test.mjs\"",
-    "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-chat-workerd.test.mjs scripts/verify-chat-activation.test.mjs scripts/verify-chat-reconciliation.test.mjs scripts/verify-chat-gateway-reconciliation.test.mjs scripts/verify-metered-gateway.test.mjs scripts/verify-metered-gateway-workerd.test.mjs scripts/verify-gemini-adapter.test.mjs scripts/verify-gemini-adapter-workerd.test.mjs scripts/verify-agent-funding-guard.test.mjs scripts/verify-agent-activation.test.mjs scripts/verify-agent-reconciliation.test.mjs scripts/verify-d1-billing.test.mjs",
+    "verify:billing": "node --test scripts/verify-billing.test.mjs scripts/verify-chat-execution.test.mjs scripts/verify-chat-client.test.mjs scripts/verify-chat-workerd.test.mjs scripts/verify-chat-activation.test.mjs scripts/verify-chat-reconciliation.test.mjs scripts/verify-chat-gateway-reconciliation.test.mjs scripts/verify-metered-gateway.test.mjs scripts/verify-metered-gateway-workerd.test.mjs scripts/verify-gemini-adapter.test.mjs scripts/verify-gemini-adapter-workerd.test.mjs scripts/verify-agent-funding-guard.test.mjs scripts/verify-agent-activation.test.mjs scripts/verify-agent-reconciliation.test.mjs scripts/verify-d1-billing.test.mjs scripts/verify-gemini-readiness.test.mjs",
     "verify:metered-gateway-build": "esbuild backend/metered-gateway.mjs --bundle --format=esm --platform=browser --target=es2022 --outfile=.metered-gateway/bundle/worker.mjs",
     "verify:chat-ui": "node --test scripts/verify-chat-ui.test.mjs",
     "verify:accounts": "node --test scripts/verify-accounts.test.mjs scripts/verify-account-client.test.mjs scripts/verify-account-workerd.test.mjs",
@@ -29,7 +29,8 @@
     "verify:account-staging-ui": "UVENARO_UI_STAGING=true node --test scripts/verify-account-ui.test.mjs",
     "verify:account-staging-build": "npm run build:account-staging && wrangler deploy --dry-run --config deploy/account-staging/wrangler.json --outdir .account-staging/bundle",
     "verify:gemini-adapter-build": "esbuild backend/gemini-adapter.mjs --bundle --format=esm --platform=browser --target=es2022 --outfile=.gemini-adapter/bundle/worker.mjs",
-    "verify:isolated-staging-build": "node scripts/prepare-isolated-staging.mjs --fixture"
+    "verify:isolated-staging-build": "node scripts/prepare-isolated-staging.mjs --fixture",
+    "check:gemini-readiness": "node scripts/check-gemini-readiness.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.1",
