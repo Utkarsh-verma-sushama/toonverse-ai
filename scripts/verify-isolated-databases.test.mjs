@@ -55,6 +55,11 @@ test('creates and reads back exactly three distinct empty databases with durable
  for(const name of stagingNames.databases)assert.ok(f.snapshots.some(s=>s.pending?.name===name&&s.pending.outcome==='unknown-no-retry'));
  assert.doesNotMatch(JSON.stringify(state),/fixture-github-secret|fixture-cloudflare-secret/);
 });
+test('programmatic invocation without a durable journal cannot perform a network request',async()=>{
+ const f=fixture();delete f.options.save;
+ await assert.rejects(provisionIsolatedDatabases(f.options),/DURABLE_DATABASE_JOURNAL_REQUIRED/);
+ assert.equal(f.calls.length,0);assert.equal(f.ciCalls,0);
+});
 test('failed exact-main CI produces no Cloudflare operation or leaked diagnostics',async()=>{
  const f=fixture();f.options.ciCheck=async()=>{throw Error('Release blocked: fixture-github-secret');};
  await assert.rejects(provisionIsolatedDatabases(f.options),/PROVISIONING_GATE_FAILED/);assert.equal(f.calls.length,0);assert.doesNotMatch(JSON.stringify(f.snapshots),/fixture-github-secret/);

@@ -34,7 +34,8 @@ export function provisioningPlan(report,request,env,now){
 }
 
 export async function provisionIsolatedDatabases({env=process.env,request,fetcher=fetch,ciCheck=checkReleaseCi,
- inspect=inspectIsolatedStaging,save=async()=>{},now=()=>Date.now()}={}){
+ inspect=inspectIsolatedStaging,save,now=()=>Date.now()}={}){
+ if(typeof save!=='function')fail('DURABLE_DATABASE_JOURNAL_REQUIRED');
  validateProvisionRequest(request,env,now());
  if(env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_EVENT_NAME!=='push'||env.GITHUB_RUN_ATTEMPT!=='1'||
   !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')||!env.GITHUB_TOKEN||!env.CLOUDFLARE_API_TOKEN||!uuid.test(env.UVENARO_STAGING_DATABASE_ID||''))fail('FIRST_MAIN_PUSH_AND_SECURE_SETTINGS_REQUIRED');
