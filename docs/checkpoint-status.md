@@ -1,11 +1,24 @@
 # UVENARO — Checkpoint Resume Record
 
-Last updated: 2026-10-01
+Last updated: 2026-10-07
 
 Current locked checkpoint: 43
 
 Exact next checkpoint: 44
 Resume instruction: When Utkarsh Prakash Verma says “आगे काम शुरू किया जाए”, start directly from Checkpoint 44. Do not repeat or reopen completed work unless a verified defect requires it.
+
+## Current engineering resume point — 7 October 2026
+
+The account/Funding Guard/agent reconciliation phase is under final readiness
+verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` has verified
+successful Security #299, Cloud runtime #517, Native #546 and Pages #546.
+The earlier invalid-reservation fixture blocker is resolved. A final audit added
+an actual expiry/cleanup regression with production triggers intact, covering
+fresh/dispatched/unknown holds, credit invariants and duplicate-release prevention.
+See [final readiness report](funding-guard-readiness-20261007.md) for evidence,
+the exact lock procedure and explicit production boundaries. New revision CI
+must pass on its own SHA before this engineering phase is locked. Account manual
+acceptance remains complete and need not be repeated without a verified defect.
 
 ## Current resume point — 1 October 2026
 
@@ -100,4 +113,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The immediate work is the account security/release audit recorded above; the owner's main account acceptance tests have passed. Legal entity registration and organization developer accounts remain later release gates. Assistant-controlled engineering may continue on pre-production hardening and the V1 chatbot gateway; production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The immediate work is final readiness verification of the account/Funding Guard/agent reconciliation phase recorded above; the owner's main account acceptance tests have passed. After its exact-revision CI and Pages evidence pass, proceed to the audited V1 metered chatbot gateway integration in pre-production. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

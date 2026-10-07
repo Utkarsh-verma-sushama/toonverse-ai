@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {listAgentReconciliation,reconcileAgent} from '../backend/agent-reconciliation.mjs';
-import {fixture,alice,cfg,messages,balance} from './billing-fixtures.mjs';
-import {reserveChat,beginDispatch,markUnknown} from '../backend/chat-billing.mjs';
+import {fixture,alice,cfg,messages,balance,seedUser,invariant} from './billing-fixtures.mjs';
+import {reserveChat,beginDispatch,markUnknown,expireUndispatched} from '../backend/chat-billing.mjs';
+import {DatabaseSync} from 'node:sqlite';
 const fails=code=>error=>error.code===code;
 async function unresolved(db,key='agent_run1'){
  const row=await reserveChat(db,alice,key,messages,cfg);await beginDispatch(db,alice,row);await markUnknown(db,alice,row,'AGENT_PROVIDER_OUTCOME_UNKNOWN');return row;
@@ -72,4 +73,39 @@ test('stale cleanup targets only expired never-dispatched holds; dispatched unce
   assert.doesNotMatch(fn,/provider_state\s*=\s*'started'/);
   assert.doesNotMatch(fn,/provider_state\s*=\s*'unknown'/);
  }finally{db.sql.close();}
+});
+
+test('stale cleanup executes expiry exactly once without releasing fresh or dispatched holds',async()=>{
+ const db=fixture(),clockSql=new DatabaseSync(':memory:');
+ try{
+  const bob={sub:'bob',verified:true};seedUser(db.sql,bob.sub);
+  // Advance SQLite time, not immutable reservation fields. Delegate date parsing
+  // and modifiers to real SQLite; all production triggers stay installed.
+  let now=Date.now();
+  for(const fn of ['julianday','strftime'])db.sql.function(fn,{varargs:true},(...args)=>{
+   const values=args.map(value=>value==='now'?new Date(now).toISOString():value);
+   return clockSql.prepare(`SELECT ${fn}(${values.map(()=>'?').join(',')}) AS value`).get(...values).value;
+  });
+  const stale=await reserveChat(db,bob,'agent_stale_expired',messages,cfg);
+  const started=await reserveChat(db,alice,'agent_expired_started',messages,cfg);await beginDispatch(db,alice,started);
+  const unknown=await unresolved(db,'agent_expired_unknown');
+  now+=4*60*1000;
+  const fresh=await reserveChat(db,bob,'agent_stale_fresh',messages,cfg);
+  const before=balance(db,bob.sub);invariant(db);
+  now+=2*60*1000;
+  assert.equal((await expireUndispatched(db)).meta.changes,1);
+  const row=id=>db.sql.prepare('SELECT * FROM usage_reservations WHERE id=?').get(id);
+  assert.equal(row(stale.id).status,'released');assert.equal(row(stale.id).failure_code,'NOT_DISPATCHED');
+  assert.equal(row(stale.id).actual_credits,0);assert.equal(row(stale.id).actual_cost_microusd,0);
+  assert.equal(row(fresh.id).status,'reserved');assert.equal(row(fresh.id).provider_state,'not_started');
+  assert.equal(row(started.id).provider_state,'started');assert.equal(row(started.id).status,'reserved');
+  assert.equal(row(unknown.id).provider_state,'unknown');assert.equal(row(unknown.id).status,'reserved');
+  assert.equal(balance(db,bob.sub).reserved,before.reserved-stale.estimated_credits);
+  assert.equal(balance(db,bob.sub).included,before.included);assert.equal(balance(db,bob.sub).prepaid,before.prepaid);
+  assert.equal((await listAgentReconciliation(db)).length,2);invariant(db);
+  assert.equal(db.sql.prepare("SELECT COUNT(*) AS count FROM usage_ledger WHERE reservation_id=? AND event_type='release'").get(stale.id).count,1);
+  const ledger=db.sql.prepare('SELECT COUNT(*) AS count FROM usage_ledger').get().count;
+  assert.equal((await expireUndispatched(db)).meta.changes,0);
+  assert.equal(db.sql.prepare('SELECT COUNT(*) AS count FROM usage_ledger').get().count,ledger);invariant(db);
+ }finally{db.sql.close();clockSql.close();}
 });
