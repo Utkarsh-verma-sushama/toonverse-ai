@@ -2,7 +2,10 @@ import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
 const root=new URL('../',import.meta.url);
-const read=path=>JSON.parse(readFileSync(new URL(path,root),'utf8'));
+const read=path=>{
+ try{return JSON.parse(readFileSync(new URL(path,root),'utf8'));}
+ catch{throw new Error('READINESS_SOURCE_UNREADABLE');}
+};
 const auditFlags=['GEMINI_MODEL_PROFILE_AUDITED','GEMINI_PREFLIGHT_AUDITED','GEMINI_COUNT_TOKENS_NONBILLABLE_AUDITED','GEMINI_PRIVACY_PRICING_AUDITED'];
 const roles=['billing','gateway-receipts','adapter-evidence'];
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

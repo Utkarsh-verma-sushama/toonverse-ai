@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {spawnSync} from 'node:child_process';
 import {inspectGeminiReadiness} from './check-gemini-readiness.mjs';
 const read=path=>JSON.parse(readFileSync(new URL('../'+path,import.meta.url),'utf8'));
 const fixture=()=>({firebase:read('.firebaserc'),account:read('deploy/account-staging/wrangler.json'),adapter:read('deploy/gemini-adapter/wrangler.json'),gateway:read('deploy/metered-gateway/wrangler.json'),receipt:read('deploy/isolated-staging/verified-deployment.json')});
@@ -47,4 +50,13 @@ test('source, fixture count and provider-call scope cannot be silently broadened
  reject(x=>{x.receipt.sourceCommit='a'.repeat(40);},'ACCEPTANCE_PROVENANCE_INCONSISTENT');
  reject(x=>{x.receipt.remoteFixtureChecks.total=45;},'FIXTURE_ACCEPTANCE_INCONSISTENT');
  reject(x=>{x.receipt.journal.providerRequestsPerformed=true;},'ACCEPTANCE_SCOPE_INCONSISTENT');
+});
+test('CLI rejects broken input without exposing JSON contents or process credentials',()=>{
+ const directory=mkdtempSync(join(tmpdir(),'uvenaro-readiness-')),secret='sensitive-cli-value-never-print';
+ try{
+  mkdirSync(join(directory,'scripts'));writeFileSync(join(directory,'scripts/check-gemini-readiness.mjs'),readFileSync(new URL('./check-gemini-readiness.mjs',import.meta.url)));
+  writeFileSync(join(directory,'.firebaserc'),'{"broken":"'+secret+'", invalid}');
+  const result=spawnSync(process.execPath,[join(directory,'scripts/check-gemini-readiness.mjs')],{encoding:'utf8',env:{GEMINI_API_KEY:secret}});
+  assert.equal(result.status,1);assert.ok(result.stderr.includes('READINESS_SOURCE_UNREADABLE'));assert.ok(!(result.stdout+result.stderr).includes(secret));
+ }finally{rmSync(directory,{recursive:true,force:true});}
 });
