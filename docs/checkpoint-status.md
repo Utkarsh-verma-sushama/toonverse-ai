@@ -9,15 +9,25 @@ Resume instruction: When Utkarsh Prakash Verma says “आगे काम श�
 
 ## Current engineering resume point — 7 October 2026
 
-The account/Funding Guard/agent reconciliation phase is under final readiness
-verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` has verified
+The account/Funding Guard/reconciliation phase passed its final CI on exact main
+`8599649a4be1273b37395a6adc4fc3543962ed4d`: Security #301, Cloud runtime #519,
+Native #548 (Android and iOS) and Pages #548. That engineering phase is locked;
+Official Launch checkpoint 44 remains open.
+
+Next gateway work adds an internal read-only receipt lookup/reconciliation adapter;
+see [receipt integration](chat-gateway-receipts.md). Its own revision requires
+mandatory CI and Pages before reporting engineering verification complete. The
+actual metered gateway server/vendor adapter deployment remains the next dependency.
+
+The account/Funding Guard/agent reconciliation phase underwent final readiness
+verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` had verified
 successful Security #299, Cloud runtime #517, Native #546 and Pages #546.
 The earlier invalid-reservation fixture blocker is resolved. A final audit added
 an actual expiry/cleanup regression with production triggers intact, covering
 fresh/dispatched/unknown holds, credit invariants and duplicate-release prevention.
 See [final readiness report](funding-guard-readiness-20261007.md) for evidence,
-the exact lock procedure and explicit production boundaries. New revision CI
-must pass on its own SHA before this engineering phase is locked. Account manual
+the exact lock procedure and explicit production boundaries. Final revision CI
+passed as recorded above. Account manual
 acceptance remains complete and need not be repeated without a verified defect.
 
 ## Current resume point — 1 October 2026
@@ -113,4 +123,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The immediate work is final readiness verification of the account/Funding Guard/agent reconciliation phase recorded above; the owner's main account acceptance tests have passed. After its exact-revision CI and Pages evidence pass, proceed to the audited V1 metered chatbot gateway integration in pre-production. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase recorded above is locked; the owner's main account acceptance tests have passed. Current work is the audited V1 metered chatbot gateway integration in pre-production, beginning with the internal receipt adapter. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

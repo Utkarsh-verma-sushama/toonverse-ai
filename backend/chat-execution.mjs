@@ -17,7 +17,13 @@ export function chatConfig(env){
   maxInputTokens:setting(env,'CHAT_MAX_INPUT_TOKENS',4000,1,12000),maxOutputTokens:setting(env,'CHAT_MAX_OUTPUT_TOKENS',1000,1,8000),
   timeoutMs:setting(env,'CHAT_TIMEOUT_MS',30000,1000,120000),globalCeiling:setting(env,'CHAT_GLOBAL_DAILY_COST_MICROUSD',0,1,1e12)};
  if(!env.CHAT_PROVIDER_API_KEY||!cfg.provider||!cfg.model||env.CHAT_PROVIDER_PROTOCOL!=='metered-v1')throw fail('PROVIDER_NOT_CONFIGURED',503);
- let url;try{url=new URL(cfg.url);}catch{throw fail('PROVIDER_NOT_CONFIGURED',503);}
+ chatGatewayRoute(env,cfg.url);
+ return cfg;
+}
+// Shared route trust boundary for dispatch and read-only receipt retrieval.
+// This validates a route; it never enables execution or authorizes a paid call.
+export function chatGatewayRoute(env,urlValue){
+ let url;try{url=new URL(urlValue);}catch{throw fail('PROVIDER_NOT_CONFIGURED',503);}
  if(url.protocol!=='https:'||url.origin!==env.CHAT_PROVIDER_ALLOWED_ORIGIN||url.username||url.password||url.search||url.hash)throw fail('PROVIDER_ROUTE_NOT_ALLOWED',503);
  // Never let the metered contract be pointed straight at a raw model vendor.
  // Production must terminate at a separately audited Uvenaro-controlled gateway.
@@ -35,7 +41,7 @@ export function chatConfig(env){
    throw fail('APPROVED_GATEWAY_ORIGIN_INVALID',503);
   if(url.origin!==approved.origin)throw fail('UNAPPROVED_GATEWAY_ROUTE',503);
  }
- return cfg;
+ return url;
 }
 export function normalizeMessages(input){
  if(!input||typeof input.message!=='string'||!input.message.trim()||input.message.length>12000)throw fail('INVALID_MESSAGE',400);

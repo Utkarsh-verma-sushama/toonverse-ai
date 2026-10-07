@@ -45,6 +45,11 @@ CHAT_PAID_EXECUTION_CONFIRMATION = ""
 # Privileged internal reconciliation is independently safe-off in production.
 # Never expose this value to clients; configure it only in an audited operator path.
 CHAT_RECONCILIATION_CONFIRMATION = ""
+# Explicit operator-only GET receipt lookup; never activates generation.
+CHAT_RECEIPT_LOOKUP_ENABLED = "false"
+CHAT_RECEIPT_BASE_URL = ""
+CHAT_RECEIPT_TIMEOUT_MS = "10000"
+# CHAT_RECEIPT_API_KEY: server secret with read-only receipt permissions.
 CHAT_PROVIDER = ""
 CHAT_MODEL = ""
 CHAT_PROVIDER_URL = ""
