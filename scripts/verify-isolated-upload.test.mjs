@@ -8,7 +8,7 @@ import {createHash} from 'node:crypto';
 import {Miniflare} from 'miniflare';
 import {build} from 'esbuild';
 import {buildIsolatedStaging,fixtureBindings} from './prepare-isolated-staging.mjs';
-import {validateUpload,schemaFingerprint,verifiedSchemaRows,validatePrivateSettings,validateResume,writeScopedSecret} from './deploy-isolated-staging.mjs';
+import {validateUpload,schemaFingerprint,verifiedSchemaRows,validatePrivateSettings,validateResume,validateRepairJournal,fixtureRecordId,writeScopedSecret} from './deploy-isolated-staging.mjs';
 const ids=['44444444-4444-4444-8444-444444444444','55555555-5555-4555-8555-555555555555','66666666-6666-4666-8666-666666666666'];
 const names=['uvenaro-chat-staging','uvenaro-gateway-receipts-staging','uvenaro-adapter-evidence-staging'];
 const record={protocol:'uvenaro-verified-isolated-databases-v1',accountId:'a'.repeat(32),databases:ids.map((uuid,i)=>({uuid,name:names[i],role:['billing','gateway-receipts','adapter-evidence'][i]}))};
@@ -98,4 +98,21 @@ test('secret writes require explicit per-key API acknowledgement and never retry
  assert.equal(calls,1);
  for(const result of [undefined,{}, {name:'OTHER_KEY',type:'secret_text'}, {name:'PROBE_KEY',type:'plain_text'}])await assert.rejects(()=>writeScopedSecret(async()=>result,'PROBE_KEY',text));
  calls=0;await assert.rejects(()=>writeScopedSecret(async()=>{calls++;throw Error('rejected');},'PROBE_KEY',text));assert.equal(calls,1);
+});
+
+test('fixture record identities are unique across retries and purposes under real receipt uniqueness constraints',()=>{
+ const db=new DatabaseSync(':memory:');try{
+  db.exec('CREATE TABLE records(record_id TEXT UNIQUE CHECK(length(record_id)=71))');
+  for(const run of ['37588135800','37589264638','37589999999'])for(const role of ['read','recovery'])db.prepare('INSERT INTO records VALUES(?)').run(fixtureRecordId(run,role));
+  assert.equal(db.prepare('SELECT count(*) AS n FROM records').get().n,6);
+  assert.equal(fixtureRecordId('37589264638','read'),fixtureRecordId('37589264638','read'));
+  assert.throws(()=>fixtureRecordId('invalid','read'));assert.throws(()=>fixtureRecordId('123','unknown'));
+ }finally{db.close();}
+});
+test('interrupted fixture repair is bound to both original schema ownership and exact failed journal',async()=>{
+ const original=JSON.parse(await readFile(new URL('../deploy/isolated-staging/upload-resume-journal.json',import.meta.url),'utf8'));
+ const interrupted=JSON.parse(await readFile(new URL('../deploy/isolated-staging/upload-repair-journal.json',import.meta.url),'utf8'));
+ const request=JSON.parse(await readFile(new URL('../deploy/isolated-staging/upload-request.json',import.meta.url),'utf8'));
+ assert.equal(validateRepairJournal(interrupted,request,original),true);
+ for(const changed of [{...interrupted,pending:'secret:unknown'},{...interrupted,resumedFrom:'f'.repeat(40)},{...interrupted,steps:[]}])assert.throws(()=>validateRepairJournal(changed,request,original));
 });

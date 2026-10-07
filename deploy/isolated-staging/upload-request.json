@@ -1,6 +1,6 @@
 {
   "protocol": "uvenaro-safe-off-staging-upload-v1",
-  "operationId": "isolated-upload-20261007-authentication-repair",
+  "operationId": "isolated-upload-20261007-unique-fixture-repair",
   "repository": "Utkarsh-verma-sushama/toonverse-ai",
   "accountId": "fc3da7a1c1263e601d03d222b7d1e155",
   "approvedAt": "2026-10-07T07:19:30Z",
@@ -15,6 +15,13 @@
     "journalSha256": "6df786d93d8b3178baa88d56eafab01536de06765c75aaa5acc07b450e5019a4",
     "workflowRunId": 37588135800,
     "artifactId": 11466823683,
-    "artifactSha256": "f0306f6dce9f1941ab57af2b581de97fa3de45ca52cb9ba0791a4da16ac29e3e"
+    "artifactSha256": "f0306f6dce9f1941ab57af2b581de97fa3de45ca52cb9ba0791a4da16ac29e3e",
+    "repair": {
+      "sourceCommit": "c79042b822dff7b531f22a8d840201d8d6699345",
+      "journalSha256": "49325927b780f1d49f50ded2016356756cfc380bf85c085936c9b7f30b334f70",
+      "workflowRunId": 37589264638,
+      "artifactId": 11466919977,
+      "artifactSha256": "495839f6aa9bb6ebb50226b6990324c522ee318c4c8d0071e18001e8d2b706a0"
+    }
   }
 }

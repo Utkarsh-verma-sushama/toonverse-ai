@@ -69,6 +69,18 @@ export function validateResume(journal,request,manifestHash){
   journal.pilotPreserved!==true||journal.manifestSha256!==manifestHash||!['worker-fixture:adapter','worker-fixture:gateway','temporary-probe','temporary-probe-scopes'].every(step=>journal.steps?.includes(step)))fail('RESUME_OWNERSHIP_EVIDENCE_INVALID');
  return true;
 }
+export function fixtureRecordId(runId,role){
+ if(!/^[0-9]{1,30}$/.test(String(runId))||!['read','recovery'].includes(role))fail('FIXTURE_RECORD_INPUT_INVALID');
+ return 'gemini_'+createHash('sha256').update('uvenaro-isolated-fixture:'+runId+':'+role).digest('hex');
+}
+export function validateRepairJournal(journal,request,original){
+ const proof=request.resume?.repair;
+ if(!proof||proof.sourceCommit!==journal?.sha||proof.journalSha256!==createHash('sha256').update(JSON.stringify(journal)).digest('hex')||
+  journal.resumedFrom!==original.sha||journal.manifestSha256!==original.manifestSha256||journal.status!=='stopped-review-required'||
+  journal.pending!=='fixture-evidence:GATEWAY_DB'||journal.error!=='WRANGLER_OPERATION_UNCONFIRMED_NO_RETRY'||journal.providerRequestsPerformed!==false||
+  !['schema-verified:billing','schema-verified:gateway','schema-verified:adapter','secret:adapter:ADAPTER_DISPATCH_KEY','secret:adapter:ADAPTER_RECEIPT_KEY','secret:gateway:GATEWAY_DISPATCH_KEY','secret:gateway:GATEWAY_RECEIPT_KEY','secret:gateway:GATEWAY_ADAPTER_DISPATCH_KEY','secret:gateway:GATEWAY_ADAPTER_RECEIPT_KEY'].every(step=>journal.steps?.includes(step)))fail('REPAIR_JOURNAL_EVIDENCE_INVALID');
+ return true;
+}
 export async function writeScopedSecret(api,name,text){
  if(!/^[A-Z_]+$/.test(name)||!/^[A-Za-z0-9_-]{32,256}$/.test(text))fail('SECRET_SCOPE_INPUT_INVALID');
  const result=await api({name,text,type:'secret_text'});
@@ -153,6 +165,15 @@ export async function deployIsolatedStaging(){
     if(resume){if(schemaFingerprint(query(binding,config,schemaQuery))!==schemaFingerprint(local.prepare(schemaQuery).all()))fail('RESUME_SCHEMA_DRIFT');state.steps.push('schema-verified:'+role);await save();}
    }finally{local.close();}
   }
+  if(request.resume?.repair){
+   const interrupted=JSON.parse(await readFile(resolve(root,'deploy/isolated-staging/upload-repair-journal.json'),'utf8'));
+   validateRepairJournal(interrupted,request,resume);
+   const priorRun=String(request.resume.repair.workflowRunId);if(!/^[0-9]{1,30}$/.test(priorRun))fail('REPAIR_RUN_ID_INVALID');
+   const rows=query('GATEWAY_DB',configs.gateway,"SELECT request_id,request_hash,provider,model,status,record_id,input_limit,output_limit,input_tokens,output_tokens FROM gateway_receipts WHERE request_id IN ('uvenaro_fixture_read_"+priorRun+"','uvenaro_fixture_recovery_"+priorRun+"')");
+   if(rows.length>2||rows.some(r=>r.request_hash!=='a'.repeat(64)||r.provider!=='google-gemini'||r.model!=='gemini-3.8-flash'||r.input_limit!==100||r.output_limit!==50||!['dispatching','unknown','completed'].includes(r.status)||
+    (r.status==='completed'&&(r.request_id!=='uvenaro_fixture_read_'+priorRun||r.record_id!=='gemini_'+'c'.repeat(64)||r.input_tokens!==10||r.output_tokens!==8))))fail('INTERRUPTED_FIXTURE_RECORD_MISMATCH');
+   state.interruptedFixtureObserved={workflowRunId:Number(priorRun),rows:rows.map(r=>({request_id:r.request_id,status:r.status})),writesReplayed:false};await save();
+  }
   const secrets=Array.from({length:5},()=>randomBytes(32).toString('base64url'));
   if(new Set(secrets).size!==5)fail('SECRET_ENTROPY_COLLISION');
   for(const secret of secrets)process.stdout.write('::add-mask::'+secret+'\n');
@@ -168,12 +189,12 @@ export async function deployIsolatedStaging(){
   }
   const readId='uvenaro_fixture_read_'+env.GITHUB_RUN_ID,recoveryId='uvenaro_fixture_recovery_'+env.GITHUB_RUN_ID;
   if(!/^[A-Za-z0-9_]{1,100}$/.test(readId+'' )||!/^[A-Za-z0-9_]{1,100}$/.test(recoveryId))fail('FIXTURE_ID_INVALID');
-  const recordId='gemini_'+'c'.repeat(64),q=value=>"'"+value.replaceAll("'","''")+"'";
+  const recordId=fixtureRecordId(env.GITHUB_RUN_ID,'read'),q=value=>"'"+value.replaceAll("'","''")+"'";
   for(const [binding,config] of [['GATEWAY_DB',configs.gateway],['ADAPTER_DB',configs.adapter]]){
    let sql='';
    for(const id of [readId,recoveryId]){
     sql+="INSERT INTO gateway_receipts(request_id,request_hash,provider,model,input_limit,output_limit,status,created_at) VALUES("+q(id)+",'"+'a'.repeat(64)+"','google-gemini',"+q(fixtureModel)+",100,50,'dispatching','uvenaro-fixture');\n";
-    if(binding==='ADAPTER_DB')sql+="INSERT INTO adapter_vendor_evidence VALUES("+q(id)+','+q('fixture-vendor-'+id)+','+q(id===readId?recordId:'gemini_'+'d'.repeat(64))+",10,8,'uvenaro-fixture');\n";
+    if(binding==='ADAPTER_DB')sql+="INSERT INTO adapter_vendor_evidence VALUES("+q(id)+','+q('fixture-vendor-'+id)+','+q(id===readId?recordId:fixtureRecordId(env.GITHUB_RUN_ID,'recovery'))+",10,8,'uvenaro-fixture');\n";
     sql+="UPDATE gateway_receipts SET status='unknown' WHERE request_id="+q(id)+";\n";
    }
    if(binding==='GATEWAY_DB')sql+="UPDATE gateway_receipts SET status='completed',record_id="+q(recordId)+",billable=1,input_tokens=10,output_tokens=8,finalized_at='uvenaro-fixture' WHERE request_id="+q(readId)+";";

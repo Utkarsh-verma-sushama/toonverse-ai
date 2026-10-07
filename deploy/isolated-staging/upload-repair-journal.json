@@ -1,0 +1,41 @@
+{
+  "protocol": "uvenaro-safe-off-staging-upload-v1",
+  "operationId": "isolated-upload-20261007-authentication-repair",
+  "sha": "c79042b822dff7b531f22a8d840201d8d6699345",
+  "status": "stopped-review-required",
+  "pending": "fixture-evidence:GATEWAY_DB",
+  "steps": [
+    "schema-verified:billing",
+    "schema-verified:gateway",
+    "schema-verified:adapter",
+    "worker-fixture:adapter",
+    "secret:adapter:ADAPTER_DISPATCH_KEY",
+    "secret:adapter:ADAPTER_RECEIPT_KEY",
+    "worker-fixture:gateway",
+    "secret:gateway:GATEWAY_DISPATCH_KEY",
+    "secret:gateway:GATEWAY_RECEIPT_KEY",
+    "secret:gateway:GATEWAY_ADAPTER_DISPATCH_KEY",
+    "secret:gateway:GATEWAY_ADAPTER_RECEIPT_KEY"
+  ],
+  "providerRequestsPerformed": false,
+  "pilotPreserved": true,
+  "probeRemoved": false,
+  "workersRestoredToBlankModel": false,
+  "freePlanEvidence": {
+    "source": "owner-dashboard-screenshots",
+    "apiWorkersFreePlanVerified": false
+  },
+  "manifestSha256": "51e4dd06ceae34b7614236cc3739f881f254d33246d4facaa84033ce55ab2627",
+  "resumedFrom": "8d27386b54572bf2c0d9799876c90cc54a256de6",
+  "adapterPriorSecretScopes": [
+    "ADAPTER_DISPATCH_KEY",
+    "ADAPTER_RECEIPT_KEY"
+  ],
+  "gatewayPriorSecretScopes": [
+    "GATEWAY_ADAPTER_DISPATCH_KEY",
+    "GATEWAY_ADAPTER_RECEIPT_KEY",
+    "GATEWAY_DISPATCH_KEY",
+    "GATEWAY_RECEIPT_KEY"
+  ],
+  "error": "WRANGLER_OPERATION_UNCONFIRMED_NO_RETRY"
+}
