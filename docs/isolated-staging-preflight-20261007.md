@@ -152,3 +152,35 @@ and permits no real AI call. Worker/schema upload and remote acceptance remain t
 next deployment operation; offline preparation does not claim deployment.
 
 [Official D1 creation contract](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/create/).
+
+
+## Completed remote database-only acceptance — 7 October, 12:36 IST
+
+Exact source commit `bfd34b5ca5391fae31642b4740750c3b4e0406ce` passed Security #318,
+Cloud #536, Native #565 (Android and iOS individually) and Pages #557. All 616
+registered local tests passed. Resource preparation run 37585091996 then succeeded.
+
+| Database role | Verified name | Actual UUID |
+| --- | --- | --- |
+| Application billing/reservations | uvenaro-chat-staging | 861c33bd-a2a1-4e34-9ab2-0b430e6d948c |
+| Gateway receipts | uvenaro-gateway-receipts-staging | 0ca7dfdf-e6f7-45ee-bbf9-9903036d6f4d |
+| Adapter evidence | uvenaro-adapter-evidence-staging | 48577dbd-14e0-4529-8b95-f073f4fb228d |
+
+Each single create response was checked against a metadata readback. Final complete
+inventory confirms all three identities plus the unchanged account pilot. D1 writes
+are now exercised; new-Worker writes are still only declared. No SQL, Worker source,
+provider request, secret rotation, plan upgrade or payment change was performed.
+
+Artifact 11465309090 contains the durable create journal and 15 fingerprinted files
+compiled against the real IDs. Its GitHub SHA-256 digest and every manifest fingerprint
+were verified after download, including private endpoints and disabled generation,
+audit, recovery, observability and paid confirmations. The persistent repository
+identity receipt is `deploy/isolated-staging/verified-databases.json`; it is evidence,
+not an authorization grant or permission to adopt an arbitrary preexisting name.
+
+Next: prepare the reviewed Worker/schema upload, independent server secrets and a
+private fixture-only remote acceptance/recovery procedure. An earlier automatic approval
+review rejected the source-upload/dry-run action because it could disclose the adapter
+source to Cloudflare. This completed run used the materially safer database-only
+operation. Source/schema upload remains pending explicit owner acknowledgement of
+sending the concrete prepared package to Cloudflare; real provider execution remains off.

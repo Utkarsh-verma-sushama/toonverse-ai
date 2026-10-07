@@ -31,11 +31,15 @@ write scopes are inspectable. Exact-main CI passed on `2015449949d1cac63277ce789
 Owner screenshots at 12:22 IST confirm Workers Free, $0, Current plan on account
 `fc3da7a1c1263e601d03d222b7d1e155`; no additional owner screenshot is needed.
 The subscription API still returns no explicit Free entry; API proof remains unknown,
-distinct from the current owner dashboard proof. The next operation creates only
-three empty isolated databases after exact-main CI and fresh inventory checks.
-It journals every attempted create, refuses blind reruns/adoption and prepares
-database-bound Workers offline. Schema upload, Worker upload, independent server
-secret scopes, remote smoke/recovery, live vendor audit and launch remain open.
+distinct from the current owner dashboard proof. The database-only operation completed on exact main `bfd34b5ca5391fae31642b4740750c3b4e0406ce`
+with Security #318, Cloud #536, Native #565 (Android/iOS) and Pages #557 passed.
+Run 37585091996 created all three distinct databases, verified every UUID/name and
+final complete inventory, exercised D1 writes and preserved the pilot (four DBs total).
+The verified identity record is `deploy/isolated-staging/verified-databases.json`.
+The offline package uses the real IDs; its 15 fingerprints and archive digest passed.
+SQL/schema and Worker source were not uploaded; no provider or payment call occurred.
+Worker/schema upload, independent server secret scopes, remote smoke/recovery, live
+vendor audit and launch remain open.
 
 The account/Funding Guard/agent reconciliation phase underwent final readiness
 verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` had verified
@@ -141,4 +145,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. The adapter passed exact-revision CI. Token-policy inspection and owner Workers Free dashboard proof are complete. Database-only provisioning and offline binding preparation are the current operation; Worker/schema upload and remote acceptance remain open. The live vendor audit remains open. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. The adapter passed exact-revision CI. Token-policy inspection and owner Workers Free dashboard proof are complete. Three real isolated staging databases and the verified offline package are complete. Worker/schema upload, secret scopes and remote acceptance remain open. The live vendor audit remains open. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

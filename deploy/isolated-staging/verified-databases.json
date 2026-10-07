@@ -1,0 +1,39 @@
+{
+  "protocol": "uvenaro-verified-isolated-databases-v1",
+  "accountId": "fc3da7a1c1263e601d03d222b7d1e155",
+  "operationId": "isolated-databases-20261007-owner-free-plan",
+  "verifiedAt": "2026-10-07T07:06:44Z",
+  "sourceCommit": "bfd34b5ca5391fae31642b4740750c3b4e0406ce",
+  "workflowRunId": 37585091996,
+  "artifactId": 11465309090,
+  "artifactSha256": "e45b59ca7f483fb6dabe251e1c198a68defc5cb950a1801b487f5aa95baf9742",
+  "manifestSha256": "51e4dd06ceae34b7614236cc3739f881f254d33246d4facaa84033ce55ab2627",
+  "databases": [
+    {
+      "name": "uvenaro-chat-staging",
+      "uuid": "861c33bd-a2a1-4e34-9ab2-0b430e6d948c",
+      "role": "billing"
+    },
+    {
+      "name": "uvenaro-gateway-receipts-staging",
+      "uuid": "0ca7dfdf-e6f7-45ee-bbf9-9903036d6f4d",
+      "role": "gateway-receipts"
+    },
+    {
+      "name": "uvenaro-adapter-evidence-staging",
+      "uuid": "48577dbd-14e0-4529-8b95-f073f4fb228d",
+      "role": "adapter-evidence"
+    }
+  ],
+  "databaseCountAfterCreation": 4,
+  "pilotPreserved": true,
+  "d1WriteExercised": true,
+  "workersWriteExercised": false,
+  "freePlanEvidenceSource": "owner-dashboard-screenshots",
+  "apiWorkersFreePlanVerified": false,
+  "schemasApplied": false,
+  "workersDeployed": false,
+  "providerCallsPermitted": false,
+  "ownershipEvidence": "single-create-response-plus-identity-readback-and-complete-final-inventory",
+  "note": "Historical verified identities, not an authorization grant. Fresh exact-main CI, plan/capacity and identity checks are required before any future write."
+}
