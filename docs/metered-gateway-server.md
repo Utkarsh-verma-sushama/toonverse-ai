@@ -2,7 +2,8 @@
 
 Date: 7 October 2026. Scope: gateway Worker, independent durable receipt database,
 authenticated generation/lookup and explicit operator recovery. Source and local
-staging runtime are implemented; no remote Worker or real vendor adapter is deployed.
+staging runtime are implemented; no remote Worker or vendor adapter is deployed.
+The [Gemini adapter source](gemini-provider-adapter.md) is now locally verified.
 Paid AI and remote generation remain disabled.
 
 ## Request and spending boundaries
@@ -71,7 +72,9 @@ and reconciled; it is never treated as a free retry or an automatic refund.
 ## Required provider adapter service
 
 The only outbound integration is the configured `PROVIDER_ADAPTER` Worker service
-binding. It accepts the bounded `metered-v1` request at `POST /responses` and returns
+binding. Gateway-to-adapter credentials are distinct server secrets:
+`GATEWAY_ADAPTER_DISPATCH_KEY` for POST and `GATEWAY_ADAPTER_RECEIPT_KEY` for GET.
+It accepts the bounded `metered-v1` request at `POST /responses` and returns
 HTTP 2xx with a final, validated envelope, including exact usage and output for success.
 Zero-charge rejection also returns an explicit final envelope over HTTP 2xx.
 `GET /receipts/{originalReservationId}` supplies durable authoritative final evidence
@@ -83,11 +86,13 @@ ceiling before vendor spend**, output ceilings, no retries/fallback duplicate sp
 reviewed pricing/token semantics, durable request identity and read-only nonbillable
 receipt retrieval. A provider response discovered over budget trips the gateway stop;
 it cannot undo vendor spend, so post-response validation does not substitute for the
-adapter's pre-dispatch token/cost enforcement. Vendor implementation/audit remains open.
+adapter's pre-dispatch token/cost enforcement. [Adapter source](gemini-provider-adapter.md)
+is implemented; live vendor audit and activation remain open.
 
 ## Verification
 
-- `npm run verify:all`: 521 passing local tests, including 32 new gateway tests.
+- `npm run verify:all`: 569 passing local tests, including 34 gateway and 37
+  provider-adapter tests.
 - Actual local Cloudflare Worker/D1 test: concurrent dispatch claims once, then
   process disposal/restart preserves a completed receipt and a lost application
   reply reconciles exactly once without another generation POST.
@@ -95,8 +100,9 @@ adapter's pre-dispatch token/cost enforcement. Vendor implementation/audit remai
   and token budget tampering, kill switches, lost claim/final DB acknowledgement, unknown outcomes,
   operator-only recovery, bad evidence, redirects, body/header deadlines and immutable
   receipt constraints.
-- `npm run verify:metered-gateway-build`: Wrangler bundle/deploy dry run passes with
-  safe-off settings. Cloud runtime CI now requires this build, and Security CI runs
+- `npm run verify:metered-gateway-build`: pinned offline esbuild compilation validates
+  the Worker bundle without contacting Cloudflare. The previous gateway checkpoint
+  also passed Wrangler dry-run validation. Cloud runtime CI requires the local build, and Security CI runs
   the gateway regressions and syntax check. New-revision CI still gates phase acceptance.
 
 These are fixture-based local/runtime tests, not proof of a real vendor audit or live
@@ -105,8 +111,10 @@ staging activation. No external model requests or funding/payment changes occurr
 ## Remote staging procedure and outstanding gates
 
 The safe-off configuration is `deploy/metered-gateway/wrangler.json`. Remote execution
-was unavailable in this session: Cloudflare token/account access and concrete isolated
-database bindings were not present. No placeholder ID was deployed.
+was unavailable directly in this session: local Cloudflare credentials and concrete
+isolated database bindings were not present. The existing GitHub environment has
+now passed actual read-only Cloudflare checks; see [access diagnosis](cloudflare-access-diagnosis-20261007.md).
+New-resource write scopes remain unverified. No placeholder ID was deployed.
 
 Before remote staging, provide authorized Cloudflare access, create/verify isolated
 billing and receipt databases, apply their correct schema/migration chains, configure

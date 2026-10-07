@@ -13,6 +13,7 @@ test('gateway persists measured receipt before reply; read key cannot generate a
  assert.equal((await gateway.fetch(h.request(h.body,receiptKey),h.env)).status,401);
  assert.equal((await gateway.fetch(h.readRequest(dispatchKey),h.env)).status,401);assert.equal(h.calls.length,1);
  assert.deepEqual(h.calls[0].body.tools,[]);assert.equal(h.calls[0].body.store,false);
+ assert.equal(h.calls[0].authorization,'Bearer '+h.env.GATEWAY_ADAPTER_DISPATCH_KEY);
 }));
 test('concurrent and restarted requests claim once; replay never generates again',()=>gatewayFixture(async h=>{
  const results=await Promise.all(Array.from({length:10},()=>gateway.fetch(h.request(),h.env)));
@@ -23,7 +24,8 @@ test('concurrent and restarted requests claim once; replay never generates again
 for(const [name,changes] of Object.entries({
  'generation off':{GATEWAY_GENERATION_ENABLED:'false'},'missing paid confirmation':{GATEWAY_PAID_EXECUTION_CONFIRMATION:''},
  'adapter unaudited':{GATEWAY_PROVIDER_ADAPTER_AUDITED:'false'},'wrong adapter protocol':{GATEWAY_ADAPTER_PROTOCOL:'raw-vendor'},
- 'same keys':{GATEWAY_RECEIPT_KEY:dispatchKey},'short key':{GATEWAY_DISPATCH_KEY:'short'},'missing database':{GATEWAY_DB:null}
+ 'same keys':{GATEWAY_RECEIPT_KEY:dispatchKey},'short key':{GATEWAY_DISPATCH_KEY:'short'},'missing database':{GATEWAY_DB:null},
+ 'same adapter keys':{GATEWAY_ADAPTER_RECEIPT_KEY:'a'.repeat(43)},'missing adapter read key':{GATEWAY_ADAPTER_RECEIPT_KEY:''}
 }))test(name+' blocks before dispatch',()=>gatewayFixture(async h=>{
  assert.equal((await gateway.fetch(h.request(),{...h.env,...changes})).status,503);assert.equal(h.calls.length,0);
 }));
@@ -55,7 +57,7 @@ test('adapter uncertainty survives restart; explicit recovery uses GET with gene
  const result=await gateway.fetch(h.request(),h.env);assert.equal(result.status,503);assert.doesNotMatch(await result.text(),/private|secret/);
  assert.equal(h.gatewaySql.prepare('SELECT status FROM gateway_receipts').get().status,'unknown');
  assert.equal((await gateway.fetch(h.request(),h.env)).status,409);
- h.env.PROVIDER_ADAPTER.fetch=async request=>{h.calls.push({method:request.method});assert.equal(request.body,null);return Response.json(h.completed);};
+ h.env.PROVIDER_ADAPTER.fetch=async request=>{h.calls.push({method:request.method});assert.equal(request.body,null);assert.equal(request.headers.get('authorization'),'Bearer '+h.env.GATEWAY_ADAPTER_RECEIPT_KEY);return Response.json(h.completed);};
  const receipt=await recoverGatewayReceipt({...h.env,GATEWAY_GENERATION_ENABLED:'false',GATEWAY_PAID_EXECUTION_CONFIRMATION:''},h.row.id);
  assert.equal(receipt.status,'completed');assert.deepEqual(h.calls.map(x=>x.method),['POST','GET']);
  await recoverGatewayReceipt(h.env,h.row.id);assert.equal(h.calls.length,2);

@@ -14,8 +14,8 @@ export async function gatewayFixture(run){
   const calls=[];
   const env={...db,GATEWAY_DB:d1(gatewaySql),ENVIRONMENT:'production',GATEWAY_PROVIDER:cfg.provider,GATEWAY_MODEL:cfg.model,
    GATEWAY_DISPATCH_KEY:dispatchKey,GATEWAY_RECEIPT_KEY:receiptKey,GATEWAY_GENERATION_ENABLED:'true',GATEWAY_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_GATEWAY',
-   GATEWAY_ADAPTER_PROTOCOL:'bounded-metered-v1',GATEWAY_PROVIDER_ADAPTER_AUDITED:'true',GATEWAY_RECOVERY_ENABLED:'true',GATEWAY_RECOVERY_CONFIRMATION:'UVENARO_RECOVER_GATEWAY_RECEIPTS',
-   PROVIDER_ADAPTER:{async fetch(request){calls.push({method:request.method,url:request.url,body:request.method==='POST'?await request.json():null});return Response.json(completed);}}};
+   GATEWAY_ADAPTER_PROTOCOL:'bounded-metered-v1',GATEWAY_ADAPTER_DISPATCH_KEY:'a'.repeat(43),GATEWAY_ADAPTER_RECEIPT_KEY:'b'.repeat(43),GATEWAY_PROVIDER_ADAPTER_AUDITED:'true',GATEWAY_RECOVERY_ENABLED:'true',GATEWAY_RECOVERY_CONFIRMATION:'UVENARO_RECOVER_GATEWAY_RECEIPTS',
+   PROVIDER_ADAPTER:{async fetch(request){calls.push({method:request.method,url:request.url,authorization:request.headers.get('authorization'),body:request.method==='POST'?await request.json():null});return Response.json(completed);}}};
   const request=(value=body,key=dispatchKey)=>new Request('https://gateway.invalid/responses',{method:'POST',headers:{authorization:'Bearer '+key,'content-type':'application/json','idempotency-key':value.request_id},body:JSON.stringify(value)});
   const readRequest=(key=receiptKey)=>new Request('https://gateway.invalid/receipts/'+row.id,{headers:{authorization:'Bearer '+key}});
   await run({db,gatewaySql,env,row,body,completed,calls,request,readRequest});invariant(db);

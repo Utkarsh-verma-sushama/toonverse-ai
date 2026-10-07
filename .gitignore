@@ -17,6 +17,7 @@ ios/
 # Account staging build, local state and secrets
 .account-staging/
 .metered-gateway/
+.gemini-adapter/
 .wrangler/
 .dev.vars
 .dev.vars.*

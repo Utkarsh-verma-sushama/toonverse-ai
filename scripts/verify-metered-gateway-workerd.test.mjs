@@ -27,7 +27,7 @@ test('real gateway Worker/D1 survives restart and reconciles lost replies withou
   d1Persist:directory,d1Databases:{DB:'billing-gateway-workerd',GATEWAY_DB:'receipts-gateway-workerd'},
   bindings:{ENVIRONMENT:'production',GATEWAY_PROVIDER:cfg.provider,GATEWAY_MODEL:cfg.model,GATEWAY_GENERATION_ENABLED:'true',
    GATEWAY_PAID_EXECUTION_CONFIRMATION:'UVENARO_ENABLE_PAID_GATEWAY',GATEWAY_DISPATCH_KEY:dispatchKey,GATEWAY_RECEIPT_KEY:receiptKey,
-   GATEWAY_ADAPTER_PROTOCOL:'bounded-metered-v1',GATEWAY_PROVIDER_ADAPTER_AUDITED:'true'},
+   GATEWAY_ADAPTER_PROTOCOL:'bounded-metered-v1',GATEWAY_ADAPTER_DISPATCH_KEY:'a'.repeat(43),GATEWAY_ADAPTER_RECEIPT_KEY:'b'.repeat(43),GATEWAY_PROVIDER_ADAPTER_AUDITED:'true'},
   serviceBindings:{PROVIDER_ADAPTER:async request=>{
    calls++;assert.equal(request.method,'POST');const input=await request.json();
    return Response.json({protocol:'metered-v1',request_id:input.request_id,provider:cfg.provider,model:cfg.model,id:'vendor-workerd-1',

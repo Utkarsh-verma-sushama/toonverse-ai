@@ -1,0 +1,25 @@
+{
+ "name":"uvenaro-bounded-provider-adapter-staging",
+ "main":"../../backend/gemini-adapter.mjs",
+ "compatibility_date":"2026-08-06",
+ "workers_dev":false,
+ "preview_urls":false,
+ "vars":{
+  "ENVIRONMENT":"staging",
+  "GEMINI_MODEL":"",
+  "GEMINI_GENERATION_ENABLED":"false",
+  "GEMINI_EXECUTION_CONFIRMATION":"",
+  "GEMINI_MODEL_PROFILE_AUDITED":"false",
+  "GEMINI_PREFLIGHT_AUDITED":"false",
+  "GEMINI_COUNT_TOKENS_NONBILLABLE_AUDITED":"false",
+  "GEMINI_PRIVACY_PRICING_AUDITED":"false",
+  "GEMINI_PREFLIGHT_TOKEN_MARGIN":"32",
+  "GEMINI_TIMEOUT_MS":"30000"
+ },
+ "d1_databases":[
+  {"binding":"DB","database_name":"uvenaro-chat-staging","database_id":"SET_ISOLATED_CHAT_STAGING_D1_ID"},
+  {"binding":"GATEWAY_DB","database_name":"uvenaro-gateway-receipts-staging","database_id":"SET_ISOLATED_GATEWAY_STAGING_D1_ID"},
+  {"binding":"ADAPTER_DB","database_name":"uvenaro-adapter-evidence-staging","database_id":"SET_ISOLATED_ADAPTER_STAGING_D1_ID"}
+ ],
+ "observability":{"enabled":false}
+}

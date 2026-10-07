@@ -39,3 +39,4 @@ jobs:
           node --check backend/chat-reconciliation.mjs
           node --check backend/chat-gateway-reconciliation.mjs
           node --check backend/metered-gateway.mjs
+          node --check backend/gemini-adapter.mjs

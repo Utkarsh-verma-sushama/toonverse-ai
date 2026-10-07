@@ -2,10 +2,10 @@ import {whole} from './chat-billing.mjs';
 import {fetchWithoutRedirect} from './safe-fetch.mjs';
 const idPattern=/^[A-Za-z0-9_-]{1,128}$/;
 const recordPattern=/^[A-Za-z0-9._:-]{1,200}$/;
-const failure=(code,status=503)=>Object.assign(new Error(code),{code,status});
-const json=(value,status=200)=>Response.json(value,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff','x-robots-tag':'noindex, nofollow','referrer-policy':'no-referrer'}});
-async function hash(value){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');}
-async function authorized(request,key){
+export const failure=(code,status=503)=>Object.assign(new Error(code),{code,status});
+export const json=(value,status=200)=>Response.json(value,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff','x-robots-tag':'noindex, nofollow','referrer-policy':'no-referrer'}});
+export async function hash(value){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');}
+export async function authorized(request,key){
  const supplied=/^Bearer ([A-Za-z0-9_-]{32,256})$/.exec(request.headers.get('authorization')||'')?.[1];
  if(!supplied||typeof key!=='string'||!/^[A-Za-z0-9_-]{32,256}$/.test(key))return false;
  const a=await hash(supplied),b=await hash(key);let different=0;
@@ -20,12 +20,14 @@ function config(env){
 }
 function adapterConfig(env){
  if(!env.PROVIDER_ADAPTER?.fetch||env.GATEWAY_ADAPTER_PROTOCOL!=='bounded-metered-v1')throw failure('GATEWAY_ADAPTER_UNAVAILABLE');
+ if(!/^[A-Za-z0-9_-]{32,256}$/.test(env.GATEWAY_ADAPTER_DISPATCH_KEY||'')||
+  !/^[A-Za-z0-9_-]{32,256}$/.test(env.GATEWAY_ADAPTER_RECEIPT_KEY||'')||env.GATEWAY_ADAPTER_DISPATCH_KEY===env.GATEWAY_ADAPTER_RECEIPT_KEY)throw failure('GATEWAY_ADAPTER_UNAVAILABLE');
  if(env.ENVIRONMENT==='production'&&env.GATEWAY_PROVIDER_ADAPTER_AUDITED!=='true')throw failure('GATEWAY_ADAPTER_AUDIT_REQUIRED');
  const timeout=String(env.GATEWAY_TIMEOUT_MS??'30000');
  if(!/^\d+$/.test(timeout)||!Number.isSafeInteger(Number(timeout))||Number(timeout)<100||Number(timeout)>120000)throw failure('GATEWAY_NOT_CONFIGURED');
  return Number(timeout);
 }
-async function boundedJson(response,signal,limit){
+export async function boundedJson(response,signal,limit){
  if(!/^application\/json(?:\s*;|$)/i.test(response.headers.get('content-type')||'')||!response.body)throw failure('GATEWAY_INVALID_BODY',400);
  const reader=response.body.getReader(),chunks=[];let length=0;
  const cancel=()=>{void reader.cancel().catch(()=>{});};signal.addEventListener('abort',cancel,{once:true});
@@ -33,13 +35,13 @@ async function boundedJson(response,signal,limit){
   while(true){
    if(signal.aborted){cancel();throw failure('GATEWAY_TIMEOUT');}
    const {done,value}=await reader.read();if(signal.aborted)throw failure('GATEWAY_TIMEOUT');if(done)break;
-   length+=value.byteLength;if(length>limit){await reader.cancel();throw failure('GATEWAY_INVALID_BODY',413);}chunks.push(value);
+   length+=value.byteLength;if(length>limit){cancel();throw failure('GATEWAY_INVALID_BODY',413);}chunks.push(value);
   }
  }finally{signal.removeEventListener('abort',cancel);reader.releaseLock();}
  const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
  try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{throw failure('GATEWAY_INVALID_BODY',400);}
 }
-function inputPayload(body){
+export function inputPayload(body){
  if(body?.protocol!=='metered-v1'||!idPattern.test(body.request_id||'')||typeof body.model!=='string'||body.store!==false||
   !Array.isArray(body.tools)||body.tools.length||!whole(body.max_input_tokens,12000)||!body.max_input_tokens||
   !whole(body.max_output_tokens,8000)||!body.max_output_tokens||!Array.isArray(body.messages)||!body.messages.length||body.messages.length>41)
@@ -51,8 +53,8 @@ function inputPayload(body){
  if(messages.reduce((n,m)=>n+m.content.length,0)>12000)throw failure('GATEWAY_INVALID_REQUEST',413);
  return {...body,messages};
 }
-async function get(env,id){return env.GATEWAY_DB.prepare('SELECT * FROM gateway_receipts WHERE request_id=?').bind(id).first();}
-function envelope(row){
+export async function get(env,id){return env.GATEWAY_DB.prepare('SELECT * FROM gateway_receipts WHERE request_id=?').bind(id).first();}
+export function envelope(row){
  return {protocol:'metered-v1',request_id:row.request_id,provider:row.provider,model:row.model,
   id:row.record_id||'gateway_'+row.request_id,status:row.status,billable:row.billable===null?null:row.billable===1,
   usage:row.input_tokens===null?null:{input_tokens:row.input_tokens,output_tokens:row.output_tokens}};
@@ -65,7 +67,7 @@ function evidence(payload,row,needsOutput){
   (needsOutput&&(typeof payload.output!=='string'||!payload.output.trim()||payload.output.length>32000)))throw failure('GATEWAY_PROVIDER_CONTRACT_VIOLATION');
  return payload;
 }
-async function finalize(env,row,payload){
+export async function finalize(env,row,payload){
  await env.GATEWAY_DB.prepare(`UPDATE gateway_receipts SET status=?,record_id=?,billable=?,input_tokens=?,output_tokens=?,
   finalized_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE request_id=? AND status IN ('dispatching','unknown')`)
   .bind(payload.status,payload.id,payload.billable?1:0,payload.usage.input_tokens,payload.usage.output_tokens,row.request_id).run();
@@ -74,7 +76,7 @@ async function finalize(env,row,payload){
   saved.input_tokens!==payload.usage.input_tokens||saved.output_tokens!==payload.usage.output_tokens)throw failure('GATEWAY_FINALIZATION_UNCONFIRMED');
  return saved;
 }
-async function unknown(env,id,stop=false){
+export async function unknown(env,id,stop=false){
  if(stop)try{await env.GATEWAY_DB.prepare("UPDATE gateway_control SET enabled=0 WHERE id='gateway'").run();}catch{}
  try{await env.GATEWAY_DB.prepare("UPDATE gateway_receipts SET status='unknown' WHERE request_id=? AND status='dispatching'").bind(id).run();}catch{}
 }
@@ -82,7 +84,7 @@ async function callAdapter(env,path,{method,body,limit},timeout){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
  try{
   const response=await fetchWithoutRedirect('https://adapter.internal'+path,{method,signal:controller.signal,
-   headers:{'content-type':'application/json',accept:'application/json'},...(body?{body:JSON.stringify(body)}:{})},
+   headers:{'content-type':'application/json',accept:'application/json',authorization:'Bearer '+(method==='POST'?env.GATEWAY_ADAPTER_DISPATCH_KEY:env.GATEWAY_ADAPTER_RECEIPT_KEY)},...(body?{body:JSON.stringify(body)}:{})},
    (url,options)=>new Promise((resolve,reject)=>{
     const abort=()=>reject(failure('GATEWAY_TIMEOUT'));
     options.signal.addEventListener('abort',abort,{once:true});
@@ -92,7 +94,7 @@ async function callAdapter(env,path,{method,body,limit},timeout){
      if(options.signal.aborted){void response.body?.cancel().catch(()=>{});abort();}else resolve(response);
     },error=>{options.signal.removeEventListener('abort',abort);reject(error);});
    }));
-  if(!response.ok){try{await response.body?.cancel();}catch{}throw failure('GATEWAY_ADAPTER_UNCERTAIN');}
+  if(!response.ok){void response.body?.cancel().catch(()=>{});throw failure('GATEWAY_ADAPTER_UNCERTAIN');}
   return await boundedJson(response,controller.signal,limit);
  }catch(error){
   if(error.message==='UPSTREAM_REDIRECT_BLOCKED')throw failure('GATEWAY_PROVIDER_CONTRACT_VIOLATION');

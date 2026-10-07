@@ -70,6 +70,7 @@ tests also exercise the extracted shared route validation.
 
 The [gateway server and durable store](metered-gateway-server.md) are now implemented
 and tested in actual local Worker/D1, including restart and lost-response reconciliation.
-Remote staging deployment and the actual bounded vendor adapter/audit remain open.
+The [bounded adapter source](gemini-provider-adapter.md) is now implemented and
+tested locally. Remote staging deployment and the live provider audit remain open.
 Validate provider token/cost accounting and read-only lookup permissions before real
 vendor access or paid execution; no credentials or production activation are created.
