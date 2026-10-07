@@ -56,8 +56,10 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
  if(verified.result?.status!=='active'||!/^[a-f0-9]{32}$/.test(verified.result?.id||'')){verified=await get('/user/tokens/verify');tokenPath='/user/tokens/';}
  const active=verified.result?.status==='active'&&/^[a-f0-9]{32}$/.test(verified.result?.id||'');
  report.tokenActive=active;
+ report.tokenKind=active?(tokenPath==='/user/tokens/'?'user':'account'):null;
  const details=active?await get(tokenPath+verified.result.id):{};
  report.scopes=declaredScopes(details.result,account);
+ report.scopeMetadataError=report.scopes.inspectable?null:(details.error||'TOKEN_POLICY_METADATA_INCOMPLETE');
  if(!active)report.blockers.push('TOKEN_STATUS_UNVERIFIED');
  if(!report.scopes.inspectable)report.blockers.push('TOKEN_SCOPE_METADATA_UNAVAILABLE');
  else if(!report.scopes.workersCreateDeclared||!report.scopes.d1WriteDeclared)report.blockers.push('REQUIRED_ACCOUNT_WRITE_SCOPES_UNVERIFIED');
@@ -66,6 +68,7 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
  // No inference from an empty list, account usage model, trial or unrelated free SKU.
  const relevant=full?subscriptions.result.filter(s=>/workers/i.test(s.rate_plan?.public_name||'')):[];
  report.workersFreePlanVerified=relevant.length>0&&relevant.every(s=>s.rate_plan?.id==='free'&&s.price===0&&!s.rate_plan.externally_managed&&!s.rate_plan.is_contract);
+ report.freePlanMetadataError=report.workersFreePlanVerified?null:(subscriptions.error||(!full?'SUBSCRIPTION_INVENTORY_INCOMPLETE':'EXPLICIT_WORKERS_FREE_PLAN_NOT_CONFIRMED'));
  if(!report.workersFreePlanVerified)report.blockers.push('WORKERS_FREE_PLAN_UNVERIFIED');
  report.readyForProvisioning=report.blockers.length===0;
  return report;

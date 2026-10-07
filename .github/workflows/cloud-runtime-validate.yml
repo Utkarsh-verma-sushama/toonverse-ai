@@ -31,6 +31,7 @@ jobs:
       - run: npm run verify:account-staging-build
       - run: npm run verify:metered-gateway-build
       - run: npm run verify:gemini-adapter-build
+      - run: npm run verify:isolated-staging-build
       - run: node --check backend/worker.mjs
       - run: node --check backend/firebase-auth.mjs
       - run: node --check backend/app-check.mjs

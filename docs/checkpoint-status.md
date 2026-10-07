@@ -19,12 +19,16 @@ The receipt adapter passed mandatory CI and Pages on exact main
 Native #549 and Pages #549. The actual safe-off gateway server passed Security #303,
 Cloud #521, Native #550 and Pages #550 on exact main
 `aa210b33cbf023bc82512567719fb1cf0fab1448`; see [gateway server](metered-gateway-server.md).
-The [bounded Gemini adapter](gemini-provider-adapter.md) is now locally implemented
-and tested. Its own revision requires mandatory CI and Pages before acceptance.
+The [bounded Gemini adapter](gemini-provider-adapter.md) passed exact-main CI on
+`4eeff9741c55302c8ef56952c8b637c3494cba10`: Security #306, Cloud #524,
+Native #553 (Android/iOS) and Pages #552.
 [Existing GitHub Cloudflare access](cloudflare-access-diagnosis-20261007.md) passed
-real read-only Workers and staging D1 checks. Next are new-resource write scopes,
-isolated remote staging bindings and fixture-only smoke tests; live vendor audit
-and production/funded activation remain open.
+real read-only Workers and staging D1 checks. The [isolated staging preflight and
+compiled-bundle smoke package](isolated-staging-preflight-20261007.md) are implemented.
+Live inventory confirms one pilot DB, no proposed-name collisions and three free-count
+slots, while token-policy and current Free-plan metadata remain unresolved. Read
+access for those metadata gates is the next owner-controlled step; remote provisioning,
+live vendor audit and production/funded activation remain open.
 
 The account/Funding Guard/agent reconciliation phase underwent final readiness
 verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` had verified
@@ -130,4 +134,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. Next are exact-revision CI for the adapter, isolated remote staging through existing GitHub access, and the live vendor audit. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. The adapter passed exact-revision CI. Isolated staging preflight/bundle preparation is implemented; token-policy/current-Free-plan metadata must become readable before remote provisioning. The live vendor audit remains open. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

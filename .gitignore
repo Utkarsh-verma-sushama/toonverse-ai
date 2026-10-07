@@ -18,6 +18,7 @@ ios/
 .account-staging/
 .metered-gateway/
 .gemini-adapter/
+.isolated-staging/
 .wrangler/
 .dev.vars
 .dev.vars.*
