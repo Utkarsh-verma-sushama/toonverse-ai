@@ -120,3 +120,35 @@ integer error codes. Free-plan acceptance still requires explicit current Worker
 Free evidence. No plan upgrade, new remote resource or provider call is part of this check.
 
 [Official SinglePage contract](https://developers.cloudflare.com/api/typescript/resources/accounts/subresources/subscriptions/methods/get/).
+
+## Owner Free plan evidence and database-only operation
+
+At 12:22 IST on 7 October, owner screenshots `1000053856.jpg` and
+`1000053857.jpg` show **Workers plans → Free → $0 → Current plan**.
+Earlier account-overview screenshots `1000053854.jpg`/`1000053855.jpg` bind this
+dashboard context to account `fc3da7a1c1263e601d03d222b7d1e155`.
+The owner proof is complete. Earlier requests for another plan screenshot are
+superseded; API subscription proof remains unknown and is not reclassified.
+
+The resource-only request is account-bound and expires within six hours of the
+owner observation. It may resolve only a successful empty subscription inventory;
+paid, nonempty uncertain, denied or failed metadata cannot be overridden.
+Security, Cloud runtime and Android/iOS Native CI on exact current main must pass
+before writes and are rechecked before each database creation.
+
+`scripts/provision-isolated-databases.mjs --remote` creates exactly the three named
+empty D1 databases using APAC location hint and disabled read replication. It reads
+back every UUID/name, preserves the pilot, verifies complete inventory and capacity
+before each create, and records durable intent before each single POST.
+Ambiguous outcomes, identity mismatch or concurrent inventory/main changes stop
+without retry, delete or adoption of a preexisting resource. Automatic workflow
+reruns cannot repeat writes; a new reviewed resource request is required.
+
+The request-specific workflow retains a sanitized journal on success/failure.
+After creation it compiles local Worker/config/schema files against the three
+confirmed IDs. This operation uploads **no SQL and no Worker source to Cloudflare**,
+does not change secrets, plans, payments, routes, providers or the existing pilot,
+and permits no real AI call. Worker/schema upload and remote acceptance remain the
+next deployment operation; offline preparation does not claim deployment.
+
+[Official D1 creation contract](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/create/).

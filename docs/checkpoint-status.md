@@ -25,10 +25,17 @@ Native #553 (Android/iOS) and Pages #552.
 [Existing GitHub Cloudflare access](cloudflare-access-diagnosis-20261007.md) passed
 real read-only Workers and staging D1 checks. The [isolated staging preflight and
 compiled-bundle smoke package](isolated-staging-preflight-20261007.md) are implemented.
-Live inventory confirms one pilot DB, no proposed-name collisions and three free-count
-slots, while token-policy and current Free-plan metadata remain unresolved. Read
-access for those metadata gates is the next owner-controlled step; remote provisioning,
-live vendor audit and production/funded activation remain open.
+The token policy edit is complete: the existing token is active and its D1/Workers
+write scopes are inspectable. Exact-main CI passed on `2015449949d1cac63277ce789f3ccc27db2b69b0`
+(Security #317, Cloud #535, Native #564 Android/iOS, Pages #556).
+Owner screenshots at 12:22 IST confirm Workers Free, $0, Current plan on account
+`fc3da7a1c1263e601d03d222b7d1e155`; no additional owner screenshot is needed.
+The subscription API still returns no explicit Free entry; API proof remains unknown,
+distinct from the current owner dashboard proof. The next operation creates only
+three empty isolated databases after exact-main CI and fresh inventory checks.
+It journals every attempted create, refuses blind reruns/adoption and prepares
+database-bound Workers offline. Schema upload, Worker upload, independent server
+secret scopes, remote smoke/recovery, live vendor audit and launch remain open.
 
 The account/Funding Guard/agent reconciliation phase underwent final readiness
 verification. Base main `69f3dffb7d32e57e20d3af1ddede5a9888bf2b7a` had verified
@@ -134,4 +141,4 @@ Checkpoint 44 cannot be truthfully locked until the remaining owner-controlled g
 
 ## Core intelligence and cross-platform foundation — added 2026-09-11\n\nAutonomous-agent contracts, bounded approvals/budgets/cancellation/audit, policy-based multimodal model routing, deployable edge cloud foundation, durable agent/routing schema, safe rollout gates, adaptive platform runtime, TV D-pad focus, overscan/safe-area handling, reduced-motion/high-contrast/data-saver awareness, resource budgets and ecosystem capability matrix are now present. Production cloud/provider activation and physical-device/store certification remain owner-controlled release work and are not falsely marked complete.\n\n## Resume point
 
-Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. The adapter passed exact-revision CI. Isolated staging preflight/bundle preparation is implemented; token-policy/current-Free-plan metadata must become readable before remote provisioning. The live vendor audit remains open. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.
+Checkpoint 43 is complete and locked. Checkpoint 44 is the current checkpoint. The account/Funding Guard/agent reconciliation engineering phase and internal receipt adapter are verified; the owner's main account acceptance tests have passed. The safe-off gateway server is CI-verified and bounded Gemini adapter source is locally verified. The adapter passed exact-revision CI. Token-policy inspection and owner Workers Free dashboard proof are complete. Database-only provisioning and offline binding preparation are the current operation; Worker/schema upload and remote acceptance remain open. The live vendor audit remains open. Legal entity registration and organization developer accounts remain later release gates. Production AI/cloud/payment flags stay disabled until their documented release gates pass.

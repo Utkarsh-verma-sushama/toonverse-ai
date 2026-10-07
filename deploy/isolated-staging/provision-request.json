@@ -1,0 +1,19 @@
+{
+  "protocol": "uvenaro-empty-staging-databases-v1",
+  "operationId": "isolated-databases-20261007-owner-free-plan",
+  "repository": "Utkarsh-verma-sushama/toonverse-ai",
+  "accountId": "fc3da7a1c1263e601d03d222b7d1e155",
+  "createdAt": "2026-10-07T06:54:00Z",
+  "expiresAt": "2026-10-07T12:52:00Z",
+  "allowedAction": "create-three-empty-d1-databases-only",
+  "ownerPlanEvidence": {
+    "source": "owner-dashboard-screenshots",
+    "observedAt": "2026-10-07T06:52:00Z",
+    "accountId": "fc3da7a1c1263e601d03d222b7d1e155",
+    "plan": "Workers Free",
+    "price": 0,
+    "currentPlan": true,
+    "screenshots": ["1000053856.jpg", "1000053857.jpg"],
+    "accountContextScreenshots": ["1000053854.jpg", "1000053855.jpg"]
+  }
+}
