@@ -48,6 +48,7 @@ entry is written, and a repeated sweep cannot duplicate that release.
 | `npm run verify:account-staging-ui` | Passed: 13 Chromium tests |
 | Targeted agent reconciliation | Passed: 8 tests; included in billing above |
 | Production dependency audit | Passed: zero vulnerabilities |
+| `npm run verify:account-staging-build` | Passed: bundle preparation and Wrangler deployment dry run |
 | Firestore/Storage and Auth emulators | Not rerun locally: installed Java is below required JDK 21; Cloud runtime CI provisions JDK 21 and must run both |
 
 These 487 suite tests exercise local fixtures, browser flows and local Workers/D1;
@@ -65,8 +66,9 @@ they do not prove real paid provider behavior or physical-device compatibility.
 
 No test failure was resolved by changing production safeguards. AI execution,
 paid confirmations, provider dispatch/routing and payment activation were not enabled.
-The staging housekeeping cron only releases never-dispatched expired holds;
-it does not authorize background AI generation or provider calls.
+The core billing sweep only releases never-dispatched expired holds. Scheduled
+account/replay housekeeping does not authorize background AI generation or
+provider calls; account staging forces AI and model routing off independently.
 
 ## Remaining release gates and next engineering work
 
