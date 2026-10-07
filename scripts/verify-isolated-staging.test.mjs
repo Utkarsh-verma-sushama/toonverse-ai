@@ -11,7 +11,7 @@ function metadata(path){
  if(path.endsWith('/workers/services'))return {success:true,result:[]};
  if(path.endsWith('/tokens/verify'))return {success:true,result:{id:tokenId,status:'active'}};
  if(path.endsWith('/tokens/'+tokenId))return {success:true,result:{policies:[policy]}};
- if(path.includes('/subscriptions?'))return {success:true,result:[{price:0,rate_plan:{id:'free',public_name:'Workers Free',is_contract:false,externally_managed:false}}],result_info:{total_count:1}};
+ if(path.endsWith('/subscriptions'))return {success:true,result:[{price:0,rate_plan:{id:'free',public_name:'Workers Free',is_contract:false,externally_managed:false}}],result_info:{total_count:1}};
  throw Error('Unexpected fixture request');
 }
 test('preflight proves declared scopes and free plan using GET metadata only',async()=>{
@@ -32,7 +32,7 @@ test('existing targets, wrong pilot and insufficient free slots are blockers',()
  assert.ok(inventoryPlan([...dbs,...Array.from({length:7},(_,i)=>({uuid:'id'+i,name:'db'+i}))],[],pilot).blockers.includes('FREE_DATABASE_CAPACITY_UNAVAILABLE'));
 });
 for(const [name,change] of Object.entries({empty:{result:[],result_info:{total_count:0}},paid:{result:[{price:5,rate_plan:{id:'pro',public_name:'Workers Paid'}}],result_info:{total_count:1}},other:{result:[{price:0,rate_plan:{id:'free',public_name:'DNS Free'}}],result_info:{total_count:1}},truncated:{result:[],result_info:{total_count:2}}}))test(name+' subscriptions do not authorize zero-cost provisioning',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>Response.json(String(url).includes('/subscriptions?')?{success:true,...change}:metadata(new URL(url).pathname+new URL(url).search)));
+ const result=await inspectIsolatedStaging(env,async url=>Response.json(String(url).endsWith('/subscriptions')?{success:true,...change}:metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.workersFreePlanVerified,false);assert.equal(result.readyForProvisioning,false);
 });
 test('denied token details preserve working reads but leave scopes unknown',async()=>{
@@ -59,4 +59,18 @@ test('HTML, API and network errors never leak response bodies or tokens',async()
 test('inspection workflow never provisions resources or installs project dependencies',()=>{
  const source=readFileSync(new URL('../.github/workflows/cloudflare-access-check.yml',import.meta.url),'utf8');
  assert.match(source,/node scripts\/inspect-isolated-staging.mjs/);assert.doesNotMatch(source,/wrangler|npm ci|npm install|contents: write/);
+});
+test('subscription request uses the documented path without unsupported query fields',async()=>{
+ let seen=false;
+ const result=await inspectIsolatedStaging(env,async url=>{
+  const parsed=new URL(url);
+  if(parsed.pathname.endsWith('/subscriptions')){seen=true;assert.equal(parsed.search,'');}
+  return Response.json(metadata(parsed.pathname+parsed.search));
+ });assert.equal(seen,true);assert.equal(result.readyForProvisioning,true);
+});
+test('subscription errors expose only bounded numeric diagnostics and never authorize provisioning',async()=>{
+ const result=await inspectIsolatedStaging(env,async url=>String(url).endsWith('/subscriptions')?
+  Response.json({errors:[{code:1234,message:'private-fixture-token'},{code:'private-fixture-token'},{code:5}]},{status:400}):Response.json(metadata(new URL(url).pathname+new URL(url).search)));
+ assert.equal(result.freePlanHttpStatus,400);assert.deepEqual(result.freePlanApiErrorCodes,[1234,5]);
+ assert.equal(result.readyForProvisioning,false);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);
 });

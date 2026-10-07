@@ -43,7 +43,12 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
      controller.signal.removeEventListener('abort',stop);if(controller.signal.aborted){void r.body?.cancel().catch(()=>{});stop();}else resolve(r);
     },error=>{controller.signal.removeEventListener('abort',stop);reject(error);});
    });
-   if(!response.ok){void response.body?.cancel().catch(()=>{});return {error:[401,403].includes(response.status)?'METADATA_ACCESS_DENIED':'METADATA_CHECK_FAILED'};}
+   if(!response.ok){
+    // Retain only numeric diagnostics, never provider messages or raw bodies.
+    let codes=[];
+    try{const body=await boundedJson(response,controller.signal,262144);codes=(Array.isArray(body?.errors)?body.errors:[]).map(e=>e?.code).filter(Number.isSafeInteger).slice(0,8);}catch{}
+    return {error:[401,403].includes(response.status)?'METADATA_ACCESS_DENIED':'METADATA_CHECK_FAILED',httpStatus:response.status,errorCodes:codes};
+   }
    const body=await boundedJson(response,controller.signal,262144);
    return body?.success===true?body:{error:'METADATA_API_REJECTED'};
   }catch{return {error:'METADATA_CHECK_UNAVAILABLE'};}finally{clearTimeout(timer);}
@@ -63,12 +68,15 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
  if(!active)report.blockers.push('TOKEN_STATUS_UNVERIFIED');
  if(!report.scopes.inspectable)report.blockers.push('TOKEN_SCOPE_METADATA_UNAVAILABLE');
  else if(!report.scopes.workersCreateDeclared||!report.scopes.d1WriteDeclared)report.blockers.push('REQUIRED_ACCOUNT_WRITE_SCOPES_UNVERIFIED');
- const subscriptions=await get(prefix+'/subscriptions?per_page=100&page=1');
+ // The documented subscription request has no pagination query parameters.
+ const subscriptions=await get(prefix+'/subscriptions');
  const full=Array.isArray(subscriptions.result)&&Number.isInteger(subscriptions.result_info?.total_count)&&subscriptions.result_info.total_count===subscriptions.result.length;
  // No inference from an empty list, account usage model, trial or unrelated free SKU.
  const relevant=full?subscriptions.result.filter(s=>/workers/i.test(s.rate_plan?.public_name||'')):[];
  report.workersFreePlanVerified=relevant.length>0&&relevant.every(s=>s.rate_plan?.id==='free'&&s.price===0&&!s.rate_plan.externally_managed&&!s.rate_plan.is_contract);
  report.freePlanMetadataError=report.workersFreePlanVerified?null:(subscriptions.error||(!full?'SUBSCRIPTION_INVENTORY_INCOMPLETE':'EXPLICIT_WORKERS_FREE_PLAN_NOT_CONFIRMED'));
+ report.freePlanHttpStatus=subscriptions.httpStatus||null;
+ report.freePlanApiErrorCodes=subscriptions.errorCodes||[];
  if(!report.workersFreePlanVerified)report.blockers.push('WORKERS_FREE_PLAN_UNVERIFIED');
  report.readyForProvisioning=report.blockers.length===0;
  return report;
