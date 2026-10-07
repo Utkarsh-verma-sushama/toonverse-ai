@@ -1,0 +1,38 @@
+name: Deploy private safe-off isolated staging (approved)
+on:
+  push:
+    branches: [main]
+    paths: ['deploy/isolated-staging/upload-request.json']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: uvenaro-isolated-staging-resources
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: uvenaro-account-staging
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      UVENARO_STAGING_DATABASE_ID: ${{ secrets.UVENARO_STAGING_DATABASE_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with: {node-version: 24, cache: npm}
+      - run: npm ci --ignore-scripts
+      - run: node scripts/deploy-isolated-staging.mjs --remote
+      - name: Preserve sanitized upload and acceptance journal
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: isolated-staging-upload-journal
+          path: .isolated-staging/upload/upload-journal.json
+          if-no-files-found: ignore
+          retention-days: 30
+          include-hidden-files: true

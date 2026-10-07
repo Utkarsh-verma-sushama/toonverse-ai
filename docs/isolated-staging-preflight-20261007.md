@@ -151,6 +151,34 @@ does not change secrets, plans, payments, routes, providers or the existing pilo
 and permits no real AI call. Worker/schema upload and remote acceptance remain the
 next deployment operation; offline preparation does not claim deployment.
 
+## Explicit owner upload authorization and execution
+
+At 12:49:30 IST the owner explicitly approved the prepared upload and continuing work:
+“मेरी पूरी अनुमति है तुमको, काम चालू रखो।” The earlier source-disclosure approval
+pause is resolved for this concrete isolated schema/Worker package. This does not
+authorize a paid plan, provider calls, background AI or public launch.
+
+The request-specific upload workflow requires exact current-main CI before every
+mutation and preserves a sanitized durable journal. It verifies the three owned UUIDs,
+unchanged pilot, complete inventory, current plan evidence and absence of target Worker
+collisions. The full schema chain is applied by file, including intact trigger bodies;
+each schema stage must exactly match the local SQLite object fingerprint before advancing.
+
+Four independent server credentials are generated in the secure runner and uploaded
+without persistence in files/artifacts. Gateway adapter credentials match the corresponding
+adapter dispatch/read scopes. No vendor API key is configured. A temporary bearer-authenticated
+probe can call only fixed private services and fixture IDs. It verifies cross-key denial,
+disabled generation, completed receipt reads, evidence projection, explicit one-time recovery,
+repeat recovery, process/version redeployment persistence, empty usage reservations and disabled
+database controls. Its fixture model is temporary metadata and is never called upstream.
+
+The final upload restores blank provider/model settings, all activation flags off and no
+public/preview endpoint on the two target Workers. Live settings/bindings/deployment identities
+are read back, the probe checks final safe-off behavior and is deleted. The existing pilot
+is neither migrated nor redeployed. Immutable test receipts retain their explicit fixture IDs.
+Ambiguous mutating outcomes stop without blind retry; only the successfully created temporary
+probe is eligible for scoped cleanup.
+
 [Official D1 creation contract](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/create/).
 
 

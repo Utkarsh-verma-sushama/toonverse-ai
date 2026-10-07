@@ -1,0 +1,12 @@
+{
+ "protocol":"uvenaro-safe-off-staging-upload-v1",
+ "operationId":"isolated-upload-20261007-owner-approved",
+ "repository":"Utkarsh-verma-sushama/toonverse-ai",
+ "accountId":"fc3da7a1c1263e601d03d222b7d1e155",
+ "approvedAt":"2026-10-07T07:19:30Z",
+ "expiresAt":"2026-10-07T12:52:00Z",
+ "sourceUploadAuthorized":true,
+ "allowedAction":"isolated-schemas-private-workers-and-temporary-authenticated-probe",
+ "providerCallsPermitted":false,
+ "ownerStatement":"मेरी पूरी अनुमति है तुमको, काम चालू रखो।"
+}
