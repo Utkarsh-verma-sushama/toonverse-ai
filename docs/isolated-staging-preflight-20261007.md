@@ -103,3 +103,20 @@ Official references:
 [Account token policy read](https://developers.cloudflare.com/api/resources/accounts/subresources/tokens/methods/get/),
 [Account subscriptions](https://developers.cloudflare.com/api/resources/accounts/subresources/subscriptions/methods/get/),
 [D1 limits](https://developers.cloudflare.com/d1/platform/limits/).
+
+## Access update after owner token edit
+
+On 7 October the owner updated `Uvenaro Staging Deploy 2`, retaining the selected
+account and D1/Workers Scripts Edit and adding Billing Read and User API Tokens Read.
+The existing GitHub environment's read-only rerun then verified an active user token,
+inspectable policies, declared new-Worker and D1 write scopes, and the unchanged pilot.
+The token-policy metadata blocker is resolved; no token value was revealed or rotated.
+
+Subscription inspection now uses the documented query-free SinglePage request.
+The SDK permits omitted `result_info`; when supplied, a matching integer total remains
+mandatory. Empty results, paid/unrelated plans, trial/inactive states or inconsistent
+totals never authorize provisioning. HTTP diagnostics expose only status and bounded
+integer error codes. Free-plan acceptance still requires explicit current Workers
+Free evidence. No plan upgrade, new remote resource or provider call is part of this check.
+
+[Official SinglePage contract](https://developers.cloudflare.com/api/typescript/resources/accounts/subresources/subscriptions/methods/get/).

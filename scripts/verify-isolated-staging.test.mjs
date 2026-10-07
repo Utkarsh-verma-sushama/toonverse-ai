@@ -74,3 +74,23 @@ test('subscription errors expose only bounded numeric diagnostics and never auth
  assert.equal(result.freePlanHttpStatus,400);assert.deepEqual(result.freePlanApiErrorCodes,[1234,5]);
  assert.equal(result.readyForProvisioning,false);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);
 });
+test('documented SinglePage subscription response does not require optional result_info',async()=>{
+ const result=await inspectIsolatedStaging(env,async url=>{
+  const body=metadata(new URL(url).pathname+new URL(url).search);
+  if(String(url).endsWith('/subscriptions'))delete body.result_info;
+  return Response.json(body);
+ });assert.equal(result.workersFreePlanVerified,true);assert.equal(result.readyForProvisioning,true);
+});
+test('empty SinglePage subscription list never proves Workers Free',async()=>{
+ const result=await inspectIsolatedStaging(env,async url=>Response.json(String(url).endsWith('/subscriptions')?{success:true,result:[]}:metadata(new URL(url).pathname+new URL(url).search)));
+ assert.equal(result.subscriptionCount,0);assert.equal(result.workersSubscriptionCount,0);assert.equal(result.readyForProvisioning,false);
+});
+test('trial and inactive subscription states cannot prove a current Free plan',async()=>{
+ for(const state of ['Trial','Cancelled','Failed','Expired','AwaitingPayment','unknown']){
+  const result=await inspectIsolatedStaging(env,async url=>{
+   const body=metadata(new URL(url).pathname+new URL(url).search);
+   if(String(url).endsWith('/subscriptions'))body.result[0].state=state;
+   return Response.json(body);
+  });assert.equal(result.workersFreePlanVerified,false);assert.equal(result.readyForProvisioning,false);
+ }
+});

@@ -70,10 +70,16 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
  else if(!report.scopes.workersCreateDeclared||!report.scopes.d1WriteDeclared)report.blockers.push('REQUIRED_ACCOUNT_WRITE_SCOPES_UNVERIFIED');
  // The documented subscription request has no pagination query parameters.
  const subscriptions=await get(prefix+'/subscriptions');
- const full=Array.isArray(subscriptions.result)&&Number.isInteger(subscriptions.result_info?.total_count)&&subscriptions.result_info.total_count===subscriptions.result.length;
+ // Cloudflare's SDK defines this endpoint as SinglePage. result_info is optional;
+ // if supplied, its total must still prove that the returned list is complete.
+ const full=Array.isArray(subscriptions.result)&&(subscriptions.result_info===undefined||
+  (Number.isInteger(subscriptions.result_info?.total_count)&&subscriptions.result_info.total_count===subscriptions.result.length));
  // No inference from an empty list, account usage model, trial or unrelated free SKU.
  const relevant=full?subscriptions.result.filter(s=>/workers/i.test(s.rate_plan?.public_name||'')):[];
- report.workersFreePlanVerified=relevant.length>0&&relevant.every(s=>s.rate_plan?.id==='free'&&s.price===0&&!s.rate_plan.externally_managed&&!s.rate_plan.is_contract);
+ report.subscriptionCount=Array.isArray(subscriptions.result)?subscriptions.result.length:null;
+ report.workersSubscriptionCount=full?relevant.length:null;
+ report.workersFreePlanVerified=relevant.length>0&&relevant.every(s=>s.rate_plan?.id==='free'&&s.price===0&&!s.rate_plan.externally_managed&&!s.rate_plan.is_contract&&
+  (s.state===undefined||['Provisioned','Paid'].includes(s.state)));
  report.freePlanMetadataError=report.workersFreePlanVerified?null:(subscriptions.error||(!full?'SUBSCRIPTION_INVENTORY_INCOMPLETE':'EXPLICIT_WORKERS_FREE_PLAN_NOT_CONFIRMED'));
  report.freePlanHttpStatus=subscriptions.httpStatus||null;
  report.freePlanApiErrorCodes=subscriptions.errorCodes||[];
