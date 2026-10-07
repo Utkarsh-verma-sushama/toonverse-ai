@@ -25,7 +25,7 @@
     "build:account-staging": "node scripts/prepare-account-staging.mjs",
     "deploy:account-staging": "node scripts/deploy-account-staging.mjs --remote",
     "check:account-staging": "node scripts/check-account-staging.mjs",
-    "verify:account-staging": "node --test scripts/verify-account-staging.test.mjs scripts/verify-account-staging-diagnostics.test.mjs scripts/verify-release-ci.test.mjs scripts/verify-cloudflare-access.test.mjs",
+    "verify:account-staging": "node --test scripts/verify-account-staging.test.mjs scripts/verify-account-staging-diagnostics.test.mjs scripts/verify-release-ci.test.mjs scripts/verify-cloudflare-access.test.mjs scripts/verify-isolated-staging.test.mjs",
     "verify:account-staging-ui": "UVENARO_UI_STAGING=true node --test scripts/verify-account-ui.test.mjs",
     "verify:account-staging-build": "npm run build:account-staging && wrangler deploy --dry-run --config deploy/account-staging/wrangler.json --outdir .account-staging/bundle",
     "verify:gemini-adapter-build": "esbuild backend/gemini-adapter.mjs --bundle --format=esm --platform=browser --target=es2022 --outfile=.gemini-adapter/bundle/worker.mjs"

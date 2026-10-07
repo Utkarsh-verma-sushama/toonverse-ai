@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/cloudflare-access-check.yml'
       - 'scripts/check-cloudflare-access.mjs'
+      - 'scripts/inspect-isolated-staging.mjs'
 permissions:
   contents: read
 concurrency:
@@ -28,3 +29,5 @@ jobs:
           node-version: 24
       - name: Read existing Worker and staging D1 metadata without remote changes
         run: node scripts/check-cloudflare-access.mjs
+      - name: Inspect isolated staging inventory, declared scopes and free plan without writes
+        run: node scripts/inspect-isolated-staging.mjs
