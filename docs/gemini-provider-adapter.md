@@ -1,8 +1,11 @@
 # Bounded Gemini provider adapter — pre-production source checkpoint
 
-Date: 7 October 2026. Provider source, isolated receipt schema and actual local
-Worker/D1 integration are implemented. Real Google traffic, remote deployment and
-production activation are not claimed. All committed generation/audit flags are off.
+Date: 7 October 2026. Provider source and local Worker/D1 integration are implemented.
+Private isolated remote deployment, full schemas and fixture recovery/restart acceptance
+are complete; see [verified deployment](../deploy/isolated-staging/verified-deployment.json).
+Real Google traffic and production activation remain unaccepted. All committed
+generation/audit flags are off. [Current public policy/pricing review](gemini-public-policy-review-20261007.md)
+is complete as a documentation review, with live project/model/privacy/funding gates still open.
 
 ## Boundaries and token accounting
 
@@ -22,8 +25,9 @@ are excluded. Kill switches and the active reservation/gateway claim are checked
 after preflight. Concurrent callers, restarts and ambiguous claim writes never create
 a replacement generation request.
 
-The model is explicitly configured and restricted to the reviewed Gemini 3 Flash/Flash
-Lite family; no model or price is selected by default. Google requests use the fixed
+The model is explicitly configured and syntactically restricted to the Gemini 3 Flash/Flash
+Lite family. The regex is not evidence that a model is audited or available to the
+selected project; no model or price is selected by default. Google requests use the fixed
 HTTPS API origin, API key header, redirect blocking, bounded response bytes and one
 shared header/body deadline. There are no automatic retries or fallbacks.
 
@@ -72,9 +76,11 @@ Recovery reports billing evidence, not a missing answer.
 
 ## Deployment and acceptance gates
 
-`deploy/gemini-adapter/wrangler.json` is a safe-off bundle configuration with three
-placeholder database IDs. It is not a remote deployment. Keep application, gateway,
-adapter controls and all confirmations off while provisioning isolated staging.
+`deploy/gemini-adapter/wrangler.json` is the safe-off source template with three
+placeholder database IDs. The accepted isolated runner generated a separate package
+with verified actual IDs and deployed it privately; the template alone is not live
+evidence. Keep application, gateway, adapter controls and confirmations off until their
+separate activation gates pass.
 Secrets belong in the secure server/CI credential store, never source or chat.
 
 Required adapter gates are `GEMINI_GENERATION_ENABLED`, the adapter and gateway D1
@@ -87,10 +93,10 @@ A true flag does not constitute audit evidence. Current provider pricing/privacy
 nonbillable token counting, zero-owner-spend/funded activation policy, monitoring,
 retention, backup/restore and lost raw-response reconciliation remain live gates.
 
-Next: validate new-resource Cloudflare permissions and isolated DB bindings via the
-existing GitHub environment, then deploy a fixture-only remote smoke test with all
-provider generation disabled. Real provider requests require separately satisfied
-funding, privacy/pricing and operational gates. No background or scheduled AI is added.
+The resource/schema/private-secret and remote fixture smoke/restart/recovery steps are
+complete. Next: resolve the project-specific evidence listed in the public policy review.
+Real provider requests still require satisfied funding, privacy/pricing, age/region,
+model/endpoint and operational gates. No background or scheduled AI is added.
 
 Verification: 36 adapter behavioral/configuration tests plus actual gateway + adapter
 Workers using three persistent D1 databases, scoped service credentials, concurrent
@@ -99,8 +105,10 @@ application settlement and persistent unknown outcomes. All Google traffic in te
 is intercepted by fixtures. `npm run verify:gemini-adapter-build` and the billing suite
 are mandatory CI gates for the new revision. Bundle verification uses the pinned
 local esbuild compiler and makes no Cloudflare deployment/API request. Local
-Wrangler verification was blocked by automatic approval review due to potential
-source disclosure; no remote deployment is inferred from the offline bundle.
+Wrangler verification was initially blocked by automatic approval review due to potential
+source disclosure. The owner subsequently approved the concrete upload; private
+remote acceptance is evidenced by run 37589900190 and the linked receipt. Offline
+bundle success alone is still not remote acceptance evidence.
 
 Official API references: [GenerateContent usage and response identity](https://ai.google.dev/api/generate-content),
 [countTokens request format](https://ai.google.dev/api/tokens),
