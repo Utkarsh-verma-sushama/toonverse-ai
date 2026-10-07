@@ -4,10 +4,11 @@ import {readFile,mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {DatabaseSync} from 'node:sqlite';
+import {createHash} from 'node:crypto';
 import {Miniflare} from 'miniflare';
 import {build} from 'esbuild';
 import {buildIsolatedStaging,fixtureBindings} from './prepare-isolated-staging.mjs';
-import {validateUpload,schemaFingerprint,verifiedSchemaRows,validatePrivateSettings} from './deploy-isolated-staging.mjs';
+import {validateUpload,schemaFingerprint,verifiedSchemaRows,validatePrivateSettings,validateResume,writeScopedSecret} from './deploy-isolated-staging.mjs';
 const ids=['44444444-4444-4444-8444-444444444444','55555555-5555-4555-8555-555555555555','66666666-6666-4666-8666-666666666666'];
 const names=['uvenaro-chat-staging','uvenaro-gateway-receipts-staging','uvenaro-adapter-evidence-staging'];
 const record={protocol:'uvenaro-verified-isolated-databases-v1',accountId:'a'.repeat(32),databases:ids.map((uuid,i)=>({uuid,name:names[i],role:['billing','gateway-receipts','adapter-evidence'][i]}))};
@@ -81,4 +82,20 @@ test('authenticated temporary probe proves secret isolation, zero generation, re
    const response=await probe.fetch('https://probe.invalid/smoke',{headers:{authorization:'Bearer '+key.PROBE_KEY}});assert.equal(response.status,200,await response.clone().text());assert.equal((await response.json()).checks,19);}
   await smoke();await mf.dispose();mf=new Miniflare(options);await smoke();assert.equal(calls,0);
  }finally{await mf?.dispose();await rm(directory,{recursive:true,force:true});}
+});
+
+test('resume requires exact acknowledged failed upload journal and manifest identity',async()=>{
+ const journal=JSON.parse(await readFile(new URL('../deploy/isolated-staging/upload-resume-journal.json',import.meta.url),'utf8'));
+ const request=JSON.parse(await readFile(new URL('../deploy/isolated-staging/upload-request.json',import.meta.url),'utf8'));
+ const approved={...request,resume:{...request.resume,sourceCommit:journal.sha,operationId:journal.operationId,journalSha256:createHash('sha256').update(JSON.stringify(journal)).digest('hex')}};
+ assert.equal(validateResume(journal,approved,journal.manifestSha256),true);
+ for(const changed of [{...journal,pending:'unknown-write'},{...journal,providerRequestsPerformed:true},{...journal,steps:[]},{...journal,sha:'f'.repeat(40)}])assert.throws(()=>validateResume(changed,approved,journal.manifestSha256));
+ assert.throws(()=>validateResume(journal,approved,'0'.repeat(64)));
+});
+test('secret writes require explicit per-key API acknowledgement and never retry a rejected write',async()=>{
+ const text='s'.repeat(43);let calls=0;
+ await writeScopedSecret(async body=>{calls++;assert.deepEqual(body,{name:'PROBE_KEY',text,type:'secret_text'});return {name:'PROBE_KEY',type:'secret_text'};},'PROBE_KEY',text);
+ assert.equal(calls,1);
+ for(const result of [undefined,{}, {name:'OTHER_KEY',type:'secret_text'}, {name:'PROBE_KEY',type:'plain_text'}])await assert.rejects(()=>writeScopedSecret(async()=>result,'PROBE_KEY',text));
+ calls=0;await assert.rejects(()=>writeScopedSecret(async()=>{calls++;throw Error('rejected');},'PROBE_KEY',text));assert.equal(calls,1);
 });

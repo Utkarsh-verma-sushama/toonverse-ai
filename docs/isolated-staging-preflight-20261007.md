@@ -212,3 +212,10 @@ review rejected the source-upload/dry-run action because it could disclose the a
 source to Cloudflare. This completed run used the materially safer database-only
 operation. Source/schema upload remains pending explicit owner acknowledgement of
 sending the concrete prepared package to Cloudflare; real provider execution remains off.
+
+
+## Approved upload authentication repair
+
+Owner approval at 2026-10-07T07:19:30Z permits the concrete isolated source/schema upload, private Workers and temporary authenticated fixture probe. Run 37588135800, source 8d27386b54572bf2c0d9799876c90cc54a256de6, acknowledged and fingerprint-checked all eleven SQL files and uploaded both private Workers. The authenticated public probe then returned 401; fixture acceptance was not completed. The CLI secret-bulk exit status alone is therefore insufficient evidence of usable live credentials. CLI deletion also returned numeric error 10000; cleanup remains unverified in that journal.
+
+The repair resumes only from that exact artifact-backed, acknowledged journal: same manifest, full live schema fingerprints, same private settings and database UUIDs, no provider key, and no unresolved mutation. It does not repeat schema imports, delete receipt fixtures, modify the pilot, or enable provider execution. Independent staging credentials are rotated through documented per-secret PUT requests with explicit name/type acknowledgements and live binding readback. The owned temporary probe is removed through the documented Worker script DELETE endpoint, followed by complete Worker inventory verification. Authenticated probe reads allow bounded propagation retries; remote writes are not blindly retried.

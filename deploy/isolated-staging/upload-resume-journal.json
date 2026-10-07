@@ -1,0 +1,38 @@
+{
+  "protocol": "uvenaro-safe-off-staging-upload-v1",
+  "operationId": "isolated-upload-20261007-owner-approved",
+  "sha": "8d27386b54572bf2c0d9799876c90cc54a256de6",
+  "status": "stopped-review-required",
+  "pending": null,
+  "steps": [
+    "schema:billing/0000_baseline.sql",
+    "schema:billing/0001_atomic_chat_billing.sql",
+    "schema:billing/0002_account_sessions.sql",
+    "schema:billing/0003_abuse_spend_hardening.sql",
+    "schema:billing/0004_request_replay_guard.sql",
+    "schema:billing/0005_agent_abuse_hardening.sql",
+    "schema:billing/0006_agent_audit_trail.sql",
+    "schema:billing/0007_bind_agent_approval_to_step.sql",
+    "schema:gateway/0000_receipts.sql",
+    "schema:adapter/0000_receipts.sql",
+    "schema:adapter/0001_vendor_evidence.sql",
+    "worker-fixture:adapter",
+    "secret-scopes:adapter",
+    "worker-fixture:gateway",
+    "secret-scopes:gateway",
+    "fixture-evidence:GATEWAY_DB",
+    "fixture-evidence:ADAPTER_DB",
+    "temporary-probe",
+    "temporary-probe-scopes"
+  ],
+  "providerRequestsPerformed": false,
+  "pilotPreserved": true,
+  "probeRemoved": false,
+  "workersRestoredToBlankModel": false,
+  "freePlanEvidence": {
+    "source": "owner-dashboard-screenshots",
+    "apiWorkersFreePlanVerified": false
+  },
+  "manifestSha256": "51e4dd06ceae34b7614236cc3739f881f254d33246d4facaa84033ce55ab2627",
+  "error": "REMOTE_PRIVATE_SMOKE_FAILED"
+}

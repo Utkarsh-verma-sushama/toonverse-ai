@@ -62,6 +62,19 @@ export function validatePrivateSettings(settings,subdomain,config,secretNames){
  for(const service of config.services||[])if(!bindings.some(b=>b.name===service.binding&&b.type==='service'&&b.service===service.service))fail('PRIVATE_SERVICE_BINDING_MISMATCH');
 }
 
+export function validateResume(journal,request,manifestHash){
+ const proof=request.resume;
+ if(!proof||proof.sourceCommit!==journal?.sha||proof.operationId!==journal.operationId||proof.journalSha256!==createHash('sha256').update(JSON.stringify(journal)).digest('hex')||
+  journal.status!=='stopped-review-required'||journal.pending!==null||journal.error!=='REMOTE_PRIVATE_SMOKE_FAILED'||journal.providerRequestsPerformed!==false||
+  journal.pilotPreserved!==true||journal.manifestSha256!==manifestHash||!['worker-fixture:adapter','worker-fixture:gateway','temporary-probe','temporary-probe-scopes'].every(step=>journal.steps?.includes(step)))fail('RESUME_OWNERSHIP_EVIDENCE_INVALID');
+ return true;
+}
+export async function writeScopedSecret(api,name,text){
+ if(!/^[A-Z_]+$/.test(name)||!/^[A-Za-z0-9_-]{32,256}$/.test(text))fail('SECRET_SCOPE_INPUT_INVALID');
+ const result=await api({name,text,type:'secret_text'});
+ if(result?.name!==name||result.type!=='secret_text')fail('SECRET_WRITE_ACKNOWLEDGEMENT_MISSING');
+}
+
 export async function deployIsolatedStaging(){
  const env=process.env,request=JSON.parse(await readFile(resolve(root,'deploy/isolated-staging/upload-request.json'),'utf8')),
   record=JSON.parse(await readFile(resolve(root,'deploy/isolated-staging/verified-databases.json'),'utf8')),
@@ -72,10 +85,10 @@ export async function deployIsolatedStaging(){
   providerRequestsPerformed:false,pilotPreserved:true,probeRemoved:false,workersRestoredToBlankModel:false};
  async function save(){await writeFile(journalPath+'.tmp',JSON.stringify(state,null,2)+'\n',{mode:0o600});await rename(journalPath+'.tmp',journalPath);}
  async function mutate(label,operation){await checkReleaseCi();validateUpload(request,record,env);state.pending=label;await save();const result=await operation();state.steps.push(label);state.pending=null;await save();return result;}
- async function api(path){
+ async function api(path,method='GET',payload){
   const signal=AbortSignal.timeout(15000);let response;
-  try{response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+request.accountId+path,{method:'GET',redirect:'error',signal,headers:{authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN}});}catch{fail('DEPLOYMENT_METADATA_UNAVAILABLE');}
-  if(!response.ok)fail('DEPLOYMENT_METADATA_DENIED');const body=await boundedJson(response,signal,1048576);if(body.success!==true)fail('DEPLOYMENT_METADATA_REJECTED');return body;
+  try{response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+request.accountId+path,{method,redirect:'error',signal,headers:{authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN,...(payload?{'content-type':'application/json'}:{})},...(payload?{body:JSON.stringify(payload)}:{})});}catch{fail('DEPLOYMENT_METADATA_UNAVAILABLE');}
+  if(!response.ok)fail(method==='GET'?'DEPLOYMENT_METADATA_DENIED':'DEPLOYMENT_WRITE_UNCONFIRMED');if(method==='DELETE'&&response.status===204)return {success:true};const body=await boundedJson(response,signal,1048576);if(body.success!==true)fail('DEPLOYMENT_METADATA_REJECTED');return body;
  }
  function wrangler(args,config,input){
   const out=spawnSync(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),...args,'--config',config],{
@@ -89,31 +102,55 @@ export async function deployIsolatedStaging(){
   }return out.stdout;
  }
  const configs={};let probeOwned=false;
+ const resume=request.resume?JSON.parse(await readFile(resolve(root,'deploy/isolated-staging/upload-resume-journal.json'),'utf8')):null;
+ const deleteProbe=()=>api('/workers/scripts/'+probeName+'?force=true','DELETE');
+ async function secretsFor(name,script,scopes){
+  for(const [key,value] of Object.entries(scopes))await mutate('secret:'+name+':'+key,()=>writeScopedSecret(async payload=>(await api('/workers/scripts/'+script+'/secrets','PUT',payload)).result,key,value));
+  const bindings=(await api('/workers/scripts/'+script+'/settings')).result?.bindings;
+  if(!Array.isArray(bindings)||!Object.keys(scopes).every(key=>bindings.some(b=>b.name===key&&b.type==='secret_text')))fail('LIVE_SECRET_SCOPES_UNVERIFIED');
+ }
  try{
   await checkReleaseCi();
   for(const db of record.databases){const metadata=(await api('/d1/database/'+db.uuid)).result;if(metadata?.uuid!==db.uuid||metadata.name!==db.name)fail('LIVE_DATABASE_OWNERSHIP_MISMATCH');}
   const report=await inspectIsolatedStaging();
   const expected=stagingNames.databases;
   if(report.inventory?.databaseCount!==4||report.inventory.databaseCollisions?.length!==3||
-   !expected.every(n=>report.inventory.databaseCollisions.includes(n))||report.inventory.workerCollisions?.length||
+   !expected.every(n=>report.inventory.databaseCollisions.includes(n))||(!resume&&report.inventory.workerCollisions?.length)||
    report.inventory.blockers?.some(b=>b!=='EXISTING_TARGET_RESOURCE_REQUIRES_OWNERSHIP_REVIEW'))fail('OWNED_ISOLATED_INVENTORY_MISMATCH');
   report.blockers=report.blockers.filter(b=>b!=='EXISTING_TARGET_RESOURCE_REQUIRES_OWNERSHIP_REVIEW');report.readyForProvisioning=report.blockers.length===0;
   state.freePlanEvidence=provisioningPlan(report,planRequest,env);
   const services=(await api('/workers/services')).result;
-  if(!Array.isArray(services)||services.some(s=>[...stagingNames.workers,probeName].includes(s.id||s.name)))fail('WORKER_NAME_ALREADY_EXISTS');
+  if(!Array.isArray(services)||(!resume&&services.some(s=>[...stagingNames.workers,probeName].includes(s.id||s.name))))fail('WORKER_NAME_ALREADY_EXISTS');
   const prepared=await buildIsolatedStaging(resolve(directory,'package'),{env:{...env,UVENARO_CHAT_STAGING_DATABASE_ID:ids[0],UVENARO_GATEWAY_STAGING_DATABASE_ID:ids[1],UVENARO_ADAPTER_STAGING_DATABASE_ID:ids[2]}});
   state.manifestSha256=createHash('sha256').update(await readFile(resolve(prepared.directory,'manifest.json'))).digest('hex');await save();
   for(const name of ['adapter','gateway'])configs[name]=resolve(prepared.directory,name,'wrangler.json');
+  if(resume){
+   validateResume(resume,request,state.manifestSha256);state.resumedFrom=request.resume.sourceCommit;
+   for(const name of ['adapter','gateway']){
+    const config=JSON.parse(await readFile(configs[name],'utf8'));if(name==='adapter')config.vars.GEMINI_MODEL='gemini-3.8-flash';else{config.vars.GATEWAY_PROVIDER='google-gemini';config.vars.GATEWAY_MODEL='gemini-3.8-flash';}
+    const settings=(await api('/workers/scripts/'+config.name+'/settings')).result,endpoint=(await api('/workers/scripts/'+config.name+'/subdomain')).result;
+    validatePrivateSettings(settings,endpoint,config,[]);
+    state[name+'PriorSecretScopes']=(settings.bindings||[]).filter(b=>b.type==='secret_text').map(b=>b.name);
+   }
+   if(services.some(s=>(s.id||s.name)===probeName)){
+    const settings=(await api('/workers/scripts/'+probeName+'/settings')).result;
+    if(!settings?.bindings?.some(b=>b.name==='FIXTURE_READ_ID'&&b.text==='uvenaro_fixture_read_'+request.resume.workflowRunId)||settings.bindings.some(b=>b.name==='GEMINI_API_KEY'))fail('PRIOR_PROBE_OWNERSHIP_MISMATCH');
+    await mutate('remove-owned-prior-probe',deleteProbe);
+    if((await api('/workers/services')).result.some(s=>(s.id||s.name)===probeName))fail('PRIOR_PROBE_REMOVAL_UNVERIFIED');
+   }
+  }
   const query=(binding,config,sql)=>{let result;try{result=JSON.parse(wrangler(['d1','execute',binding,'--remote','--command',sql,'--json'],config));}catch{fail('REMOTE_SQL_CHECK_UNAVAILABLE');}return verifiedSchemaRows(result);};
   for(const [role,binding,config] of [['billing','DB',configs.adapter],['gateway','GATEWAY_DB',configs.gateway],['adapter','ADAPTER_DB',configs.adapter]]){
-   if(query(binding,config,schemaQuery).length!==0)fail('ISOLATED_SCHEMA_NOT_EMPTY_REQUIRES_REVIEW');
+   if(!resume&&query(binding,config,schemaQuery).length!==0)fail('ISOLATED_SCHEMA_NOT_EMPTY_REQUIRES_REVIEW');
    const local=new DatabaseSync(':memory:');
    try{
     for(const file of Object.keys(prepared.manifest.files).filter(f=>f.startsWith(role+'/')&&f.endsWith('.sql')).sort()){
      const path=resolve(prepared.directory,file),source=await readFile(path,'utf8');local.exec(source);
+     if(resume){if(!resume.steps.includes('schema:'+file))fail('RESUME_SCHEMA_CHAIN_INCOMPLETE');continue;}
      await mutate('schema:'+file,async()=>wrangler(['d1','execute',binding,'--remote','--file',path],config));
      if(schemaFingerprint(query(binding,config,schemaQuery))!==schemaFingerprint(local.prepare(schemaQuery).all()))fail('REMOTE_SCHEMA_FINGERPRINT_MISMATCH');
     }
+    if(resume){if(schemaFingerprint(query(binding,config,schemaQuery))!==schemaFingerprint(local.prepare(schemaQuery).all()))fail('RESUME_SCHEMA_DRIFT');state.steps.push('schema-verified:'+role);await save();}
    }finally{local.close();}
   }
   const secrets=Array.from({length:5},()=>randomBytes(32).toString('base64url'));
@@ -127,7 +164,7 @@ export async function deployIsolatedStaging(){
    const config=structuredClone(original[name]);if(name==='adapter')config.vars.GEMINI_MODEL=fixtureModel;else{config.vars.GATEWAY_PROVIDER='google-gemini';config.vars.GATEWAY_MODEL=fixtureModel;}
    await writeFile(configs[name],JSON.stringify(config,null,2)+'\n');
    await mutate('worker-fixture:'+name,async()=>wrangler(['deploy'],configs[name]));
-   await mutate('secret-scopes:'+name,async()=>wrangler(['secret','bulk'],configs[name],JSON.stringify(scopes[name])));
+   await secretsFor(name,config.name,scopes[name]);
   }
   const readId='uvenaro_fixture_read_'+env.GITHUB_RUN_ID,recoveryId='uvenaro_fixture_recovery_'+env.GITHUB_RUN_ID;
   if(!/^[A-Za-z0-9_]{1,100}$/.test(readId+'' )||!/^[A-Za-z0-9_]{1,100}$/.test(recoveryId))fail('FIXTURE_ID_INVALID');
@@ -149,13 +186,13 @@ export async function deployIsolatedStaging(){
    d1_databases:original.adapter.d1_databases,services:[{binding:'TARGET_GATEWAY',service:stagingNames.workers[0]},{binding:'TARGET_ADAPTER',service:stagingNames.workers[1]}]};
   configs.probe=resolve(probeDir,'wrangler.json');await writeFile(configs.probe,JSON.stringify(probe,null,2));
   await mutate('temporary-probe',async()=>wrangler(['deploy'],configs.probe));probeOwned=true;
-  await mutate('temporary-probe-scopes',async()=>wrangler(['secret','bulk'],configs.probe,JSON.stringify({...scopes.gateway,...scopes.adapter,PROBE_KEY:pk})));
+  await secretsFor('probe',probeName,{...scopes.gateway,...scopes.adapter,PROBE_KEY:pk});
   const subdomain=(await api('/workers/subdomain')).result?.subdomain;if(!/^[a-z0-9-]{1,63}$/.test(subdomain||''))fail('WORKERS_SUBDOMAIN_UNVERIFIED');
   const probeOrigin='https://'+probeName+'.'+subdomain+'.workers.dev';
   async function readProbe(path,key){
    let last;
    for(let attempt=0;attempt<5;attempt++){
-    try{last=await fetch(probeOrigin+path,{method:'GET',redirect:'error',signal:AbortSignal.timeout(45000),headers:key?{authorization:'Bearer '+key}:{}});if([200,401].includes(last.status))return last;}catch{}
+    try{last=await fetch(probeOrigin+path,{method:'GET',redirect:'error',signal:AbortSignal.timeout(45000),headers:key?{authorization:'Bearer '+key}:{}});if(last.status===200||(!key&&last.status===401))return last;}catch{}
     if(attempt<4)await new Promise(resolve=>setTimeout(resolve,3000));
    }
    if(!last)fail('REMOTE_PROBE_UNAVAILABLE');return last;
@@ -181,13 +218,13 @@ export async function deployIsolatedStaging(){
    state[name+'Deployment']=records.slice(0,1).map(d=>({id:d.id,versions:(d.versions||[]).map(v=>({version_id:v.version_id,percentage:v.percentage}))}));
   }
   state.workersRestoredToBlankModel=true;await smoke('/final');
-  await mutate('remove-temporary-probe',async()=>wrangler(['delete','--force'],configs.probe));probeOwned=false;
+  await mutate('remove-temporary-probe',deleteProbe);probeOwned=false;
   const remaining=(await api('/workers/services')).result;if(!Array.isArray(remaining)||remaining.some(w=>(w.id||w.name)===probeName))fail('TEMPORARY_PROBE_REMOVAL_UNVERIFIED');
   state.probeRemoved=true;state.status='private-safe-off-staging-accepted';await save();console.log(JSON.stringify(state));
  }catch(error){state.status='stopped-review-required';state.error=/^[A-Z_]+$/.test(error.message)?error.message:'ISOLATED_UPLOAD_UNCONFIRMED';await save();throw Error(state.error);}
  finally{
   // Delete only the authenticated probe whose successful creation this run owns.
-  if(probeOwned)try{wrangler(['delete','--force'],configs.probe);state.probeRemoved=true;await save();}catch{}
+  if(probeOwned)try{await checkReleaseCi();validateUpload(request,record,env);await deleteProbe();state.probeRemoved=!(await api('/workers/services')).result.some(s=>(s.id||s.name)===probeName);await save();}catch{}
   // No secret files are written or uploaded as artifacts; Wrangler diagnostics
   // are suppressed and operation output/journal contains no credential values.
   await rm(resolve(directory,'probe/worker.mjs'),{force:true});
