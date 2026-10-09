@@ -22,15 +22,24 @@ Evidence:
 
 The smoke run read Worker metadata only. It made no Gemini/provider request, enabled no generation, changed no billing setting and exposed no endpoint.
 
+## Owner-dashboard read-only evidence
+
+The signed-in Google AI Studio dashboard was checked without copying or revealing the key:
+
+- Project `Toonverse AI` / project ID `toonverse-ai` is present.
+- The key label `Uvenaro Staging Gemini` is listed under that project.
+- The project and key show **Free tier**.
+- The Spend page states that no billing is currently set up for the project.
+- The Usage page for the last 28 days shows no data available. Google notes that usage can take up to 15 minutes to update, so this is supporting evidence—not a permanent guarantee for future traffic.
+
 ## Readiness boundary
 
-The private key binding is accepted as a secure staging prerequisite; it is **not** provider activation evidence. The following remain intentionally unverified:
+The private key binding and current owner-dashboard evidence are accepted as secure staging prerequisites; they are **not** provider activation evidence. The following remain intentionally unverified:
 
-1. Authenticated Gemini project identity and current tier.
-2. Exact model/endpoint support and reviewed input/output/thinking-token caps.
-3. Current pricing, privacy, retention, region and age-policy acceptance.
-4. Non-billable preflight/counting behavior and lost-response reconciliation against the live provider.
-5. Funded production policy and explicit zero-owner-spend approval.
+1. Exact model/endpoint support and reviewed input/output/thinking-token caps.
+2. Current pricing, privacy, retention, region and age-policy acceptance.
+3. Non-billable preflight/counting behavior and lost-response reconciliation against the live provider.
+4. Funded production policy and explicit zero-owner-spend approval.
 
 Generation, paid execution, background AI, automatic retries and public launch remain off.
 
