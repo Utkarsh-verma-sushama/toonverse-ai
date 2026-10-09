@@ -1,0 +1,25 @@
+{
+  "protocol": "uvenaro-provider-live-ops-review-v1",
+  "reviewedAt": "2026-10-09T08:00:00Z",
+  "source": "pending-operator-observation",
+  "liveOpsSource": "pending-operator-observation",
+  "liveOpsEvidenceVerified": false,
+  "liveOpsObservedAt": null,
+  "checks": {
+    "alertsVerified": false,
+    "killSwitchVerified": false,
+    "backupRestoreVerified": false,
+    "rollbackVerified": false,
+    "versionPinned": false
+  },
+  "decision": {
+    "status": "SAFE_OFF_PENDING",
+    "activationAuthorized": false,
+    "reason": "Live operator-observed alert, kill-switch, backup/restore and rollback evidence is still required."
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false
+  }
+}
