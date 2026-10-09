@@ -1,3 +1,4 @@
+import {validateGeminiPrivacyPolicy} from './provider-privacy-policy.mjs';
 const freeze=Object.freeze;
 
 export const PROVIDER_CONTRACT_PROTOCOL='uvenaro-provider-contract-v1';
@@ -27,6 +28,7 @@ const contracts={
    tools:'toolUsePromptTokenCount'
   }),
   controls:freeze({candidateCount:1,thinkingLevel:'low',streaming:false,tools:false}),
+  privacy:freeze({store:false,background:false,fileApi:false,contextCaching:false,grounding:false,retentionDays:0,promptsPersisted:false,answersPersisted:false}),
   requiredAuditFlags:auditFlags
  })
 };
@@ -49,6 +51,8 @@ export function validateProviderContract(env,{provider=env?.GEMINI_PROVIDER||'go
  check(Number.isSafeInteger(contract.limits.maxOutputTokens)&&contract.limits.maxOutputTokens>0,'OUTPUT_LIMIT_INVALID');
  check(Number.isSafeInteger(contract.limits.maxTotalTokens)&&contract.limits.maxTotalTokens>=contract.limits.maxOutputTokens,'TOTAL_LIMIT_INVALID');
  check(contract.controls.candidateCount===1&&contract.controls.streaming===false&&contract.controls.tools===false,'UNSAFE_PROVIDER_CONTROLS');
+ const privacy=validateGeminiPrivacyPolicy(contract.privacy);
+ check(privacy.ok,'UNSAFE_PRIVACY_CONTROLS');
  check(Array.isArray(contract.requiredAuditFlags)&&contract.requiredAuditFlags.length===4,'AUDIT_PROFILE_INCOMPLETE');
  return {ok:errors.length===0,errors,contract,provider};
 }
