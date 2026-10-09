@@ -6,4 +6,6 @@ The Cloudflare subscription API currently returns an incomplete subscription inv
 
 The gate requires an account-bound dashboard observation, a Workers/Cloudflare Free label, a zero monthly price, billing disabled, a SHA-256 evidence digest and a capture age of no more than six hours. Raw screenshots, secrets, prompts and answers are never stored by the gate.
 
+A capture that passes every check except the six-hour freshness window is classified as historical evidence only. It is useful for audit continuity, but it does not close the current verification gate; future-dated captures are not historical evidence. A fresh owner-dashboard observation is required before any later stage could consider the plan currently verified.
+
 This evidence only verifies the plan observation. It never authorizes provisioning, paid requests, provider generation, billing changes or production activation. The zero-owner-spend boundary remains active.
