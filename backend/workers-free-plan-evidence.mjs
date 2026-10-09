@@ -142,10 +142,10 @@ export function evaluateWorkersFreePlanEvidenceBundle(
 ) {
   const expectedAccountId = bundle.expectedAccountId || '';
   const observedAt = Date.parse(asOf);
-  const captures = Array.isArray(bundle.captures)
-    ? bundle.captures.slice(0, WORKERS_FREE_PLAN_EVIDENCE_MAX_CAPTURES)
-    : [];
-  const captureResults = captures.map((capture) =>
+  const captures = Array.isArray(bundle.captures) ? bundle.captures : [];
+  const captureResults = captures
+    .slice(0, WORKERS_FREE_PLAN_EVIDENCE_MAX_CAPTURES)
+    .map((capture) =>
     evaluateBundleCapture(capture, expectedAccountId, observedAt)
   );
   const hasExpectedAccount = ACCOUNT_ID.test(expectedAccountId);
