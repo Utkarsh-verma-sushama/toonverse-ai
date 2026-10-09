@@ -27,7 +27,7 @@ export function evaluateWorkersFreePlanEvidence(
     fresh: Number.isFinite(ageMs) &&
       ageMs >= 0 &&
       ageMs <= WORKERS_FREE_PLAN_EVIDENCE_MAX_AGE_MS,
-    freePlanLabel: /\\bfree\\b/.test(planLabel) &&
+    freePlanLabel: /\bfree\b/.test(planLabel) &&
       /workers|cloudflare/.test(planLabel),
     zeroMonthlyPrice: evidence.monthlyPriceUsd === 0,
     billingInactive: evidence.billingEnabled === false,
