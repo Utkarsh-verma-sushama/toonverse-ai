@@ -5,6 +5,12 @@
   "liveOpsSource": "pending-operator-observation",
   "liveOpsEvidenceVerified": false,
   "liveOpsObservedAt": null,
+  "integrity": {
+    "protocol": "uvenaro-provider-evidence-integrity-v1",
+    "algorithm": "SHA-256",
+    "verified": false,
+    "digest": null
+  },
   "checks": {
     "alertsVerified": false,
     "killSwitchVerified": false,
