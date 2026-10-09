@@ -4,6 +4,7 @@ import {evaluateProviderLiveOpsEvidence} from '../backend/provider-live-ops-revi
 
 const t='2026-10-09T08:00:00.000Z';
 const complete={
+ integrity:{protocol:'uvenaro-provider-evidence-integrity-v1',algorithm:'SHA-256',verified:true,digest:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'},
  liveOpsSource:'operator-observed',liveOpsEvidenceVerified:true,liveOpsObservedAt:t,
  alertsVerified:true,alertsObservedAt:t,
  killSwitchVerified:true,killSwitchObservedAt:t,
