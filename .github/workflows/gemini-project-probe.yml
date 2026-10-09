@@ -1,1 +1,46 @@
-name: Probe Gemini project endpoint without generation\n\n\non:\n  workflow_dispatch:\n    inputs:\n      model:\n        description: Gemini model to verify with models.list and countTokens only\n        required: true\n        default: gemini-3.8-flash\n        type: string\n\n\npermissions:\n  contents: read\n\n\nconcurrency:\n  group: uvenaro-gemini-project-probe\n  cancel-in-progress: false\n\n\njobs:\n  probe:\n    if: github.ref == 'refs/heads/main'\n    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    environment: uvenaro-account-staging\n    env:\n      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}\n      GEMINI_PROBE_MODEL: ${{ inputs.model }}\n      GEMINI_PROJECT_ID: ${{ vars.GEMINI_PROJECT_ID }}\n      GEMINI_PROJECT_NUMBER: ${{ vars.GEMINI_PROJECT_NUMBER }}\n      GEMINI_TIER: ${{ vars.GEMINI_TIER }}\n      GEMINI_BILLING_ACCOUNT_ATTACHED: ${{ vars.GEMINI_BILLING_ACCOUNT_ATTACHED }}\n      GEMINI_BINDING_READBACK: ${{ vars.GEMINI_BINDING_READBACK }}\n    steps:\n      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5\n      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5\n        with:\n          node-version: '22'\n          cache: npm\n      - name: Install locked dependencies\n        run: npm ci --ignore-scripts\n      - name: Run sanitized non-generation probe\n        run: node scripts/probe-gemini-project.mjs
+name: Probe Gemini project endpoint without generation
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Gemini model to verify with models.list and countTokens only
+        required: true
+        default: gemini-3.8-flash
+        type: string
+
+
+permissions:
+  contents: read
+
+
+concurrency:
+  group: uvenaro-gemini-project-probe
+  cancel-in-progress: false
+
+
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: uvenaro-account-staging
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_PROBE_MODEL: ${{ inputs.model }}
+      GEMINI_PROJECT_ID: ${{ vars.GEMINI_PROJECT_ID }}
+      GEMINI_PROJECT_NUMBER: ${{ vars.GEMINI_PROJECT_NUMBER }}
+      GEMINI_TIER: ${{ vars.GEMINI_TIER }}
+      GEMINI_BILLING_ACCOUNT_ATTACHED: ${{ vars.GEMINI_BILLING_ACCOUNT_ATTACHED }}
+      GEMINI_BINDING_READBACK: ${{ vars.GEMINI_BINDING_READBACK }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Run sanitized non-generation probe
+        run: node scripts/probe-gemini-project.mjs
