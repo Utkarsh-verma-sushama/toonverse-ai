@@ -58,3 +58,12 @@ The core ecosystem is deliberately insulated from vendor churn:
 This is the Uvenaro change policy for all future stages: prefer additive, versioned,
 backward-compatible boundaries; never make an unreviewed provider change in the
 billing, identity or public client core.
+
+## Privacy and retention invariant
+
+Every provider profile must carry an explicit privacy policy. For Gemini, the stable
+default is stateless and non-background: `store=false`, `background=false`, no File
+API persistence, no explicit context caching, no grounding, zero retention days, and
+no prompt/answer persistence. The request-level guard rejects any future adapter
+request that attempts to enable one of these paths. Unknown or omitted provider
+privacy controls do not become permission by inference.
