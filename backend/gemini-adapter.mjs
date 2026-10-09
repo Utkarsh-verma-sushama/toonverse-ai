@@ -1,23 +1,25 @@
 import {whole} from './chat-billing.mjs';
+import {validateProviderContract,requireProviderContract} from './provider-contract.mjs';
 import {fetchWithoutRedirect} from './safe-fetch.mjs';
 import {failure,json,hash,authorized,boundedJson,inputPayload,get,envelope,finalize,unknown} from './metered-gateway.mjs';
 const provider='google-gemini';
 const state=env=>({GATEWAY_DB:env.ADAPTER_DB});
 function config(env){
- if(!env.ADAPTER_DB||!env.GATEWAY_DB||!env.DB||!['test','staging','production'].includes(env.ENVIRONMENT)||
-  !/^gemini-3(?:\.\d+)?-(?:flash|flash-lite)$/.test(env.GEMINI_MODEL||'')||
+ const profile=validateProviderContract(env,{allowBlankModel:true});
+ if(!profile.ok||!env.ADAPTER_DB||!env.GATEWAY_DB||!env.DB||!['test','staging','production'].includes(env.ENVIRONMENT)||
   !/^[A-Za-z0-9_-]{32,256}$/.test(env.ADAPTER_DISPATCH_KEY||'')||!/^[A-Za-z0-9_-]{32,256}$/.test(env.ADAPTER_RECEIPT_KEY||'')||env.ADAPTER_DISPATCH_KEY===env.ADAPTER_RECEIPT_KEY)
   throw failure('ADAPTER_NOT_CONFIGURED');
 }
 function generationConfig(env){
  if(env.GEMINI_GENERATION_ENABLED!=='true')throw failure('ADAPTER_GENERATION_DISABLED');
  if(env.ENVIRONMENT==='production'&&env.GEMINI_EXECUTION_CONFIRMATION!=='UVENARO_ENABLE_GEMINI_GENERATION')throw failure('ADAPTER_CONFIRMATION_REQUIRED');
- for(const name of ['GEMINI_MODEL_PROFILE_AUDITED','GEMINI_PREFLIGHT_AUDITED','GEMINI_COUNT_TOKENS_NONBILLABLE_AUDITED','GEMINI_PRIVACY_PRICING_AUDITED'])
+ const contract=requireProviderContract(env);
+ for(const name of contract.requiredAuditFlags)
   if(env[name]!=='true')throw failure('ADAPTER_AUDIT_REQUIRED');
  if(typeof env.GEMINI_API_KEY!=='string'||!env.GEMINI_API_KEY||env.GEMINI_API_KEY.length>256||/[\r\n]/.test(env.GEMINI_API_KEY))throw failure('ADAPTER_NOT_CONFIGURED');
  const margin=String(env.GEMINI_PREFLIGHT_TOKEN_MARGIN??'32'),timeout=String(env.GEMINI_TIMEOUT_MS??'30000');
  if(!/^\d+$/.test(margin)||!whole(Number(margin),1024)||Number(margin)<16||!/^\d+$/.test(timeout)||Number(timeout)<100||Number(timeout)>120000)throw failure('ADAPTER_NOT_CONFIGURED');
- return {margin:Number(margin),timeout:Number(timeout)};
+ return {margin:Number(margin),timeout:Number(timeout),contract};
 }
 async function vendorCall(env,method,body,timeout){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
@@ -68,7 +70,7 @@ async function generate(request,env){
  }catch{throw failure('ADAPTER_CLAIM_UNCONFIRMED');}
  const row=await get(state(env),body.request_id);if(!row)throw failure('ADAPTER_CLAIM_UNCONFIRMED');
  const vendorBody={contents:body.messages.map(item=>({role:item.role==='assistant'?'model':'user',parts:[{text:item.content}]})),
-  generationConfig:{candidateCount:1,maxOutputTokens:row.output_limit,thinkingConfig:{thinkingLevel:'low',includeThoughts:false}}};
+  generationConfig:{candidateCount:1,maxOutputTokens:row.output_limit,thinkingConfig:{thinkingLevel:cfg.contract.controls.thinkingLevel,includeThoughts:false}}};
  let dispatched=false;const startedAt=Date.now();
  const remaining=()=>{const value=cfg.timeout-(Date.now()-startedAt);if(value<=0)throw failure('ADAPTER_VENDOR_UNCERTAIN');return value;};
  try{
@@ -78,8 +80,8 @@ async function generate(request,env){
   if(adapterControl?.enabled!==1||gatewayControl?.enabled!==1||policy?.enabled!==1||request.signal.aborted)return await rejected(env,row);
   // Count the complete generation request, not character length. Keep reviewed
   // model-specific headroom; real preflight-vs-usage drift is an activation gate.
-  const counted=await vendorCall(env,'countTokens',{generateContentRequest:{model:'models/'+env.GEMINI_MODEL,...vendorBody}},remaining());
-  if(!whole(counted.totalTokens,12000)||counted.totalTokens+cfg.margin>row.input_limit)return await rejected(env,row);
+  const counted=await vendorCall(env,cfg.contract.methods.countTokens,{generateContentRequest:{model:'models/'+env.GEMINI_MODEL,...vendorBody}},remaining());
+  if(!whole(counted.totalTokens,cfg.contract.limits.maxInputTokens)||counted.totalTokens+cfg.margin>row.input_limit)return await rejected(env,row);
   // Recheck stop controls after the network preflight and before billable dispatch.
   const currentAdapter=await env.ADAPTER_DB.prepare("SELECT enabled FROM gateway_control WHERE id='gateway'").first();
   const currentGateway=await env.GATEWAY_DB.prepare("SELECT enabled FROM gateway_control WHERE id='gateway'").first();
@@ -88,11 +90,12 @@ async function generate(request,env){
   const currentClaim=await get(env,row.request_id);
   if(currentAdapter?.enabled!==1||currentGateway?.enabled!==1||currentPolicy?.enabled!==1||!currentReservation||currentClaim?.status!=='dispatching'||request.signal.aborted)return await rejected(env,row);
   const generationTimeout=remaining();dispatched=true;
-  const result=await vendorCall(env,'generateContent',vendorBody,generationTimeout),usage=result.usageMetadata;
-  const prompt=usage?.promptTokenCount,candidate=usage?.candidatesTokenCount??0,thoughts=usage?.thoughtsTokenCount??0,total=usage?.totalTokenCount;
+  const result=await vendorCall(env,cfg.contract.methods.generateContent,vendorBody,generationTimeout),usage=result.usageMetadata;
+  const accounting=cfg.contract.accounting;
+  const prompt=usage?.[accounting.prompt],candidate=usage?.[accounting.candidate]??0,thoughts=usage?.[accounting.thoughts]??0,total=usage?.[accounting.total];
   if(typeof result.responseId!=='string'||!result.responseId||result.responseId.length>200||
    !whole(prompt,row.input_limit)||!whole(candidate,row.output_limit)||!whole(thoughts,row.output_limit)||candidate+thoughts>row.output_limit||
-   !whole(total,20000)||total!==prompt+candidate+thoughts||(usage.cachedContentTokenCount??0)!==0||(usage.toolUsePromptTokenCount??0)!==0||
+   !whole(total,cfg.contract.limits.maxTotalTokens)||total!==prompt+candidate+thoughts||(usage[accounting.cached]??0)!==0||(usage[accounting.tools]??0)!==0||
    prompt>counted.totalTokens+cfg.margin||!Array.isArray(result.candidates)||result.candidates.length>1)throw failure('ADAPTER_USAGE_CONTRACT_VIOLATION');
   const recordId='gemini_'+await hash(result.responseId);
   // Commit vendor evidence before constructing the reply. No prompt/output is
