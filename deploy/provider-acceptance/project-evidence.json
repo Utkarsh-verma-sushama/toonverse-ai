@@ -1,6 +1,6 @@
 {
   "protocol": "uvenaro-provider-project-evidence-v1",
-  "observedAt": "2026-10-09T06:46:30Z",
+  "observedAt": "2026-10-09T06:59:00Z",
   "source": "owner-dashboard-read-only",
   "provider": "google-gemini",
   "project": {
@@ -26,23 +26,76 @@
     "dashboardObserved": true,
     "currentPeakUsage": 0,
     "models": [
-      {"model":"gemini-2.5-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
-      {"model":"gemini-2.5-flash-lite","rpm":"0 / 10","tpm":"0 / 250K","rpd":"0 / 20"},
-      {"model":"gemini-3-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
-      {"model":"gemini-3.1-flash-lite","rpm":"0 / 15","tpm":"0 / 250K","rpd":"0 / 500"},
-      {"model":"gemini-3.5-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
-      {"model":"gemini-3.5-flash-lite","rpm":"0 / 15","tpm":"0 / 250K","rpd":"0 / 500"},
-      {"model":"gemini-3.6-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
-      {"model":"gemini-3.7-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
-      {"model":"gemini-3.8-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"}
+      {
+        "model": "gemini-2.5-flash",
+        "rpm": "0 / 5",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      },
+      {
+        "model": "gemini-2.5-flash-lite",
+        "rpm": "0 / 10",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      },
+      {
+        "model": "gemini-3-flash",
+        "rpm": "0 / 5",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      },
+      {
+        "model": "gemini-3.1-flash-lite",
+        "rpm": "0 / 15",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 500"
+      },
+      {
+        "model": "gemini-3.5-flash",
+        "rpm": "0 / 5",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      },
+      {
+        "model": "gemini-3.5-flash-lite",
+        "rpm": "0 / 15",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 500"
+      },
+      {
+        "model": "gemini-3.6-flash",
+        "rpm": "0 / 5",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      },
+      {
+        "model": "gemini-3.7-flash",
+        "rpm": "0 / 5",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "rpm": "0 / 5",
+        "tpm": "0 / 250K",
+        "rpd": "0 / 20"
+      }
     ]
   },
   "endpointVerification": {
-    "modelsListCalled": false,
-    "countTokensCalled": false,
+    "modelsListCalled": true,
+    "countTokensCalled": true,
     "generateContentCalled": false,
-    "verified": false,
-    "reason": "This checkpoint is dashboard-only and keeps provider requests disabled."
+    "verified": true,
+    "model": "gemini-3.8-flash",
+    "supportedMethods": [
+      "countTokens",
+      "generateContent"
+    ],
+    "countTokensTotalTokens": 13,
+    "workflowRunId": 37896363285,
+    "workflowRunUrl": "https://github.com/Utkarsh-verma-sushama/toonverse-ai/actions/runs/37896363285",
+    "reason": "Protected environment probe verified endpoint access without generation."
   },
   "runtimePolicy": {
     "generationEnabled": false,
@@ -56,8 +109,9 @@
     "status": "SAFE_OFF_PENDING",
     "projectAndTierSupportingEvidence": true,
     "quotaDashboardEvidence": true,
-    "modelEndpointGate": "pending",
-    "reason": "Dashboard evidence cannot substitute for a controlled non-generation endpoint call."
+    "modelEndpointGate": "verified_non_generation",
+    "reason": "Dashboard quota evidence and protected non-generation endpoint probe are verified; activation remains disabled.",
+    "endpointProbeRunId": 37896363285
   },
   "redaction": {
     "secretValuesStored": false,
