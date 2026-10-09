@@ -1,0 +1,29 @@
+{
+  "protocol": "uvenaro-isolated-staging-reaudit-v1",
+  "plannedAt": "2026-10-09T10:45:00Z",
+  "mode": "read-only",
+  "steps": [
+    "inventory",
+    "schema-fingerprint",
+    "private-binding-scope",
+    "safe-off-runtime",
+    "rollback-readiness"
+  ],
+  "eligible": true,
+  "writeAllowed": false,
+  "providerCallsAllowed": false,
+  "activationAllowed": false,
+  "ownerSpendMicrousd": 0,
+  "remoteChangesPerformed": false,
+  "decision": {
+    "status": "READ_ONLY_REAUDIT_READY",
+    "executed": false,
+    "reason": "Plan is prepared only; no remote re-audit has been executed."
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "rawResponsesStored": false
+  }
+}
