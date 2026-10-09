@@ -17,7 +17,7 @@ const readyEvidence=()=>({
  privacy:{privacyReviewed:true,retentionReviewed:true,regionReviewed:true,agePolicyReviewed:true},
  usage:{countTokensNonbillableVerified:true,preflightHeadroomVerified:true,thinkingOutputAccountingVerified:true},
  reconciliation:{lostResponsePolicyVerified:true,noAutomaticRetryVerified:true,receiptIdentityVerified:true},
- operations:{alertsVerified:true,backupRestoreVerified:true,rollbackVerified:true,killSwitchVerified:true,alertThresholdsDeclared:true,versionPinned:true,automaticRetry:false,promptLogging:false,answerLogging:false,publicEndpoint:false,killSwitchRequired:true,backupRestoreRequired:true,rollbackMode:'version-pinned',alertThresholds:{errorRatePct:5,reconciliationOpen:1,latencyMs:30000,spendMicrousd:0}},
+ operations:{alertsVerified:true,alertsObservedAt:'2026-10-09T00:00:00Z',backupRestoreVerified:true,backupRestoreObservedAt:'2026-10-09T00:00:00Z',rollbackVerified:true,rollbackObservedAt:'2026-10-09T00:00:00Z',killSwitchVerified:true,killSwitchObservedAt:'2026-10-09T00:00:00Z',alertThresholdsDeclared:true,versionPinned:true,automaticRetry:false,promptLogging:false,answerLogging:false,publicEndpoint:false,liveOpsSource:'operator-observed',liveOpsEvidenceVerified:true,liveOpsObservedAt:'2026-10-09T00:00:00Z',killSwitchRequired:true,backupRestoreRequired:true,rollbackMode:'version-pinned',alertThresholds:{errorRatePct:5,reconciliationOpen:1,latencyMs:30000,spendMicrousd:0}},
  authorization:{activationAuthorized:false}
 });
 
