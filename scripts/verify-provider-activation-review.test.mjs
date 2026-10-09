@@ -15,7 +15,7 @@ function completeEvidence(){
   tier:{verified:true,name:'free',observedAt:t},
   model:{profileVerified:true,endpointVerified:true,methods:['countTokens','generateContent'],profileObservedAt:t,endpointObservedAt:t},
   pricing:{snapshotVerified:true,snapshotAt:t},
-  funding:{sourceVerified:true,zeroOwnerSpendBoundary:true,observedAt:t},
+  funding:{sourceVerified:true,zeroOwnerSpendBoundary:true,billingConfigured:false,ownerSpendCapMicrousd:0,autoTopUp:false,paidRequestsAllowed:false,fundingSource:'provider-free-tier',observedAt:t},
   privacy:{privacyReviewed:true,retentionReviewed:true,regionReviewed:true,agePolicyReviewed:true,reviewedAt:t,retentionReviewedAt:t,regionReviewedAt:t,agePolicyReviewedAt:t},
   usage:{countTokensNonbillableVerified:true,preflightHeadroomVerified:true,thinkingOutputAccountingVerified:true,countTokensObservedAt:t,preflightObservedAt:t,thinkingOutputObservedAt:t},
   reconciliation:{lostResponsePolicyVerified:true,noAutomaticRetryVerified:true,receiptIdentityVerified:true,lostResponseObservedAt:t,retryPolicyObservedAt:t,receiptIdentityObservedAt:t},
