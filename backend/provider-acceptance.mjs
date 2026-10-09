@@ -1,3 +1,6 @@
+import {validateProviderFundingPolicy} from './provider-funding-policy.mjs';
+import {validateProviderOperationsPolicy} from './provider-operations-policy.mjs';
+
 const freeze=Object.freeze;
 
 export const PROVIDER_ACCEPTANCE_PROTOCOL='uvenaro-provider-acceptance-v1';
