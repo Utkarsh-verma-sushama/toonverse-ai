@@ -1,3 +1,4 @@
+import {evaluateProviderActivationAuthorization} from './provider-activation-authorization.mjs';
 import {evaluateProviderAcceptance} from './provider-acceptance.mjs';
 
 export const PROVIDER_ACTIVATION_REVIEW_PROTOCOL='uvenaro-provider-activation-review-v1';
@@ -24,10 +25,8 @@ const GATE_DATE_PATHS=Object.freeze({
 
 function dated(value){return typeof value==='string'&&Number.isFinite(Date.parse(value));}
 function valueAt(root,path){return path.reduce((value,key)=>value&&typeof value==='object'?value[key]:undefined,root);}
-function authorizationRecordValid(record={}){
- return record.activationAuthorized===true&&typeof record.approvedBy==='string'&&record.approvedBy.trim().length>=3&&
-  dated(record.approvedAt)&&typeof record.scope==='string'&&record.scope==='provider-generation'&&
-  typeof record.reason==='string'&&record.reason.trim().length>=8;
+function authorizationRecordValid(record={},asOf){
+ return evaluateProviderActivationAuthorization(record,asOf).ok;
 }
 
 function freshnessForGate(gate,evidence,asOf){
@@ -46,7 +45,7 @@ export function reviewProviderActivation({contract,evidence={},runtime={},asOf=n
  const acceptance=evaluateProviderAcceptance({contract,evidence,runtime});
  const freshness=acceptance.gates.map(gate=>freshnessForGate(gate,evidence,asOf));
  const freshnessBlockers=freshness.filter(item=>item.status!=='fresh').map(item=>item.id);
- const authorizationValid=authorizationRecordValid(evidence.authorization);
+ const authorizationValid=authorizationRecordValid(evidence.authorization,asOf);
  const safeOff=runtime.generationEnabled!==true&&runtime.providerRequestsPermitted!==true;
  const blockers=[...new Set([...acceptance.blockers,...freshnessBlockers])];
  if(!authorizationValid&&runtime.activationAuthorized===true)blockers.push('AUTHORIZATION_RECORD');
