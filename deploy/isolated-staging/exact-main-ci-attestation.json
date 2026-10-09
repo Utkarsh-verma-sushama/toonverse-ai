@@ -1,0 +1,50 @@
+{
+  "protocol": "uvenaro-isolated-staging-ci-attestation-v1",
+  "attestedAt": "2026-10-09T10:30:00Z",
+  "source": "github-actions-read-only",
+  "branch": "main",
+  "headSha": "44d91d8f8a249c07eb6e3b252ee2f230e3ecf6d2",
+  "workflows": [
+    {
+      "name": "Cloud runtime validation",
+      "runId": 37902340443,
+      "headSha": "44d91d8f8a249c07eb6e3b252ee2f230e3ecf6d2",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Security policy gate",
+      "runId": 37902340395,
+      "headSha": "44d91d8f8a249c07eb6e3b252ee2f230e3ecf6d2",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Native build validation",
+      "runId": 37902340422,
+      "headSha": "44d91d8f8a249c07eb6e3b252ee2f230e3ecf6d2",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "pages build and deployment",
+      "runId": 37902340818,
+      "headSha": "44d91d8f8a249c07eb6e3b252ee2f230e3ecf6d2",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "providerCallsPerformed": false,
+  "productionActivated": false,
+  "ownerSpendMicrousd": 0,
+  "decision": {
+    "stagingReauditEligible": true,
+    "activationAllowed": false
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "rawResponsesStored": false
+  }
+}
