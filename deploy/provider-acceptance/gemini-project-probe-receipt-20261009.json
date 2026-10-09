@@ -1,0 +1,53 @@
+{
+  "protocol": "uvenaro-gemini-project-probe-receipt-v1",
+  "workflowRunId": 37933842349,
+  "workflowJobId": 113830865150,
+  "sourceCommit": "8eec600594e0c9ea3cc4de186076b8e9f95372bd",
+  "capturedAt": "2026-10-09T18:31:23+05:30",
+  "probeProtocol": "uvenaro-gemini-project-probe-v1",
+  "provider": "google-gemini",
+  "model": "gemini-3.8-flash",
+  "generationCalled": false,
+  "providerRequestsPermitted": false,
+  "probeVerified": true,
+  "credential": {
+    "name": "GEMINI_API_KEY",
+    "keyPresent": true,
+    "sha256": "c5e2eea352a4356ed8ce61231163d0abb79c66d9ed0820f1cf1d0068cc14f023",
+    "liveBindingReadback": false,
+    "boundedPropagationRetries": false
+  },
+  "project": {
+    "bindingVerified": false,
+    "id": null,
+    "number": null,
+    "tier": null,
+    "billingAccountAttached": null
+  },
+  "endpoint": {
+    "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+    "endpointVerified": true,
+    "redirectsBlocked": true,
+    "tlsVerified": true
+  },
+  "usage": {
+    "countTokensNonbillableVerified": true,
+    "authoritativeReceiptGetVerified": false,
+    "billable": false,
+    "totalTokens": 13
+  },
+  "readinessStatus": "PROVIDER_ENDPOINT_READINESS_UNVERIFIED",
+  "remainingGates": [
+    "PROJECT_CREDENTIAL_BINDING_AND_TIER",
+    "AUTHORITATIVE_NONBILLABLE_RECEIPT_GET",
+    "BOUNDED_PROPAGATION_RETRY_ACKNOWLEDGEMENT"
+  ],
+  "zeroOwnerSpendBoundary": true,
+  "activationAllowed": false,
+  "redaction": {
+    "keyStored": false,
+    "rawResponseStored": false,
+    "promptStored": false,
+    "answerStored": false
+  }
+}
