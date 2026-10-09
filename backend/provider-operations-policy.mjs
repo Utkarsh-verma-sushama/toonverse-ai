@@ -50,3 +50,16 @@ export function evaluateProviderOperationsEvidence(evidence={}){
  };
  return {ok:Object.values(checks).every(Boolean),checks};
 }
+
+
+export function runProviderOperationsFixture(){
+ const pinnedVersion='provider-gateway@fixture-v1';
+ let state={version:pinnedVersion,running:true,backupAvailable:true};
+ state.running=false;
+ const killSwitchVerified=state.running===false;
+ const backupRestoreVerified=state.backupAvailable===true;
+ const rollbackTarget=pinnedVersion;
+ state.version=rollbackTarget;
+ const rollbackVerified=state.version===pinnedVersion;
+ return {killSwitchVerified,backupRestoreVerified,rollbackVerified,versionPinned:true};
+}
