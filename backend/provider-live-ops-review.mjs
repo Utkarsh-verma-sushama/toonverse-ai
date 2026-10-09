@@ -1,3 +1,5 @@
+import {evidenceIntegrityShape} from './provider-evidence-integrity.mjs';
+
 const freeze=Object.freeze;
 
 export const PROVIDER_LIVE_OPS_REVIEW_PROTOCOL='uvenaro-provider-live-ops-review-v1';
@@ -12,7 +14,8 @@ export function evaluateProviderLiveOpsEvidence(evidence={}){
   alertDelivery:evidence.alertsVerified===true&&dated(evidence.alertsObservedAt),
   killSwitch:evidence.killSwitchVerified===true&&dated(evidence.killSwitchObservedAt),
   backupRestore:evidence.backupRestoreVerified===true&&dated(evidence.backupRestoreObservedAt),
-  rollback:evidence.rollbackVerified===true&&evidence.versionPinned===true&&dated(evidence.rollbackObservedAt)
+  rollback:evidence.rollbackVerified===true&&evidence.versionPinned===true&&dated(evidence.rollbackObservedAt),
+  integrity:Object.values(evidenceIntegrityShape(evidence.integrity)).every(Boolean)
  };
  return {protocol:PROVIDER_LIVE_OPS_REVIEW_PROTOCOL,ok:Object.values(checks).every(Boolean),checks};
 }
