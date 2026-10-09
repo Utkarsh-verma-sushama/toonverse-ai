@@ -21,10 +21,13 @@ export function evaluateWorkersFreePlanEvidence(
     accountBound: ACCOUNT_ID.test(expectedAccountId) &&
       evidence.accountId === expectedAccountId,
     capturedAt: Number.isFinite(capturedAt),
+    captureNotFuture: Number.isFinite(capturedAt) &&
+      Number.isFinite(observedAt) &&
+      capturedAt <= observedAt,
     fresh: Number.isFinite(ageMs) &&
       ageMs >= 0 &&
       ageMs <= WORKERS_FREE_PLAN_EVIDENCE_MAX_AGE_MS,
-    freePlanLabel: /\bfree\b/.test(planLabel) &&
+    freePlanLabel: /\\bfree\\b/.test(planLabel) &&
       /workers|cloudflare/.test(planLabel),
     zeroMonthlyPrice: evidence.monthlyPriceUsd === 0,
     billingInactive: evidence.billingEnabled === false,
@@ -34,13 +37,20 @@ export function evaluateWorkersFreePlanEvidence(
       evidence.secretValue === undefined
   };
 
-  const verified = Object.values(checks).every(Boolean);
+  const historicalEvidenceValid = Object.entries(checks)
+    .filter(([name]) => name !== 'fresh')
+    .every(([, passed]) => passed);
+  const verified = historicalEvidenceValid && checks.fresh;
+
   return {
     protocol: WORKERS_FREE_PLAN_EVIDENCE_PROTOCOL,
     status: verified
       ? 'OWNER_DASHBOARD_FREE_PLAN_VERIFIED'
-      : 'FREE_PLAN_EVIDENCE_UNVERIFIED',
+      : historicalEvidenceValid
+        ? 'HISTORICAL_OWNER_DASHBOARD_FREE_PLAN_EVIDENCE'
+        : 'FREE_PLAN_EVIDENCE_UNVERIFIED',
     verified,
+    historicalEvidenceValid,
     apiIndependent: false,
     provisioningAllowed: false,
     activationAllowed: false,
