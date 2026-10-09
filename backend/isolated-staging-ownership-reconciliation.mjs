@@ -15,10 +15,12 @@ const TARGET_WORKERS = freeze([
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 function sameDatabaseIdentity(observed, accepted) {
+  const observedId = observed?.uuid || observed?.id;
+  // Cloudflare inventory returns the identifier as `id`; deployment receipts
+  // retain it as `uuid`. Role is derived from the accepted name, not API data.
   return observed?.name === accepted?.name &&
-    observed?.uuid === accepted?.uuid &&
-    observed?.role === accepted?.role &&
-    UUID.test(observed?.uuid || '');
+    observedId === accepted?.uuid &&
+    UUID.test(observedId || '');
 }
 
 function uniqueNames(rows) {
