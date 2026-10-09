@@ -1,0 +1,38 @@
+{
+  "protocol": "uvenaro-provider-funding-operations-evidence-v1",
+  "observedAt": "2026-10-09T07:30:00Z",
+  "source": "owner-dashboard-read-only-plus-local-fixture-drill",
+  "funding": {
+    "billingAccountConfigured": false,
+    "ownerSpendCapMicrousd": 0,
+    "autoTopUp": false,
+    "paidRequestsAllowed": false,
+    "zeroOwnerSpendBoundary": true,
+    "providerPriceSnapshotDocumented": true,
+    "projectSpendObservedMicrousd": 0
+  },
+  "operations": {
+    "killSwitchRequired": true,
+    "killSwitchVerified": true,
+    "alertThresholdsDeclared": true,
+    "backupRestoreFixtureVerified": true,
+    "rollbackFixtureVerified": true,
+    "versionPinned": true,
+    "automaticRetry": false,
+    "promptLogging": false,
+    "answerLogging": false,
+    "publicEndpointEnabled": false
+  },
+  "acceptanceDecision": {
+    "status": "SAFE_OFF_PENDING",
+    "pricingGate": "supporting_zero_spend_evidence",
+    "operationsGate": "fixture_verified_live_ops_pending",
+    "activationAuthorized": false
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "apiResponsesStored": false
+  }
+}
