@@ -18,7 +18,7 @@ export function evaluateExactMainCiAttestation(attestation={}){
   headSha:SHA.test(attestation.headSha||''),
   everyRequiredWorkflow:REQUIRED_MAIN_CI_WORKFLOWS.every(name=>{
    const item=byName.get(name);
-   return item?.headSha===attestation.headSha&&item.status==='completed'&&item.conclusion==='success'&&typeof item.runId==='number'&&item.runId>0;
+   return item?.headSha===attestation.headSha&&item?.status==='completed'&&item?.conclusion==='success'&&typeof item?.runId==='number'&&item.runId>0;
   }),
   noDuplicateWorkflowNames:new Set(workflows.map(item=>item.name)).size===workflows.length,
   providerCallsDisabled:attestation.providerCallsPerformed===false,
