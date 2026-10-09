@@ -21,7 +21,7 @@ function validInput(patch = {}) {
       providerRequestsPerformed: false,
       databases: [
         {name: 'uvenaro-account-staging', uuid: pilotId},
-        ...acceptedRecord.databases
+        ...acceptedRecord.databases.map(db => ({name: db.name, id: db.uuid}))
       ],
       workers: acceptedRecord.workers.map(worker => ({name: worker.name}))
     },
@@ -46,7 +46,7 @@ test('database identity drift fails closed', () => {
   const input = validInput();
   input.inventory.databases[1] = {
     ...input.inventory.databases[1],
-    uuid: '22222222-2222-4222-8222-222222222222'
+    id: '22222222-2222-4222-8222-222222222222'
   };
   const result = reconcileIsolatedStagingOwnership(input);
   assert.equal(result.status, 'OWNERSHIP_RECONCILIATION_BLOCKED');
