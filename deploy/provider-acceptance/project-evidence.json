@@ -1,0 +1,68 @@
+{
+  "protocol": "uvenaro-provider-project-evidence-v1",
+  "observedAt": "2026-10-09T06:46:30Z",
+  "source": "owner-dashboard-read-only",
+  "provider": "google-gemini",
+  "project": {
+    "name": "Toonverse AI",
+    "id": "toonverse-ai",
+    "bindingVerified": true
+  },
+  "tier": {
+    "name": "free",
+    "verified": true
+  },
+  "billing": {
+    "configured": false,
+    "verified": true,
+    "dashboardState": "No billing account"
+  },
+  "usage": {
+    "timeRange": "last-28-days",
+    "totalApiRequests": 0,
+    "dashboardState": "No data available"
+  },
+  "quotaHeadroom": {
+    "dashboardObserved": true,
+    "currentPeakUsage": 0,
+    "models": [
+      {"model":"gemini-2.5-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
+      {"model":"gemini-2.5-flash-lite","rpm":"0 / 10","tpm":"0 / 250K","rpd":"0 / 20"},
+      {"model":"gemini-3-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
+      {"model":"gemini-3.1-flash-lite","rpm":"0 / 15","tpm":"0 / 250K","rpd":"0 / 500"},
+      {"model":"gemini-3.5-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
+      {"model":"gemini-3.5-flash-lite","rpm":"0 / 15","tpm":"0 / 250K","rpd":"0 / 500"},
+      {"model":"gemini-3.6-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
+      {"model":"gemini-3.7-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"},
+      {"model":"gemini-3.8-flash","rpm":"0 / 5","tpm":"0 / 250K","rpd":"0 / 20"}
+    ]
+  },
+  "endpointVerification": {
+    "modelsListCalled": false,
+    "countTokensCalled": false,
+    "generateContentCalled": false,
+    "verified": false,
+    "reason": "This checkpoint is dashboard-only and keeps provider requests disabled."
+  },
+  "runtimePolicy": {
+    "generationEnabled": false,
+    "providerRequestsPermitted": false,
+    "backgroundAiEnabled": false,
+    "publicEndpointEnabled": false,
+    "activationAuthorized": false,
+    "zeroOwnerSpendBoundary": true
+  },
+  "acceptanceDecision": {
+    "status": "SAFE_OFF_PENDING",
+    "projectAndTierSupportingEvidence": true,
+    "quotaDashboardEvidence": true,
+    "modelEndpointGate": "pending",
+    "reason": "Dashboard evidence cannot substitute for a controlled non-generation endpoint call."
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "apiResponsesStored": false
+  }
+}
