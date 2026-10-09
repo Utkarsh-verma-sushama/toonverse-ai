@@ -1,0 +1,77 @@
+{
+  "protocol": "uvenaro-provider-evidence-v1",
+  "observedAt": "2026-10-09T06:24:00Z",
+  "provider": "google-gemini",
+  "source": "owner-dashboard-read-only",
+  "project": {
+    "bindingVerified": true,
+    "id": "toonverse-ai"
+  },
+  "tier": {
+    "verified": true,
+    "name": "free",
+    "observedAt": "2026-10-09T06:24:00Z"
+  },
+  "billing": {
+    "verified": true,
+    "configured": false,
+    "observedAt": "2026-10-09T06:24:00Z"
+  },
+  "runtime": {
+    "generationEnabled": false,
+    "activationAuthorized": false,
+    "providerRequestsPermitted": false
+  },
+  "evidence": {
+    "project": {
+      "bindingVerified": true
+    },
+    "tier": {
+      "verified": true,
+      "name": "free",
+      "observedAt": "2026-10-09T06:24:00Z"
+    },
+    "model": {
+      "profileVerified": false,
+      "endpointVerified": false,
+      "methods": []
+    },
+    "pricing": {
+      "snapshotVerified": false,
+      "snapshotAt": null
+    },
+    "funding": {
+      "sourceVerified": false,
+      "zeroOwnerSpendBoundary": true
+    },
+    "privacy": {
+      "privacyReviewed": false,
+      "retentionReviewed": false,
+      "regionReviewed": false,
+      "agePolicyReviewed": false
+    },
+    "usage": {
+      "countTokensNonbillableVerified": false,
+      "preflightHeadroomVerified": false,
+      "thinkingOutputAccountingVerified": false
+    },
+    "reconciliation": {
+      "lostResponsePolicyVerified": false,
+      "noAutomaticRetryVerified": true,
+      "receiptIdentityVerified": false
+    },
+    "operations": {
+      "alertsVerified": false,
+      "backupRestoreVerified": false,
+      "rollbackVerified": false
+    },
+    "authorization": {
+      "activationAuthorized": false
+    }
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false
+  }
+}
