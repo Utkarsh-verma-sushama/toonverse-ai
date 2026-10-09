@@ -1,0 +1,30 @@
+{
+  "protocol": "uvenaro-provider-readiness-pass-v1",
+  "observedAt": "2026-10-09T09:30:00Z",
+  "source": "local-fixture-only",
+  "isolatedResources": true,
+  "schemasApplied": true,
+  "privateBindings": true,
+  "smokeDrill": true,
+  "restartRecoveryDrill": true,
+  "rollbackDrill": true,
+  "generationEnabled": false,
+  "paidConfirmation": false,
+  "apiKeyPresent": false,
+  "externalProviderCalls": false,
+  "publicEndpoint": false,
+  "backgroundAi": false,
+  "unknownOutcomeFailsClosed": true,
+  "decision": {
+    "status": "FIXTURE_READINESS_PASS",
+    "activationAllowed": false,
+    "productionProvisioningPerformed": false,
+    "providerCallsPerformed": false
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "apiResponsesStored": false
+  }
+}
