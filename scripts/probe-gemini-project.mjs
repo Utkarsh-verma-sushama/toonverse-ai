@@ -1,4 +1,5 @@
 import {pathToFileURL} from 'node:url';
+import {createHash} from 'node:crypto';
 
 export const GEMINI_PROJECT_PROBE_PROTOCOL='uvenaro-gemini-project-probe-v1';
 const DEFAULT_MODEL='gemini-3.8-flash';
@@ -17,7 +18,7 @@ async function readJson(response){
 }
 function errorCode(error){return error?.message==='PROBE_RESPONSE_TOO_LARGE'||error?.message==='PROBE_RESPONSE_NOT_JSON'?error.message:'PROBE_NETWORK_ERROR';}
 
-export async function runGeminiProjectProbe({apiKey,model=DEFAULT_MODEL,fetcher=fetch,baseUrl=BASE_URL}={}){
+export async function runGeminiProjectProbe({apiKey,model=DEFAULT_MODEL,fetcher=fetch,baseUrl=BASE_URL,projectId=null,projectNumber=null,tier=null,billingAccountAttached=null,bindingReadback=false}={}){
  const result={
   protocol:GEMINI_PROJECT_PROBE_PROTOCOL,
   provider:'google-gemini',
@@ -27,9 +28,19 @@ export async function runGeminiProjectProbe({apiKey,model=DEFAULT_MODEL,fetcher=
   verified:false,
   modelList:{status:null,modelFound:false,supportedMethods:[]},
   countTokens:{status:null,totalTokens:null},
-  errors:[]
+  errors:[],
+  credential:{name:'GEMINI_API_KEY',keyPresent:false,digest:null,acknowledgements:{declared:false,liveBindingReadback:Boolean(bindingReadback),boundedPropagationRetries:false}},
+  project:{bindingVerified:Boolean(bindingReadback),id:projectId,number:projectNumber,tier,billingAccountAttached},
+  endpoint:{baseUrl,endpointVerified:baseUrl===BASE_URL,redirectsBlocked:true,tlsVerified:baseUrl.startsWith('https://')},
+  usage:{countTokensNonbillableVerified:false,authoritativeReceiptGetVerified:false,billable:false,totalTokens:null},
+  privacy:{store:false,background:false,promptsPersisted:false,answersPersisted:false,retentionDays:0},
+  funding:{ownerSpendCapMicrousd:0,paidRequestsAllowed:false,autoTopUp:false},
+  runtime:{generationEnabled:false,providerCallsPermitted:false,activationAuthorized:false}
  };
  if(!safeKey(apiKey)){result.errors.push('PROBE_API_KEY_INVALID');return result;}
+ result.credential.keyPresent=true;
+ result.credential.digest=credentialDigest(apiKey);
+ result.credential.acknowledgements.declared=true;
  if(!safeModel(model)){result.errors.push('PROBE_MODEL_INVALID');return result;}
  const headers={'x-goog-api-key':apiKey,'accept':'application/json','content-type':'application/json'};
  const request=async(url,options)=>{
@@ -61,6 +72,8 @@ export async function runGeminiProjectProbe({apiKey,model=DEFAULT_MODEL,fetcher=
   const total=counted.body?.totalTokens;
   if(!Number.isSafeInteger(total)||total<1){result.errors.push('PROBE_COUNTTOKENS_RESPONSE_INVALID');return result;}
   result.countTokens.totalTokens=total;
+  result.usage.countTokensNonbillableVerified=true;
+  result.usage.totalTokens=total;
   result.verified=true;
   return result;
  }catch(error){
