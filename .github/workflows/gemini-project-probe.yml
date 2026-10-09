@@ -1,0 +1,37 @@
+name: Probe Gemini project endpoint without generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Gemini model to verify with models.list and countTokens only
+        required: true
+        default: gemini-3.8-flash
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uvenaro-gemini-project-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: uvenaro-account-staging
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_PROBE_MODEL: ${{ inputs.model }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Run sanitized non-generation probe
+        run: node scripts/probe-gemini-project.mjs
