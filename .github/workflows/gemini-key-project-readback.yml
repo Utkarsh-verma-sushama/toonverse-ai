@@ -1,0 +1,29 @@
+name: Authoritative Gemini key project readback
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uvenaro-gemini-key-project-readback
+  cancel-in-progress: false
+
+jobs:
+  readback:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: uvenaro-account-staging
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GOOGLE_CLOUD_READONLY_TOKEN: ${{ secrets.GOOGLE_CLOUD_READONLY_TOKEN }}
+      GEMINI_PROJECT_NUMBER: ${{ vars.GEMINI_PROJECT_NUMBER }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+      - name: Run authoritative non-generation project lookup
+        run: node scripts/lookup-gemini-key-project.mjs
