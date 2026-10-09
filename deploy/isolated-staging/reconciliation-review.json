@@ -1,0 +1,20 @@
+{
+  "protocol": "uvenaro-isolated-staging-review-v1",
+  "reviewedAt": "2026-10-09T10:00:00Z",
+  "source": "verified-deployment-record-read-only",
+  "historicalEvidenceValid": true,
+  "freshMainCiVerified": false,
+  "stagingReauditEligible": false,
+  "activationAllowed": false,
+  "safeOff": true,
+  "reason": "Historical private staging evidence reconciles, but a fresh exact-main CI proof is required before any re-audit or write.",
+  "productionProvisioningPerformed": false,
+  "providerCallsPerformed": false,
+  "ownerSpendMicrousd": 0,
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "rawResponsesStored": false
+  }
+}
