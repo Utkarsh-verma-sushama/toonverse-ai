@@ -32,7 +32,16 @@ function completeEvidence(evidence={}){
    'audited model profile and endpoint capability evidence required'),
   passed('PRICING_AND_ZERO_OWNER_SPEND',
    pricing.snapshotVerified===true&&dated(pricing.snapshotAt)&&
-    funding.sourceVerified===true&&funding.zeroOwnerSpendBoundary===true,
+    funding.sourceVerified===true&&funding.zeroOwnerSpendBoundary===true&&
+    funding.ownerSpendCapMicrousd===0&&funding.autoTopUp===false&&
+    funding.paidRequestsAllowed===false&&validateProviderFundingPolicy({
+     billingConfigured:funding.billingConfigured===true,
+     ownerSpendCapMicrousd:funding.ownerSpendCapMicrousd,
+     autoTopUp:funding.autoTopUp,
+     paidRequestsAllowed:funding.paidRequestsAllowed,
+     zeroOwnerSpendBoundary:funding.zeroOwnerSpendBoundary,
+     fundingSource:funding.fundingSource||'provider-free-tier'
+    }).ok,
    'dated pricing and funded zero-owner-spend evidence required'),
   passed('PRIVACY_RETENTION_AND_REGION',
    privacy.privacyReviewed===true&&privacy.retentionReviewed===true&&
@@ -48,7 +57,20 @@ function completeEvidence(evidence={}){
    'lost-response, retry and receipt-identity evidence required'),
   passed('OPERATIONS_AND_ROLLBACK',
    operations.alertsVerified===true&&operations.backupRestoreVerified===true&&
-    operations.rollbackVerified===true,
+    operations.rollbackVerified===true&&operations.killSwitchVerified===true&&
+    operations.alertThresholdsDeclared===true&&operations.versionPinned===true&&
+    operations.automaticRetry===false&&operations.promptLogging===false&&
+    operations.answerLogging===false&&operations.publicEndpoint===false&&
+    validateProviderOperationsPolicy({
+     killSwitchRequired:operations.killSwitchRequired,
+     alertThresholds:operations.alertThresholds,
+     backupRestoreRequired:operations.backupRestoreRequired,
+     rollbackMode:operations.rollbackMode,
+     automaticRetry:operations.automaticRetry,
+     promptLogging:operations.promptLogging,
+     answerLogging:operations.answerLogging,
+     publicEndpoint:operations.publicEndpoint
+    }).ok,
    'alerts, backup/restore and rollback evidence required')
  ];
 }
