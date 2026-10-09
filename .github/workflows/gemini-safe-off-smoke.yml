@@ -1,0 +1,65 @@
+name: Verify Gemini safe-off runtime after private binding
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: uvenaro-account-staging
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WORKER_NAME: uvenaro-bounded-provider-adapter-staging
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Read-only safe-off runtime assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -n "${CLOUDFLARE_API_TOKEN:-}"
+          test "${WORKER_NAME}" = "uvenaro-bounded-provider-adapter-staging"
+
+          base="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${WORKER_NAME}"
+          settings="$(curl --fail-with-body --silent --show-error --location --max-time 30 \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "${base}/settings")"
+          subdomain="$(curl --fail-with-body --silent --show-error --location --max-time 30 \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "${base}/subdomain")"
+
+          SETTINGS="${settings}" SUBDOMAIN="${subdomain}" python3 - <<'PY'
+          import json, os, sys
+
+          settings = json.loads(os.environ["SETTINGS"])
+          subdomain = json.loads(os.environ["SUBDOMAIN"])
+          if settings.get("success") is not True or subdomain.get("success") is not True:
+              sys.exit("Cloudflare read-only metadata was not acknowledged")
+
+          result = settings.get("result") or {}
+          bindings = result.get("bindings") or []
+          key = next((item for item in bindings if item.get("name") == "GEMINI_API_KEY"), None)
+          if not key or key.get("type") != "secret_text":
+              sys.exit("GEMINI_API_KEY secret binding is not verified")
+
+          plain = {item.get("name"): item.get("text") for item in bindings if item.get("type") == "plain_text"}
+          if plain.get("GEMINI_GENERATION_ENABLED") != "false":
+              sys.exit("Gemini generation safe-off flag is not false")
+          if plain.get("GEMINI_EXECUTION_CONFIRMATION", "") != "":
+              sys.exit("Gemini execution confirmation is unexpectedly enabled")
+
+          endpoint = subdomain.get("result") or {}
+          if endpoint.get("enabled") is not False or endpoint.get("previews_enabled") is not False:
+              sys.exit("Private Worker endpoint is not locked down")
+          if (result.get("observability") or {}).get("enabled") is True:
+              sys.exit("Worker observability is unexpectedly enabled")
+
+          print("Safe-off runtime assertions passed; no provider request was made.")
+          print("Secret binding present, generation disabled, confirmation absent, endpoint private.")
+          PY
