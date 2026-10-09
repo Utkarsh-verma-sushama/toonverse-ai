@@ -1,5 +1,6 @@
 import {validateProviderFundingPolicy} from './provider-funding-policy.mjs';
 import {validateProviderOperationsPolicy} from './provider-operations-policy.mjs';
+import {evaluateProviderLiveOpsEvidence} from './provider-live-ops-review.mjs';
 
 const freeze=Object.freeze;
 
@@ -64,6 +65,7 @@ function completeEvidence(evidence={}){
     operations.alertThresholdsDeclared===true&&operations.versionPinned===true&&
     operations.automaticRetry===false&&operations.promptLogging===false&&
     operations.answerLogging===false&&operations.publicEndpoint===false&&
+    evaluateProviderLiveOpsEvidence(operations).ok&&
     validateProviderOperationsPolicy({
      killSwitchRequired:operations.killSwitchRequired,
      alertThresholds:operations.alertThresholds,
