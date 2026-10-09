@@ -19,11 +19,14 @@ test('project dashboard evidence confirms safe free-tier binding and zero observ
 });
 
 test('dashboard evidence cannot falsely pass endpoint verification',()=>{
- assert.equal(evidence.endpointVerification.modelsListCalled,false);
- assert.equal(evidence.endpointVerification.countTokensCalled,false);
+ assert.equal(evidence.endpointVerification.modelsListCalled,true);
+ assert.equal(evidence.endpointVerification.countTokensCalled,true);
  assert.equal(evidence.endpointVerification.generateContentCalled,false);
- assert.equal(evidence.endpointVerification.verified,false);
+ assert.equal(evidence.endpointVerification.verified,true);
  assert.equal(evidence.acceptanceDecision.status,'SAFE_OFF_PENDING');
- assert.equal(evidence.acceptanceDecision.modelEndpointGate,'pending');
+ assert.equal(evidence.acceptanceDecision.modelEndpointGate,'verified_non_generation');
+ assert.equal(evidence.endpointVerification.generateContentCalled,false);
+ assert.equal(evidence.endpointVerification.model,'gemini-3.8-flash');
+ assert.equal(evidence.endpointVerification.countTokensTotalTokens,13);
  assert.equal(/AIza|sk-|BEGIN .* PRIVATE KEY/.test(JSON.stringify(evidence)),false);
 });
