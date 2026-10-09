@@ -11,7 +11,7 @@ export const READ_ONLY_REAUDIT_STEPS=freeze([
  'rollback-readiness'
 ]);
 
-export function planIsolatedStagingReaudit({deployment={},ciAttestation={},asOf=new Date().toISOString()}={}){
+export function planIsolatedStagingReaudit({deployment={},ciAttestation={},ownerSpendMicrousd=deployment.ownerSpendMicrousd,asOf=new Date().toISOString()}={}){
  const ci=evaluateExactMainCiAttestation(ciAttestation);
  const staging=evaluateIsolatedStagingReview({...deployment,freshMainCiVerified:ci.exactMainCiGreen},asOf);
  const checks={
@@ -19,9 +19,9 @@ export function planIsolatedStagingReaudit({deployment={},ciAttestation={},asOf=
   historicalDeploymentValid:staging.historicalEvidenceValid,
   safeOff:staging.safeOff,
   readOnly:true,
-  remoteWritesDisabled:true,
+  remoteWritesDisabled:deployment.remoteChangesPerformed!==true,
   providerCallsDisabled:deployment.providerCallsPermitted===false,
-  ownerSpendZero:deployment.ownerSpendMicrousd===0
+  ownerSpendZero:ownerSpendMicrousd===0
  };
  const eligible=Object.values(checks).every(Boolean);
  return {
