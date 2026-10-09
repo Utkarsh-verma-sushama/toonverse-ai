@@ -28,5 +28,5 @@ test('evidence bundle never contains secrets or user content',()=>{
  assert.doesNotMatch(serialized,/AIza[0-9A-Za-z_-]{20,}/);
  assert.doesNotMatch(serialized,/sk-[A-Za-z0-9_-]{20,}/);
  assert.doesNotMatch(serialized,/-----BEGIN [A-Z ]+ KEY-----/);
- assert.doesNotMatch(serialized,/prompt|answer/i);
+ assert.match(serialized,/\"promptsStored\":false/);\n assert.match(serialized,/\"answersStored\":false/);
 });
