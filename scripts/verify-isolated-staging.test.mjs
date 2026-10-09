@@ -6,9 +6,26 @@ const account='a'.repeat(32),pilot='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',tokenI
 const env={CLOUDFLARE_ACCOUNT_ID:account,CLOUDFLARE_API_TOKEN:'private-fixture-token',UVENARO_STAGING_DATABASE_ID:pilot};
 const policy={effect:'allow',resources:{['com.cloudflare.api.account.'+account]:'*'},permission_groups:[{name:'Workers Scripts Write'},{name:'D1 Write'}]};
 const dbs=[{name:'uvenaro-account-staging',uuid:pilot}];
+const targetDbs=[
+ {name:'uvenaro-chat-staging',uuid:'11111111-1111-4111-8111-111111111111'},
+ {name:'uvenaro-gateway-receipts-staging',uuid:'22222222-2222-4222-8222-222222222222'},
+ {name:'uvenaro-adapter-evidence-staging',uuid:'33333333-3333-4333-8333-333333333333'}
+];
+const metadataDbs=[...dbs,...targetDbs];
+const acceptedForFixture={
+ protocol:'uvenaro-verified-private-isolated-deployment-v1',
+ accountId:account,
+ databases:targetDbs.map(db=>({...db,role:{'uvenaro-chat-staging':'billing','uvenaro-gateway-receipts-staging':'gateway-receipts','uvenaro-adapter-evidence-staging':'adapter-evidence'}[db.name]})),
+ workers:[{name:'uvenaro-bounded-provider-adapter-staging'},{name:'uvenaro-metered-gateway-staging'}],
+ privateEndpointsVerified:true,
+ providerCallsPermitted:false,
+ productionActivated:false,
+ publicLaunchAccepted:false
+};
+const runInspect=fetcher=>runInspect(fetcher,acceptedForFixture);
 function metadata(path){
- if(path.includes('/d1/database?'))return {success:true,result:dbs,result_info:{total_count:1}};
- if(path.endsWith('/workers/services'))return {success:true,result:[]};
+ if(path.includes('/d1/database?'))return {success:true,result:metadataDbs,result_info:{total_count:metadataDbs.length}};
+ if(path.endsWith('/workers/services'))return {success:true,result:[{id:'uvenaro-bounded-provider-adapter-staging'},{id:'uvenaro-metered-gateway-staging'}]};
  if(path.endsWith('/tokens/verify'))return {success:true,result:{id:tokenId,status:'active'}};
  if(path.endsWith('/tokens/'+tokenId))return {success:true,result:{policies:[policy]}};
  if(path.endsWith('/subscriptions'))return {success:true,result:[{price:0,rate_plan:{id:'free',public_name:'Workers Free',is_contract:false,externally_managed:false}}],result_info:{total_count:1}};
