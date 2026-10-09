@@ -32,7 +32,7 @@ function metadata(path){
  throw Error('Unexpected fixture request');
 }
 test('preflight proves declared scopes and free plan using GET metadata only',async()=>{
- const calls=[];const result=await inspectIsolatedStaging(env,async(url,options)=>{
+ const calls=[];const result=await runInspect(async(url,options)=>{
   calls.push(url);assert.equal(options.method,'GET');assert.equal(options.redirect,'error');return Response.json(metadata(new URL(url).pathname+new URL(url).search));
  });assert.equal(result.readyForProvisioning,true);assert.equal(result.writePermissionsExercised,false);assert.equal(result.remoteChangesPerformed,false);assert.equal(calls.length,5);
  assert.doesNotMatch(JSON.stringify(result),/private-fixture-token|aaaaaaaa-bbbb|bbbbbbbbbbbb/);
@@ -49,20 +49,20 @@ test('existing targets, wrong pilot and insufficient free slots are blockers',()
  assert.ok(inventoryPlan([...dbs,...Array.from({length:7},(_,i)=>({uuid:'id'+i,name:'db'+i}))],[],pilot).blockers.includes('FREE_DATABASE_CAPACITY_UNAVAILABLE'));
 });
 for(const [name,change] of Object.entries({empty:{result:[],result_info:{total_count:0}},paid:{result:[{price:5,rate_plan:{id:'pro',public_name:'Workers Paid'}}],result_info:{total_count:1}},other:{result:[{price:0,rate_plan:{id:'free',public_name:'DNS Free'}}],result_info:{total_count:1}},truncated:{result:[],result_info:{total_count:2}}}))test(name+' subscriptions do not authorize zero-cost provisioning',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>Response.json(String(url).endsWith('/subscriptions')?{success:true,...change}:metadata(new URL(url).pathname+new URL(url).search)));
+ const result=await runInspect(async url=>Response.json(String(url).endsWith('/subscriptions')?{success:true,...change}:metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.workersFreePlanVerified,false);assert.equal(result.readyForProvisioning,false);
 });
 test('denied token details preserve working reads but leave scopes unknown',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>String(url).endsWith('/tokens/'+tokenId)?new Response('private-fixture-token',{status:403}):Response.json(metadata(new URL(url).pathname+new URL(url).search)));
+ const result=await runInspect(async url=>String(url).endsWith('/tokens/'+tokenId)?new Response('private-fixture-token',{status:403}):Response.json(metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.inventory.inventoryVerified,true);assert.equal(result.tokenActive,true);assert.equal(result.scopes.inspectable,false);assert.equal(result.readyForProvisioning,false);
  assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);
 });
 test('account token verification can safely fall back to user token verification',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>String(url).includes('/accounts/'+account+'/tokens/verify')?new Response('denied',{status:403}):Response.json(metadata(new URL(url).pathname+new URL(url).search)));
+ const result=await runInspect(async url=>String(url).includes('/accounts/'+account+'/tokens/verify')?new Response('denied',{status:403}):Response.json(metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.tokenActive,true);assert.equal(result.scopes.workersCreateDeclared,true);
 });
 test('partial database inventory cannot justify quota or absence of collisions',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>Response.json(String(url).includes('/d1/database?')?{success:true,result:dbs,result_info:{total_count:9}}:metadata(new URL(url).pathname+new URL(url).search)));
+ const result=await runInspect(async url=>Response.json(String(url).includes('/d1/database?')?{success:true,result:dbs,result_info:{total_count:9}}:metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.inventory.inventoryVerified,false);assert.equal(result.readyForProvisioning,false);
 });
 test('missing configuration makes no network call',async()=>{
@@ -70,7 +70,7 @@ test('missing configuration makes no network call',async()=>{
 });
 test('HTML, API and network errors never leak response bodies or tokens',async()=>{
  for(const reply of [()=>new Response('<html>private-fixture-token</html>'),()=>Response.json({success:false,errors:[{message:'private-fixture-token'}]}),()=>{throw Error('private-fixture-token');}]){
-  const result=await inspectIsolatedStaging(env,reply);assert.equal(result.readyForProvisioning,false);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);
+  const result=await runInspect(reply);assert.equal(result.readyForProvisioning,false);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);
  }
 });
 test('inspection workflow never provisions resources or installs project dependencies',()=>{
@@ -79,32 +79,32 @@ test('inspection workflow never provisions resources or installs project depende
 });
 test('subscription request uses the documented path without unsupported query fields',async()=>{
  let seen=false;
- const result=await inspectIsolatedStaging(env,async url=>{
+ const result=await runInspect(async url=>{
   const parsed=new URL(url);
   if(parsed.pathname.endsWith('/subscriptions')){seen=true;assert.equal(parsed.search,'');}
   return Response.json(metadata(parsed.pathname+parsed.search));
  });assert.equal(seen,true);assert.equal(result.readyForProvisioning,true);
 });
 test('subscription errors expose only bounded numeric diagnostics and never authorize provisioning',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>String(url).endsWith('/subscriptions')?
+ const result=await runInspect(async url=>String(url).endsWith('/subscriptions')?
   Response.json({errors:[{code:1234,message:'private-fixture-token'},{code:'private-fixture-token'},{code:5}]},{status:400}):Response.json(metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.freePlanHttpStatus,400);assert.deepEqual(result.freePlanApiErrorCodes,[1234,5]);
  assert.equal(result.readyForProvisioning,false);assert.doesNotMatch(JSON.stringify(result),/private-fixture-token/);
 });
 test('documented SinglePage subscription response does not require optional result_info',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>{
+ const result=await runInspect(async url=>{
   const body=metadata(new URL(url).pathname+new URL(url).search);
   if(String(url).endsWith('/subscriptions'))delete body.result_info;
   return Response.json(body);
  });assert.equal(result.workersFreePlanVerified,true);assert.equal(result.readyForProvisioning,true);
 });
 test('empty SinglePage subscription list never proves Workers Free',async()=>{
- const result=await inspectIsolatedStaging(env,async url=>Response.json(String(url).endsWith('/subscriptions')?{success:true,result:[]}:metadata(new URL(url).pathname+new URL(url).search)));
+ const result=await runInspect(async url=>Response.json(String(url).endsWith('/subscriptions')?{success:true,result:[]}:metadata(new URL(url).pathname+new URL(url).search)));
  assert.equal(result.subscriptionCount,0);assert.equal(result.workersSubscriptionCount,0);assert.equal(result.readyForProvisioning,false);
 });
 test('trial and inactive subscription states cannot prove a current Free plan',async()=>{
  for(const state of ['Trial','Cancelled','Failed','Expired','AwaitingPayment','unknown']){
-  const result=await inspectIsolatedStaging(env,async url=>{
+  const result=await runInspect(async url=>{
    const body=metadata(new URL(url).pathname+new URL(url).search);
    if(String(url).endsWith('/subscriptions'))body.result[0].state=state;
    return Response.json(body);
