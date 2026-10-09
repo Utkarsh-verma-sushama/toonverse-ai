@@ -25,7 +25,8 @@
     "billingAccountAttached": null
   },
   "endpoint": {
-    "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+    "authority": "generativelanguage.googleapis.com",
+    "apiVersionPath": "/v1beta",
     "endpointVerified": true,
     "redirectsBlocked": true,
     "tlsVerified": true
