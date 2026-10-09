@@ -11,6 +11,9 @@ function safeModel(value){
 function safeKey(value){
  return typeof value==='string'&&value.length>=20&&value.length<=256&&!/[\r\n]/.test(value);
 }
+function credentialDigest(value){
+ return createHash('sha256').update(value,'utf8').digest('hex');
+}
 async function readJson(response){
  const text=await response.text();
  if(text.length>262144)throw new Error('PROBE_RESPONSE_TOO_LARGE');
