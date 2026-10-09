@@ -1,9 +1,11 @@
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 
+
 export const GEMINI_PROJECT_PROBE_PROTOCOL='uvenaro-gemini-project-probe-v1';
 const DEFAULT_MODEL='gemini-3.8-flash';
 const BASE_URL='https://generativelanguage.googleapis.com/v1beta';
+
 
 function safeModel(value){
  return typeof value==='string'&&/^gemini-[a-z0-9.-]{1,80}$/.test(value);
@@ -20,6 +22,7 @@ async function readJson(response){
  try{return JSON.parse(text);}catch{throw new Error('PROBE_RESPONSE_NOT_JSON');}
 }
 function errorCode(error){return error?.message==='PROBE_RESPONSE_TOO_LARGE'||error?.message==='PROBE_RESPONSE_NOT_JSON'?error.message:'PROBE_NETWORK_ERROR';}
+
 
 export async function runGeminiProjectProbe({apiKey,model=DEFAULT_MODEL,fetcher=fetch,baseUrl=BASE_URL,projectId=null,projectNumber=null,tier=null,billingAccountAttached=null,bindingReadback=false}={}){
  const result={
@@ -85,10 +88,16 @@ export async function runGeminiProjectProbe({apiKey,model=DEFAULT_MODEL,fetcher=
  }
 }
 
+
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const report=await runGeminiProjectProbe({
   apiKey:process.env.GEMINI_API_KEY,
-  model:process.env.GEMINI_PROBE_MODEL||DEFAULT_MODEL
+  model:process.env.GEMINI_PROBE_MODEL||DEFAULT_MODEL,
+  projectId:process.env.GEMINI_PROJECT_ID||null,
+  projectNumber:process.env.GEMINI_PROJECT_NUMBER||null,
+  tier:process.env.GEMINI_TIER||null,
+  billingAccountAttached:process.env.GEMINI_BILLING_ACCOUNT_ATTACHED ? process.env.GEMINI_BILLING_ACCOUNT_ATTACHED==='true' : null,
+  bindingReadback:process.env.GEMINI_BINDING_READBACK==='true'
  });
  console.log(JSON.stringify(report,null,2));
  if(!report.verified)process.exitCode=1;
