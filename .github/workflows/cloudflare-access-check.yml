@@ -9,6 +9,8 @@ on:
       - 'scripts/inspect-isolated-staging.mjs'
       - 'backend/isolated-staging-ownership-reconciliation.mjs'
       - 'deploy/isolated-staging/verified-deployment.json'
+      - 'deploy/isolated-staging/ownership-reconciliation.json'
+      - 'scripts/verify-isolated-staging.test.mjs'
 permissions:
   contents: read
 concurrency:
