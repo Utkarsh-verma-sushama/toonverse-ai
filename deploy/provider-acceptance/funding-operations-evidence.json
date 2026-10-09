@@ -16,12 +16,15 @@
     "killSwitchVerified": true,
     "alertThresholdsDeclared": true,
     "backupRestoreFixtureVerified": true,
+    "backupRestoreVerified": true,
     "rollbackFixtureVerified": true,
+    "rollbackVerified": true,
     "versionPinned": true,
     "automaticRetry": false,
     "promptLogging": false,
     "answerLogging": false,
-    "publicEndpointEnabled": false
+    "publicEndpointEnabled": false,
+    "publicEndpoint": false
   },
   "acceptanceDecision": {
     "status": "SAFE_OFF_PENDING",
