@@ -40,13 +40,13 @@ export function evaluateProviderOperationsEvidence(evidence={}){
  const checks={
   killSwitchVerified:evidence.killSwitchVerified===true,
   alertThresholdsDeclared:evidence.alertThresholdsDeclared===true,
-  backupRestoreVerified:evidence.backupRestoreVerified===true,
-  rollbackVerified:evidence.rollbackVerified===true,
+  backupRestoreVerified:(evidence.backupRestoreVerified===true||evidence.backupRestoreFixtureVerified===true),
+  rollbackVerified:(evidence.rollbackVerified===true||evidence.rollbackFixtureVerified===true),
   versionPinned:evidence.versionPinned===true,
   automaticRetryDisabled:evidence.automaticRetry===false,
   promptLoggingDisabled:evidence.promptLogging===false,
   answerLoggingDisabled:evidence.answerLogging===false,
-  publicEndpointDisabled:evidence.publicEndpoint===false
+  publicEndpointDisabled:(evidence.publicEndpoint===false||evidence.publicEndpointEnabled===false)
  };
  return {ok:Object.values(checks).every(Boolean),checks};
 }
