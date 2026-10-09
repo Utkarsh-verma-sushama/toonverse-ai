@@ -5,6 +5,7 @@ import {
  getProviderContract,
  validateProviderContract
 } from '../backend/provider-contract.mjs';
+import {enforceGeminiPrivacyPolicy,validateGeminiPrivacyPolicy} from '../backend/provider-privacy-policy.mjs';
 
 const base={ENVIRONMENT:'staging',GEMINI_MODEL:'',GEMINI_PROVIDER:'google-gemini'};
 
@@ -15,6 +16,7 @@ test('the registry exposes an immutable bounded contract instead of provider ass
  assert.deepEqual(contract.methods,{countTokens:'countTokens',generateContent:'generateContent'});
  assert.deepEqual(contract.limits,{maxInputTokens:12000,maxOutputTokens:12000,maxTotalTokens:20000});
  assert.deepEqual(contract.controls,{candidateCount:1,thinkingLevel:'low',streaming:false,tools:false});
+ assert.deepEqual(contract.privacy,{store:false,background:false,fileApi:false,contextCaching:false,grounding:false,retentionDays:0,promptsPersisted:false,answersPersisted:false});
  assert.equal(Object.isFrozen(contract),true);
  assert.equal(Object.isFrozen(contract.limits),true);
 });
@@ -44,4 +46,38 @@ test('contract capability and accounting fields are complete before activation',
   'GEMINI_COUNT_TOKENS_NONBILLABLE_AUDITED',
   'GEMINI_PRIVACY_PRICING_AUDITED'
  ]);
+});
+
+
+test('privacy policy is immutable and rejects retention or background controls',()=>{
+ const contract=getProviderContract('google-gemini');
+ assert.equal(validateGeminiPrivacyPolicy(contract.privacy).ok,true);
+ for(const change of [
+  {store:true},
+  {background:true},
+  {fileApi:true},
+  {contextCaching:true},
+  {grounding:true},
+  {retentionDays:1},
+  {promptsPersisted:true},
+  {answersPersisted:true}
+ ]){
+  const report=validateGeminiPrivacyPolicy({...contract.privacy,...change});
+  assert.equal(report.ok,false);
+ }
+});
+
+test('request privacy guard fails closed for every persistence path',()=>{
+ for(const request of [
+  {store:true},{background:true},{fileApi:true},{file:true},
+  {contextCaching:true},{cachedContent:'cache-1'},{grounding:true},
+  {googleSearch:true},{retentionDays:7}
+ ]){
+  const report=enforceGeminiPrivacyPolicy(request);
+  assert.equal(report.ok,false);
+  assert.ok(report.errors.length>0);
+  assert.equal(report.normalized.store,false);
+  assert.equal(report.normalized.background,false);
+ }
+ assert.equal(enforceGeminiPrivacyPolicy({}).ok,true);
 });
