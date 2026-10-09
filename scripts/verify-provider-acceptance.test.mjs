@@ -13,7 +13,7 @@ const readyEvidence=()=>({
  tier:{verified:true,name:'free',observedAt:'2026-10-09T00:00:00Z'},
  model:{profileVerified:true,endpointVerified:true,methods:['countTokens','generateContent']},
  pricing:{snapshotVerified:true,snapshotAt:'2026-10-09T00:00:00Z'},
- funding:{sourceVerified:true,zeroOwnerSpendBoundary:true},
+ funding:{sourceVerified:true,zeroOwnerSpendBoundary:true,billingConfigured:false,ownerSpendCapMicrousd:0,autoTopUp:false,paidRequestsAllowed:false,fundingSource:'provider-free-tier'},
  privacy:{privacyReviewed:true,retentionReviewed:true,regionReviewed:true,agePolicyReviewed:true},
  usage:{countTokensNonbillableVerified:true,preflightHeadroomVerified:true,thinkingOutputAccountingVerified:true},
  reconciliation:{lostResponsePolicyVerified:true,noAutomaticRetryVerified:true,receiptIdentityVerified:true},
