@@ -32,7 +32,7 @@ export function inventoryPlan(databases,workers,pilotId){
  if(databases.length+stagingNames.databases.length>10)blockers.push('FREE_DATABASE_CAPACITY_UNAVAILABLE');
  return {inventoryVerified:true,pilotPreserved:true,databaseCount:databases.length,newDatabaseCount:3,databaseCollisions,workerCollisions,blockers};
 }
-export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
+export async function inspectIsolatedStaging(env=process.env,fetcher=fetch,accepted=acceptedRecord){
  const account=env.CLOUDFLARE_ACCOUNT_ID,pilot=env.UVENARO_STAGING_DATABASE_ID;
  const report={phase:'isolated-staging-preflight',remoteChangesPerformed:false,writePermissionsExercised:false,providerRequestsPerformed:false,readyForProvisioning:false,blockers:[]};
  if(!/^[a-f0-9]{32}$/.test(account||'')||!env.CLOUDFLARE_API_TOKEN||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(pilot||''))return {...report,blockers:['SECURE_SETTINGS_MISSING_OR_INVALID']};
@@ -61,7 +61,7 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
  const complete=Array.isArray(databases.result)&&Number.isInteger(databases.result_info?.total_count)&&databases.result_info.total_count===databases.result.length;
  const inventory=inventoryPlan(complete?databases.result:null,Array.isArray(workers.result)?workers.result:null,pilot);
  const ownership=reconcileIsolatedStagingOwnership({
-  acceptedRecord,
+  acceptedRecord:accepted,
   accountId:account,
   pilotId:pilot,
   inventory:{
