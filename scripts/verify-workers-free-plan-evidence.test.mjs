@@ -27,13 +27,25 @@ test('fresh account-bound Workers Free evidence verifies without enabling anythi
   const result = evaluateWorkersFreePlanEvidence(validEvidence(), asOf);
   assert.equal(result.status, 'OWNER_DASHBOARD_FREE_PLAN_VERIFIED');
   assert.equal(result.verified, true);
+  assert.equal(result.historicalEvidenceValid, true);
   assert.equal(result.provisioningAllowed, false);
   assert.equal(result.activationAllowed, false);
   assert.equal(result.zeroOwnerSpendBoundary, true);
   assert.equal(result.redaction.screenshotStored, false);
 });
 
-test('evidence older than six hours or from the future fails closed', () => {
+test('stale but otherwise valid evidence is historical only and stays locked', () => {
+  const stale = evaluateWorkersFreePlanEvidence(
+    validEvidence({capturedAt: '2026-10-09T11:43:59+05:30'}), asOf
+  );
+  assert.equal(stale.status, 'HISTORICAL_OWNER_DASHBOARD_FREE_PLAN_EVIDENCE');
+  assert.equal(stale.historicalEvidenceValid, true);
+  assert.equal(stale.verified, false);
+  assert.equal(stale.provisioningAllowed, false);
+  assert.equal(stale.activationAllowed, false);
+});
+
+test('evidence older than six hours or from the future fails current verification', () => {
   const stale = evaluateWorkersFreePlanEvidence(
     validEvidence({capturedAt: '2026-10-09T11:43:59+05:30'}), asOf
   );
@@ -42,6 +54,7 @@ test('evidence older than six hours or from the future fails closed', () => {
     validEvidence({capturedAt: '2026-10-09T18:00:00+05:30'}), asOf
   );
   assert.equal(future.verified, false);
+  assert.equal(future.historicalEvidenceValid, false);
   assert.equal(WORKERS_FREE_PLAN_EVIDENCE_MAX_AGE_MS, 21600000);
 });
 
