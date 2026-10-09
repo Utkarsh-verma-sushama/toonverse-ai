@@ -1,0 +1,34 @@
+{
+  "protocol": "uvenaro-isolated-staging-ownership-reconciliation-v1",
+  "status": "PENDING_EXACT_MAIN_READ_ONLY_RECHECK",
+  "executionMode": "read-only",
+  "sourceCommit": "5633a9c0a0d829c223ee3688fbb64f8cc6c15588",
+  "inspectionWorkflow": "Check Cloudflare deployment access (read-only)",
+  "remoteInspectionRunId": null,
+  "ownershipVerified": false,
+  "provisioningAllowed": false,
+  "activationAllowed": false,
+  "remoteChangesPerformed": false,
+  "providerRequestsPerformed": false,
+  "workersFreePlanVerified": false,
+  "blockers": [
+    "EXACT_MAIN_READ_ONLY_RECHECK_PENDING",
+    "WORKERS_FREE_PLAN_UNVERIFIED"
+  ],
+  "acceptedRoles": [
+    "billing",
+    "gateway-receipts",
+    "adapter-evidence"
+  ],
+  "acceptedWorkers": [
+    "uvenaro-bounded-provider-adapter-staging",
+    "uvenaro-metered-gateway-staging"
+  ],
+  "redaction": {
+    "secrets": true,
+    "prompts": true,
+    "answers": true,
+    "rawProviderResponses": true
+  },
+  "note": "This ledger intentionally remains pending until the read-only workflow runs against this exact main commit. No resource write or provider request is authorized."
+}
