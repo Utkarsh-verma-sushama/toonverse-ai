@@ -1,0 +1,29 @@
+{
+  "protocol": "uvenaro-isolated-staging-reaudit-execution-v1",
+  "executedAt": "2026-10-09T11:00:00Z",
+  "executionMode": "fixture",
+  "status": "FIXTURE_REAUDIT_PASS",
+  "complete": true,
+  "steps": [
+    {"step": "inventory", "passed": true},
+    {"step": "schema-fingerprint", "passed": true},
+    {"step": "private-binding-scope", "passed": true},
+    {"step": "safe-off-runtime", "passed": true},
+    {"step": "rollback-readiness", "passed": true}
+  ],
+  "remoteExecutionPerformed": false,
+  "providerCallsPerformed": false,
+  "activationAllowed": false,
+  "ownerSpendMicrousd": 0,
+  "decision": {
+    "status": "FIXTURE_REAUDIT_PASS",
+    "productionProvisioningPerformed": false,
+    "reason": "Fixture harness completed; remote read-only re-audit has not been executed."
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false,
+    "rawResponsesStored": false
+  }
+}
