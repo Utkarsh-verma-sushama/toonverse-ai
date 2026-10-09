@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
  DEFAULT_PROVIDER_OPERATIONS_POLICY,
  evaluateProviderOperationsEvidence,
+ runProviderOperationsFixture,
  validateProviderOperationsPolicy
 } from '../backend/provider-operations-policy.mjs';
 
@@ -31,4 +32,10 @@ test('operations policy fails closed on unsafe controls',()=>{
   {promptLogging:true},{answerLogging:true},{publicEndpoint:true},
   {alertThresholds:{errorRatePct:0,reconciliationOpen:0,latencyMs:0,spendMicrousd:1}}
  ])assert.equal(validateProviderOperationsPolicy({...DEFAULT_PROVIDER_OPERATIONS_POLICY,...patch}).ok,false);
+});
+
+
+test('operations fixture exercises kill-switch, restore and pinned rollback',()=>{
+ const result=runProviderOperationsFixture();
+ assert.deepEqual(result,{killSwitchVerified:true,backupRestoreVerified:true,rollbackVerified:true,versionPinned:true});
 });
