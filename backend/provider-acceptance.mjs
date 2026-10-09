@@ -59,9 +59,10 @@ export function evaluateProviderAcceptance({contract,evidence={},runtime={}}={})
  const gates=completeEvidence(evidence);
  const blockers=gates.filter(gate=>gate.status!=='pass').map(gate=>gate.id);
  const requested=runtime.generationEnabled===true||runtime.activationAuthorized===true;
+ const explicitAuthorization=evidence.authorization?.activationAuthorized===true;
+ if(requested&&!explicitAuthorization)errors.push('ACTIVATION_AUTHORIZATION_REQUIRED');
  if(requested&&blockers.length)errors.push('ACTIVATION_GATES_INCOMPLETE');
  const allPassed=blockers.length===0&&errors.length===0;
- const explicitAuthorization=evidence.authorization?.activationAuthorized===true;
  let status='SAFE_OFF_PENDING';
  if(requested&&errors.length)status='REJECTED';
  else if(allPassed&&!explicitAuthorization)status='READY_FOR_AUTHORIZED_ACTIVATION';
