@@ -22,7 +22,7 @@ const acceptedForFixture={
  productionActivated:false,
  publicLaunchAccepted:false
 };
-const runInspect=fetcher=>runInspect(fetcher,acceptedForFixture);
+const runInspect=fetcher=>inspectIsolatedStaging(env,fetcher,acceptedForFixture);
 function metadata(path){
  if(path.includes('/d1/database?'))return {success:true,result:metadataDbs,result_info:{total_count:metadataDbs.length}};
  if(path.endsWith('/workers/services'))return {success:true,result:[{id:'uvenaro-bounded-provider-adapter-staging'},{id:'uvenaro-metered-gateway-staging'}]};
