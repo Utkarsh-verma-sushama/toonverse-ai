@@ -1,0 +1,105 @@
+{
+  "protocol": "uvenaro-provider-official-evidence-v1",
+  "observedAt": "2026-10-09T06:38:21Z",
+  "provider": "google-gemini",
+  "sourceClass": "official-google-documentation",
+  "sources": [
+    {
+      "id": "gemini-models",
+      "url": "https://ai.google.dev/gemini-api/docs/models",
+      "claims": ["model catalogue and capability profiles are documented"]
+    },
+    {
+      "id": "gemini-all-methods",
+      "url": "https://ai.google.dev/api/all-methods",
+      "claims": ["countTokens is documented", "generateContent is documented"]
+    },
+    {
+      "id": "gemini-interactions-overview",
+      "url": "https://ai.google.dev/gemini-api/docs/interactions-overview",
+      "claims": ["Interactions API stores state by default", "store=false opts out", "free-tier interaction retention is one day"]
+    },
+    {
+      "id": "gemini-migrate-interactions",
+      "url": "https://ai.google.dev/gemini-api/docs/migrate-to-interactions",
+      "claims": ["Interactions API is recommended for new development", "generateContent remains supported"]
+    },
+    {
+      "id": "gemini-pricing",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "claims": ["free and paid pricing tables are documented", "thinking output is included in output pricing"]
+    },
+    {
+      "id": "gemini-billing",
+      "url": "https://ai.google.dev/gemini-api/docs/billing",
+      "claims": ["billing is based on input, output, cached-token count and cached storage duration"]
+    },
+    {
+      "id": "gemini-tokens",
+      "url": "https://ai.google.dev/gemini-api/docs/tokens",
+      "claims": ["actual interaction usage exposes input, output, thought, cached, tool-use and total token fields"]
+    },
+    {
+      "id": "gemini-zdr",
+      "url": "https://ai.google.dev/gemini-api/docs/zdr",
+      "claims": ["zero-data-retention requires explicit controls and feature restrictions"]
+    }
+  ],
+  "findings": {
+    "model": {
+      "documentationReviewed": true,
+      "interactionsRecommendedForNewDevelopment": true,
+      "generateContentSupportedAsLegacy": true,
+      "countTokensDocumented": true,
+      "projectEndpointVerified": false,
+      "selectedModel": null
+    },
+    "pricing": {
+      "documentationReviewed": true,
+      "snapshotVerified": true,
+      "billingAccountConfigured": false,
+      "zeroOwnerSpendBoundary": true,
+      "projectPriceBindingVerified": false
+    },
+    "privacy": {
+      "documentationReviewed": true,
+      "storeFalseAvailable": true,
+      "freeInteractionRetention": "1 day",
+      "paidInteractionRetention": "55 days",
+      "projectPolicyEnforced": false,
+      "backgroundExecutionAllowedByDefault": false
+    },
+    "usage": {
+      "documentationReviewed": true,
+      "countTokensDocumented": true,
+      "interactionUsageFields": [
+        "total_input_tokens",
+        "total_output_tokens",
+        "total_thought_tokens",
+        "total_cached_tokens",
+        "total_tool_use_tokens",
+        "total_tokens"
+      ],
+      "thinkingOutputAccountingDocumented": true,
+      "projectRuntimeVerified": false
+    },
+    "operations": {
+      "documentationReviewed": true,
+      "localRollbackDrillVerified": true,
+      "liveProviderRollbackVerified": false,
+      "projectAlertsVerified": false
+    }
+  },
+  "acceptanceDecision": {
+    "generationEnabled": false,
+    "providerRequestsPermitted": false,
+    "activationAuthorized": false,
+    "status": "SAFE_OFF_PENDING",
+    "reason": "Official documentation is not project-specific authorization or endpoint verification."
+  },
+  "redaction": {
+    "secretValuesStored": false,
+    "promptsStored": false,
+    "answersStored": false
+  }
+}
