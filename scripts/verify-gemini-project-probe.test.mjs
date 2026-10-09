@@ -25,6 +25,10 @@ test('probe verifies model listing and countTokens without generation',async()=>
  assert.equal(report.modelList.modelFound,true);
  assert.deepEqual(report.modelList.supportedMethods,['countTokens','generateContent']);
  assert.equal(report.countTokens.totalTokens,7);
+ assert.equal(report.credential.keyPresent,true);
+ assert.match(report.credential.digest,/^[a-f0-9]{64}$/);
+ assert.equal(report.credential.acknowledgements.declared,true);
+ assert.equal(JSON.stringify(report).includes(secret),false);
  assert.equal(calls.length,2);
  assert.equal(calls[0].method,'GET');
  assert.equal(calls[1].url.endsWith('/models/gemini-3.8-flash:countTokens'),true);
