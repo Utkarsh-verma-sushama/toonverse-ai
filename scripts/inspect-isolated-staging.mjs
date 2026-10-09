@@ -1,6 +1,9 @@
 import {pathToFileURL} from 'node:url';
+import {readFileSync} from 'node:fs';
+import {reconcileIsolatedStagingOwnership} from '../backend/isolated-staging-ownership-reconciliation.mjs';
 import {boundedJson} from '../backend/metered-gateway.mjs';
 export const stagingNames=Object.freeze({databases:['uvenaro-chat-staging','uvenaro-gateway-receipts-staging','uvenaro-adapter-evidence-staging'],workers:['uvenaro-metered-gateway-staging','uvenaro-bounded-provider-adapter-staging']});
+const acceptedRecord=JSON.parse(readFileSync(new URL('../deploy/isolated-staging/verified-deployment.json',import.meta.url),'utf8'));
 // A declared token scope is not an exercised write. Denied metadata is unknown,
 // never interpreted as either write permission or proof that access is absent.
 export function declaredScopes(token,account){
@@ -56,7 +59,27 @@ export async function inspectIsolatedStaging(env=process.env,fetcher=fetch){
  // Inventory must be complete; a truncated page cannot justify free capacity.
  const databases=await get(prefix+'/d1/database?per_page=100&page=1'),workers=await get(prefix+'/workers/services');
  const complete=Array.isArray(databases.result)&&Number.isInteger(databases.result_info?.total_count)&&databases.result_info.total_count===databases.result.length;
- const inventory=inventoryPlan(complete?databases.result:null,workers.result,pilot);report.inventory=inventory;report.blockers.push(...inventory.blockers);
+ const inventory=inventoryPlan(complete?databases.result:null,Array.isArray(workers.result)?workers.result:null,pilot);
+ const ownership=reconcileIsolatedStagingOwnership({
+  acceptedRecord,
+  accountId:account,
+  pilotId:pilot,
+  inventory:{
+   complete,
+   pilotPreserved:inventory.pilotPreserved===true,
+   databases:complete?databases.result:null,
+   workers:Array.isArray(workers.result)?workers.result:null,
+   writePermissionsExercised:false,
+   providerRequestsPerformed:false
+  },
+  remoteChangesPerformed:false,
+  providerRequestsPerformed:false,
+  workersFreePlanVerified:false
+ });
+ report.inventory=inventory;
+ report.ownership=ownership;
+ report.blockers.push(...inventory.blockers.filter(blocker=>blocker!=='EXISTING_TARGET_RESOURCE_REQUIRES_OWNERSHIP_REVIEW'));
+ if(!ownership.ownershipVerified)report.blockers.push('OWNERSHIP_RECONCILIATION_REQUIRED');
  let verified=await get(prefix+'/tokens/verify'),tokenPath=prefix+'/tokens/';
  if(verified.result?.status!=='active'||!/^[a-f0-9]{32}$/.test(verified.result?.id||'')){verified=await get('/user/tokens/verify');tokenPath='/user/tokens/';}
  const active=verified.result?.status==='active'&&/^[a-f0-9]{32}$/.test(verified.result?.id||'');
