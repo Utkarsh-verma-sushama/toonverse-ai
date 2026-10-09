@@ -1,0 +1,63 @@
+name: Verify Gemini provider metadata readiness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: uvenaro-account-staging
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Read-only provider metadata assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          key="${GEMINI_API_KEY:-}"
+          test -n "$key"
+          test "${#key}" -ge 20
+          test "${#key}" -le 256
+          case "$key" in *$'\n'*|*$'\r'*) exit 1 ;; esac
+
+          response="$(curl --fail-with-body --silent --show-error --location --max-time 30 \
+            -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+            -H "Accept: application/json" \
+            "https://generativelanguage.googleapis.com/v1beta/models?pageSize=100")"
+
+          RESPONSE="$response" python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          body = json.loads(os.environ["RESPONSE"])
+          models = body.get("models")
+          if not isinstance(models, list):
+              sys.exit("Provider metadata response did not contain a model list")
+
+          valid = 0
+          generation_capable = 0
+          for model in models:
+              if not isinstance(model, dict):
+                  continue
+              name = model.get("name")
+              methods = model.get("supportedGenerationMethods")
+              if isinstance(name, str) and name.startswith("models/") and isinstance(methods, list):
+                  valid += 1
+                  if "generateContent" in methods:
+                      generation_capable += 1
+
+          if valid == 0:
+              sys.exit("Provider metadata contained no valid model entries")
+
+          print("Provider metadata read succeeded; no generation request was made.")
+          print(f"Models discovered: {valid}; generateContent-capable metadata entries: {generation_capable}.")
+          print("Project identity, tier, pricing, privacy and billable-count acceptance remain unverified by design.")
+          PY
