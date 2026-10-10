@@ -16,6 +16,7 @@ function errorCode(error){
 }
 
 export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProjectNumber,fetcher=fetch}={}){
+ const normalizedAccessToken=typeof accessToken==='string'?accessToken.trim():accessToken;
  const result={
   protocol:'uvenaro-gemini-key-project-lookup-v1',
   provider:'google-gemini',
@@ -33,13 +34,13 @@ export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProject
  };
  if(!validSecret(apiKey)){result.errors.push('LOOKUP_API_KEY_INVALID');return result;}
  result.credential.keyPresent=true;
- if(!validToken(accessToken)){result.errors.push('LOOKUP_OAUTH_TOKEN_MISSING_OR_INVALID');return result;}
+ if(!validToken(normalizedAccessToken)){ result.errors.push('LOOKUP_OAUTH_TOKEN_MISSING_OR_INVALID');return result;}
  result.oauth.accessTokenPresent=true;
  if(!validProjectNumber(expectedProjectNumber)){result.errors.push('LOOKUP_PROJECT_NUMBER_INVALID');return result;}
  const expectedParent='projects/'+expectedProjectNumber+'/locations/global';
  const url=API_KEYS_BASE_URL+'/keys:lookupKey?keyString='+encodeURIComponent(apiKey);
  try{
-  const response=await fetcher(url,{method:'GET',redirect:'error',headers:{authorization:'Bearer '+accessToken,accept:'application/json'}});
+  const response=await fetcher(url,{method:'GET',redirect:'error',headers:{authorization:'Bearer '+normalizedAccessToken,accept:'application/json'}});
   result.lookup.status=response.status;
   const body=await readJson(response);
   const parent=typeof body?.parent==='string'?body.parent:null;
