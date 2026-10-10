@@ -37,6 +37,7 @@ export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProject
  result.credential.keyPresent=true;
  if(!validToken(normalizedAccessToken)){ result.errors.push('LOOKUP_OAUTH_TOKEN_MISSING_OR_INVALID');return result;}
  result.oauth.accessTokenPresent=true;
+ result.oauth.tokenFormat=normalizedAccessToken.startsWith('ya29.')?'google_user_access_token':'other';
  if(!validProjectNumber(expectedProjectNumber)){result.errors.push('LOOKUP_PROJECT_NUMBER_INVALID');return result;}
  const expectedParent='projects/'+expectedProjectNumber+'/locations/global';
  const url=API_KEYS_BASE_URL+'/keys:lookupKey?keyString='+encodeURIComponent(apiKey);
@@ -44,6 +45,7 @@ export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProject
   const response=await fetcher(url,{method:'GET',redirect:'error',headers:{authorization:'Bearer '+normalizedAccessToken,'x-goog-user-project':resolvedQuotaProject,accept:'application/json'}});
   result.lookup.status=response.status;
   const body=await readJson(response);
+  if(!response.ok&&body?.error&&typeof body.error==='object'){result.lookup.error={code:typeof body.error.code==='number'?body.error.code:null,status:typeof body.error.status==='string'?body.error.status:null};}
   const parent=typeof body?.parent==='string'?body.parent:null;
   result.lookup.parent=parent;
   result.lookup.parentVerified=Boolean(response.ok&&parent===expectedParent);
