@@ -1,7 +1,9 @@
 import {pathToFileURL} from 'node:url';
 
+
 const API_KEYS_BASE_URL='https://apikeys.googleapis.com/v2';
 const MAX_BODY_BYTES=65536;
+
 
 function validSecret(value){return typeof value==='string'&&value.length>=20&&value.length<=256&&!/[\r\n]/.test(value);}
 function validToken(value){return typeof value==='string'&&value.length>=20&&value.length<=8192&&!/[\r\n]/.test(value);}
@@ -15,8 +17,10 @@ function errorCode(error){
  return error?.message==='LOOKUP_RESPONSE_TOO_LARGE'||error?.message==='LOOKUP_RESPONSE_NOT_JSON'?error.message:'LOOKUP_NETWORK_ERROR';
 }
 
-export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProjectNumber,fetcher=fetch}={}){
+
+export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProjectNumber,quotaProject,fetcher=fetch}={}){
  const normalizedAccessToken=typeof accessToken==='string'?accessToken.trim():accessToken;
+ const resolvedQuotaProject=typeof quotaProject==='string'&&quotaProject.trim()?quotaProject.trim():expectedProjectNumber;
  const result={
   protocol:'uvenaro-gemini-key-project-lookup-v1',
   provider:'google-gemini',
@@ -40,7 +44,7 @@ export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProject
  const expectedParent='projects/'+expectedProjectNumber+'/locations/global';
  const url=API_KEYS_BASE_URL+'/keys:lookupKey?keyString='+encodeURIComponent(apiKey);
  try{
-  const response=await fetcher(url,{method:'GET',redirect:'error',headers:{authorization:'Bearer '+normalizedAccessToken,accept:'application/json'}});
+  const response=await fetcher(url,{method:'GET',redirect:'error',headers:{authorization:'Bearer '+normalizedAccessToken,'x-goog-user-project':resolvedQuotaProject,accept:'application/json'}});
   result.lookup.status=response.status;
   const body=await readJson(response);
   const parent=typeof body?.parent==='string'?body.parent:null;
@@ -56,12 +60,7 @@ export async function lookupGeminiKeyProject({apiKey,accessToken,expectedProject
  }catch(error){result.errors.push(errorCode(error));return result;}
 }
 
+
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const report=await lookupGeminiKeyProject({
   apiKey:process.env.GEMINI_API_KEY,
-  accessToken:process.env.GOOGLE_CLOUD_READONLY_TOKEN,
-  expectedProjectNumber:process.env.GEMINI_PROJECT_NUMBER
- });
- console.log(JSON.stringify(report,null,2));
- if(!report.verified)process.exitCode=1;
-}
